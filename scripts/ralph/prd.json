@@ -58,7 +58,7 @@
         "No new simulator clones are created in repeated runs (manual verification note acceptable)",
         "Context7 consulted for current xcodebuild destination usage; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

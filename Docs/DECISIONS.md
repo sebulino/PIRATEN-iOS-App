@@ -138,6 +138,41 @@ Use SwiftUI exclusively. No UIKit except where required for system integration (
 
 ---
 
+## D-007: Pinned Simulator Destination for Automation
+
+**Date:** 2026-01-30
+**Status:** Accepted
+
+### Context
+Automated xcodebuild runs using `-destination 'platform=iOS Simulator,name=iPhone 16'` can create simulator clones when multiple simulators share the same name. This leads to:
+- Wasted disk space from clone accumulation
+- Ambiguous test environments
+- Potential CI/CD failures when name resolution picks the wrong simulator
+
+### Decision
+Pin a specific simulator UDID for all automated builds and tests:
+
+**Primary Destination (iOS 26.2):**
+```
+-destination 'platform=iOS Simulator,id=F0291949-CCB9-4C91-B947-292F98247041'
+```
+
+This targets: iPhone 16 running iOS 26.2
+
+### Rationale
+- UDID-based destinations are unambiguous and prevent clone creation
+- iOS 26.2 is the latest available runtime in the current Xcode version
+- Using a specific device UDID ensures consistent test environments
+- If the UDID becomes unavailable (e.g., after Xcode update), the build will fail explicitly rather than silently using a different simulator
+
+### Fallback
+If the pinned simulator is unavailable after an Xcode update:
+1. Run `xcrun simctl list devices available` to list available simulators
+2. Select an iPhone 16 (or similar) UDID from the iOS 18.x runtime
+3. Update this document and CLAUDE.md with the new UDID
+
+---
+
 ## Future Decisions
 
 Decisions pending external input:

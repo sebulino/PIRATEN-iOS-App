@@ -11,7 +11,30 @@ Started: Fr. 30 Jan. 2026 16:41:49 CET
 
 - **AppContainer Pattern**: Use a central `AppContainer` class as the composition root. Initialize at app entry point and pass to views via constructor injection.
 - **Constructor Injection in SwiftUI**: Use `let container = AppContainer()` in the `App` struct, then pass `container.authStateManager` to views
+- **xcodebuild Destinations**: Always use UDID-based destinations (`id=<UDID>`) instead of name-based (`name=iPhone 16`) to prevent simulator clone ambiguity and ensure reproducible builds
 
+---
+
+## [2026-01-30 20:25] - M2A-004
+- Documented pinned simulator destination in Docs/DECISIONS.md (D-007)
+- Updated CLAUDE.md build commands to use UDID-based destination
+- Pinned destination: iPhone 16 (iOS 26.2) with UDID `F0291949-CCB9-4C91-B947-292F98247041`
+- Verified build and tests pass with the new UDID-based destination
+- Files changed:
+  - Docs/DECISIONS.md (added D-007 decision)
+  - CLAUDE.md (updated build commands section)
+  - scripts/ralph/progress.txt (this entry)
+- **Context7 xcodebuild Destination Usage Summary:**
+  - Use UDID-based destinations (`id=<UDID>`) to avoid ambiguity when multiple simulators share the same name
+  - Name-based destinations (`name=iPhone 16`) can resolve to any matching simulator, causing unpredictable clone creation
+  - Run `xcrun simctl list devices available` to find simulator UUIDs
+  - For CI/CD: explicitly manage simulators and use UDID-based targeting
+  - Test parallelization still creates clones (expected behavior), but UDID targeting prevents resolution-related clones
+  - If UDID becomes unavailable after Xcode update, builds fail explicitly (better than silent misrouting)
+- **Learnings for future iterations:**
+  - Always document the pinned UDID and how to update it if unavailable
+  - Check `xcodebuild -destination` output to see available simulators for the scheme
+  - iOS runtime versions change with Xcode updates (18.4 → 26.2 in this case)
 ---
 
 ## [2026-01-30 20:15] - M2A-003
