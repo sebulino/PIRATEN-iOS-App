@@ -9,3 +9,6 @@ DerivedData/
 *.xcuserstate
 *.xcuserdata/
 .DS_Store
+
+# Secrets configuration (never commit)
+Config/Secrets.xcconfig

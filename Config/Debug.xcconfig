@@ -1,0 +1,13 @@
+// Debug Configuration
+// This file contains debug-specific build settings
+
+// Include secrets (git-ignored)
+#include "Secrets.xcconfig"
+
+// API Base URLs (can be overridden in Secrets.xcconfig)
+API_BASE_URL = https:/$()/api.dev.piratenpartei.de
+DISCOURSE_BASE_URL = https:/$()/forum.dev.piratenpartei.de
+MEINE_PIRATEN_BASE_URL = https:/$()/meine.dev.piratenpartei.de
+
+// App Configuration
+PRODUCT_BUNDLE_IDENTIFIER = de.piratenpartei.app.debug
