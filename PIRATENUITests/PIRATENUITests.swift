@@ -23,12 +23,17 @@ final class PIRATENUITests: XCTestCase {
     }
 
     @MainActor
-    func testExample() throws {
+    func testAppLaunchesAndShowsLoginScreen() throws {
         // UI tests must launch the application that they test.
         let app = XCUIApplication()
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+        // Verify the login screen is displayed
+        let loginTitle = app.staticTexts["loginTitle"]
+        XCTAssertTrue(loginTitle.waitForExistence(timeout: 5), "Login screen title should be visible")
+
+        let loginButton = app.buttons["loginButton"]
+        XCTAssertTrue(loginButton.exists, "Login button should be visible")
     }
 
     @MainActor

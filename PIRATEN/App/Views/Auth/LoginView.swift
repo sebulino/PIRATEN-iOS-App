@@ -17,10 +17,12 @@ struct LoginView: View {
             Image(systemName: "flag.fill")
                 .font(.system(size: 80))
                 .foregroundColor(.orange)
+                .accessibilityIdentifier("loginLogo")
 
             Text("PIRATEN")
                 .font(.largeTitle)
                 .fontWeight(.bold)
+                .accessibilityIdentifier("loginTitle")
 
             Text("Mitglieder-App")
                 .font(.subheadline)
@@ -44,6 +46,7 @@ struct LoginView: View {
                         .cornerRadius(10)
                 }
                 .padding(.horizontal, 40)
+                .accessibilityIdentifier("loginButton")
             }
 
             Spacer()
