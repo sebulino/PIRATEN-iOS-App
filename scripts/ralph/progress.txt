@@ -124,3 +124,27 @@
   - Protocol-based design (KeychainServiceProtocol) enables future mocking in tests
   - Always cleanup test data in each test to avoid state leakage
 ---
+## 2026-01-30 16:20 - M1-006
+- Created comprehensive documentation as required by CLAUDE.md
+- README.md: Build/run instructions, architecture overview, getting started guide
+- Docs/PROJECT_STATUS.md: Milestone tracking with M1 listed as current
+- Docs/DECISIONS.md: Architectural Decision Records (ADRs) for key choices
+- Docs/OPEN_QUESTIONS.md: Questions blocking implementation (SSO, Discourse, meine-piraten.de)
+- Docs/THREAT_MODEL.md: Security threats, mitigations, privacy considerations
+- Renamed lowercase `docs/` to `Docs/` per spec requirements
+- Files changed: 6 files
+  - New: README.md
+  - New: Docs/PROJECT_STATUS.md
+  - New: Docs/DECISIONS.md
+  - New: Docs/OPEN_QUESTIONS.md
+  - New: Docs/THREAT_MODEL.md
+  - Modified: PIRATEN.xcodeproj/project.pbxproj (cosmetic reordering)
+- Build succeeded, all tests passed (15 tests)
+- **Learnings for future iterations:**
+  - Documentation files go in root-level Docs/ folder (capital D)
+  - README.md stays at project root
+  - PROJECT_STATUS.md should be updated each milestone completion
+  - OPEN_QUESTIONS.md blocks guessing - use it instead of inventing API details
+  - THREAT_MODEL.md evolves with features - update as new threats identified
+  - ADR format: Context → Decision → Rationale for each major choice
+---

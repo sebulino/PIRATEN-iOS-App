@@ -71,7 +71,7 @@
         "Docs/PROJECT_STATUS.md exists and lists Milestone 1 as current",
         "Docs/DECISIONS.md, Docs/OPEN_QUESTIONS.md, Docs/THREAT_MODEL.md exist"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M1-007",
