@@ -1,0 +1,11 @@
+
+
+.env
+CLAUDE.md
+/scripts
+.mcp.json
+
+DerivedData/
+*.xcuserstate
+*.xcuserdata/
+.DS_Store
