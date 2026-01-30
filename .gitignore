@@ -2,7 +2,8 @@
 
 .env
 CLAUDE.md
-/scripts
+/scripts/*
+!/scripts/ralph
 .mcp.json
 
 DerivedData/

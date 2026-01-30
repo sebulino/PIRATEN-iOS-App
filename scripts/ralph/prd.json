@@ -47,7 +47,7 @@
         "Config/Secrets.sample.xcconfig exists",
         "No secrets are hardcoded in source files"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M1-005",

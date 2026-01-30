@@ -65,3 +65,32 @@
   - All 5 views follow identical structure for consistency
   - Xcode 16 auto-discovery works perfectly - just create files in correct folders
 ---
+## 2026-01-30 15:45 - M1-004
+- Implemented xcconfig configuration system with three files
+- Created Config/Debug.xcconfig with debug-specific settings (dev URLs, debug bundle ID)
+- Created Config/Release.xcconfig with production settings (production URLs, release bundle ID)
+- Created Config/Secrets.sample.xcconfig as a template for local secrets (SSO config, API keys)
+- Added Config/Secrets.xcconfig to .gitignore to prevent committing secrets
+- Modified PIRATEN.xcodeproj/project.pbxproj to:
+  - Add file references for xcconfig files
+  - Create Config group in project navigator
+  - Link Debug.xcconfig to Debug build configuration
+  - Link Release.xcconfig to Release build configuration
+- Verified no hardcoded secrets exist in source files
+- Files changed: 5 files
+  - New: Config/Debug.xcconfig
+  - New: Config/Release.xcconfig
+  - New: Config/Secrets.sample.xcconfig
+  - Modified: .gitignore
+  - Modified: PIRATEN.xcodeproj/project.pbxproj
+- Build and tests passed successfully
+- **Learnings for future iterations:**
+  - xcconfig files use #include to reference other xcconfig files
+  - Config/ directory is at project root (not inside PIRATEN/)
+  - Xcode project file references use SOURCE_ROOT for paths relative to project root
+  - baseConfigurationReference links xcconfig to build configurations in project.pbxproj
+  - Variable syntax in xcconfig: `VARIABLE_NAME = value` and reference with `$(VARIABLE_NAME)`
+  - To prevent variable expansion in URLs, use `https:/$()/` instead of `https://`
+  - Secrets.xcconfig should be git-ignored but a sample version should be committed
+  - All builds and tests must pass before committing configuration changes
+---
