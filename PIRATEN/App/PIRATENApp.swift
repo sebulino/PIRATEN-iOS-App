@@ -21,7 +21,8 @@ struct PIRATENApp: App {
         WindowGroup {
             RootView(
                 authStateManager: container.authStateManager,
-                forumViewModel: container.forumViewModel
+                forumViewModel: container.forumViewModel,
+                todosViewModel: container.todosViewModel
             )
         }
     }

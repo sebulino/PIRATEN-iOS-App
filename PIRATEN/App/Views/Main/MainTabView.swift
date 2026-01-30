@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @ObservedObject var forumViewModel: ForumViewModel
+    @ObservedObject var todosViewModel: TodosViewModel
 
     var body: some View {
         TabView {
@@ -27,7 +28,7 @@ struct MainTabView: View {
                     Label("Knowledge", systemImage: "book")
                 }
 
-            TodosView()
+            TodosView(viewModel: todosViewModel)
                 .tabItem {
                     Label("Todos", systemImage: "checklist")
                 }
@@ -41,5 +42,8 @@ struct MainTabView: View {
 }
 
 #Preview {
-    MainTabView(forumViewModel: ForumViewModel(discourseRepository: FakeDiscourseRepository()))
+    MainTabView(
+        forumViewModel: ForumViewModel(discourseRepository: FakeDiscourseRepository()),
+        todosViewModel: TodosViewModel(todoRepository: FakeTodoRepository())
+    )
 }

@@ -29,6 +29,10 @@ final class AppContainer {
     /// Currently uses FakeDiscourseRepository; will be swapped for real Discourse API later.
     let discourseRepository: DiscourseRepository
 
+    /// Todo repository implementation.
+    /// Currently uses FakeTodoRepository; will be swapped for real meine-piraten.de API later.
+    let todoRepository: TodoRepository
+
     // MARK: - Presentation Layer (ViewModels)
 
     /// Authentication state manager (ViewModel for auth flow).
@@ -36,6 +40,9 @@ final class AppContainer {
 
     /// Forum view model for displaying topics.
     let forumViewModel: ForumViewModel
+
+    /// Todos view model for displaying tasks.
+    let todosViewModel: TodosViewModel
 
     // MARK: - Initialization
 
@@ -47,10 +54,12 @@ final class AppContainer {
         // Data layer
         self.authRepository = FakeAuthRepository(credentialStore: credentialStore)
         self.discourseRepository = FakeDiscourseRepository()
+        self.todoRepository = FakeTodoRepository()
 
         // Presentation layer
         self.authStateManager = AuthStateManager(authRepository: authRepository)
         self.forumViewModel = ForumViewModel(discourseRepository: discourseRepository)
+        self.todosViewModel = TodosViewModel(todoRepository: todoRepository)
     }
 
     /// Creates the container with custom dependencies for testing.
@@ -58,10 +67,12 @@ final class AppContainer {
     ///   - credentialStore: Custom credential store implementation
     ///   - authRepositoryFactory: Factory closure to create auth repository with the credential store
     ///   - discourseRepository: Custom discourse repository implementation (defaults to fake)
+    ///   - todoRepository: Custom todo repository implementation (defaults to fake)
     init(
         credentialStore: CredentialStore,
         authRepositoryFactory: ((CredentialStore) -> AuthRepository)? = nil,
-        discourseRepository: DiscourseRepository? = nil
+        discourseRepository: DiscourseRepository? = nil,
+        todoRepository: TodoRepository? = nil
     ) {
         self.credentialStore = credentialStore
 
@@ -72,8 +83,10 @@ final class AppContainer {
         }
 
         self.discourseRepository = discourseRepository ?? FakeDiscourseRepository()
+        self.todoRepository = todoRepository ?? FakeTodoRepository()
 
         self.authStateManager = AuthStateManager(authRepository: authRepository)
         self.forumViewModel = ForumViewModel(discourseRepository: self.discourseRepository)
+        self.todosViewModel = TodosViewModel(todoRepository: self.todoRepository)
     }
 }

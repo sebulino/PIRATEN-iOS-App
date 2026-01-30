@@ -62,3 +62,29 @@ Started: Fr. 30 Jan. 2026 21:15:46 CET
   - `refreshable` modifier provides pull-to-refresh with async support
   - Load data in `onAppear` with guard to prevent duplicate loads
 ---
+
+## [2026-01-30 21:37] - M2B-003
+- **What was implemented:** Todos domain entity, repository protocol, fake implementation, and ViewModel integration
+- **Files changed:**
+  - Created: `PIRATEN/Core/Domain/Todos/Todo.swift`
+  - Created: `PIRATEN/Core/Domain/Todos/TodoRepository.swift`
+  - Created: `PIRATEN/Core/Data/Todos/FakeTodoRepository.swift`
+  - Created: `PIRATEN/App/ViewModels/TodosViewModel.swift`
+  - Modified: `PIRATEN/App/Views/Main/TodosView.swift` - now uses ViewModel with fake todos
+  - Modified: `PIRATEN/App/Views/Main/MainTabView.swift` - accepts TodosViewModel
+  - Modified: `PIRATEN/App/RootView.swift` - passes TodosViewModel
+  - Modified: `PIRATEN/App/PIRATENApp.swift` - injects TodosViewModel from container
+  - Modified: `PIRATEN/Core/Support/AppContainer.swift` - added todoRepository and todosViewModel
+- **Context7 SwiftUI List/Identifiable Learnings:**
+  - Structs conforming to `Identifiable` enable efficient List rendering
+  - `UUID` or unique Int IDs work well for `Identifiable` conformance
+  - `ForEach` within List allows sectioned content (pending vs completed)
+  - List combined with Section provides grouped display
+  - `strikethrough` modifier with conditional check for completed items
+  - Computed properties on ViewModel (`pendingTodos`, `completedTodos`) keep filtering logic out of Views
+- **Learnings for future iterations:**
+  - Todo model includes `priority` enum for future sorting/filtering
+  - `dueDate: Date?` allows optional due dates with visual indicators for overdue items
+  - Group name (`groupName`) represents organizational unit for task ownership
+  - Fake data uses German text and realistic Piratenpartei working group names
+---
