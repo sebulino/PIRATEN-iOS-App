@@ -59,7 +59,7 @@
         "At least one unit test validates set/get/delete behavior (using test key)",
         "No tokens or PII are logged"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M1-006",

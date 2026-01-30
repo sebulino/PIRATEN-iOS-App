@@ -94,3 +94,33 @@
   - Secrets.xcconfig should be git-ignored but a sample version should be committed
   - All builds and tests must pass before committing configuration changes
 ---
+## 2026-01-30 16:10 - M1-005
+- Implemented KeychainService wrapper at Core/Support/KeychainService.swift
+- Used native iOS Security framework (no third-party dependencies)
+- Created KeychainServiceProtocol for dependency injection and testing
+- Implemented set/get/delete/contains operations with proper error handling
+- KeychainError enum provides typed errors: itemNotFound, duplicateItem, unexpectedStatus, encodingFailed, decodingFailed
+- Security features: kSecAttrAccessibleWhenUnlockedThisDeviceOnly for secure storage
+- No logging of values, tokens, or PII in the implementation
+- Created comprehensive unit tests covering:
+  - Set and get value
+  - Get returns nil for nonexistent key
+  - Set overwrites existing value
+  - Delete removes value
+  - Delete nonexistent key does not throw
+  - Contains returns true/false appropriately
+  - Handles special characters in values (Unicode, symbols, etc.)
+- Files changed: 2 files
+  - New: PIRATEN/Core/Support/KeychainService.swift
+  - New: PIRATENTests/KeychainServiceTests.swift
+- Build succeeded, all 15 tests passed
+- **Learnings for future iterations:**
+  - Native Keychain API uses Security framework (import Security)
+  - SecItemAdd/SecItemCopyMatching/SecItemDelete are the core Keychain functions
+  - Query dictionaries use kSecClass, kSecAttrService, kSecAttrAccount keys
+  - kSecAttrAccessibleWhenUnlockedThisDeviceOnly provides good security for tokens
+  - Swift Testing framework uses @Test attribute and #expect for assertions
+  - Test isolation achieved by using unique service identifiers per test run
+  - Protocol-based design (KeychainServiceProtocol) enables future mocking in tests
+  - Always cleanup test data in each test to avoid state leakage
+---
