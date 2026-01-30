@@ -19,7 +19,10 @@ struct PIRATENApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView(authStateManager: container.authStateManager)
+            RootView(
+                authStateManager: container.authStateManager,
+                forumViewModel: container.forumViewModel
+            )
         }
     }
 }

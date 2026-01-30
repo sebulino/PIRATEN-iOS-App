@@ -25,10 +25,17 @@ final class AppContainer {
     /// Currently uses FakeAuthRepository; will be swapped for real SSO implementation later.
     let authRepository: AuthRepository
 
+    /// Discourse forum repository implementation.
+    /// Currently uses FakeDiscourseRepository; will be swapped for real Discourse API later.
+    let discourseRepository: DiscourseRepository
+
     // MARK: - Presentation Layer (ViewModels)
 
     /// Authentication state manager (ViewModel for auth flow).
     let authStateManager: AuthStateManager
+
+    /// Forum view model for displaying topics.
+    let forumViewModel: ForumViewModel
 
     // MARK: - Initialization
 
@@ -39,18 +46,22 @@ final class AppContainer {
 
         // Data layer
         self.authRepository = FakeAuthRepository(credentialStore: credentialStore)
+        self.discourseRepository = FakeDiscourseRepository()
 
         // Presentation layer
         self.authStateManager = AuthStateManager(authRepository: authRepository)
+        self.forumViewModel = ForumViewModel(discourseRepository: discourseRepository)
     }
 
     /// Creates the container with custom dependencies for testing.
     /// - Parameters:
     ///   - credentialStore: Custom credential store implementation
     ///   - authRepositoryFactory: Factory closure to create auth repository with the credential store
+    ///   - discourseRepository: Custom discourse repository implementation (defaults to fake)
     init(
         credentialStore: CredentialStore,
-        authRepositoryFactory: ((CredentialStore) -> AuthRepository)? = nil
+        authRepositoryFactory: ((CredentialStore) -> AuthRepository)? = nil,
+        discourseRepository: DiscourseRepository? = nil
     ) {
         self.credentialStore = credentialStore
 
@@ -60,6 +71,9 @@ final class AppContainer {
             self.authRepository = FakeAuthRepository(credentialStore: credentialStore)
         }
 
+        self.discourseRepository = discourseRepository ?? FakeDiscourseRepository()
+
         self.authStateManager = AuthStateManager(authRepository: authRepository)
+        self.forumViewModel = ForumViewModel(discourseRepository: self.discourseRepository)
     }
 }

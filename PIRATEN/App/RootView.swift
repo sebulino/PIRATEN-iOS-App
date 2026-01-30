@@ -9,6 +9,7 @@ import SwiftUI
 
 struct RootView: View {
     @ObservedObject var authStateManager: AuthStateManager
+    @ObservedObject var forumViewModel: ForumViewModel
 
     var body: some View {
         Group {
@@ -16,7 +17,7 @@ struct RootView: View {
             case .unauthenticated, .authenticating:
                 LoginView(authStateManager: authStateManager)
             case .authenticated:
-                MainTabView()
+                MainTabView(forumViewModel: forumViewModel)
             case .failed(let error):
                 ErrorView(error: error, authStateManager: authStateManager)
             }
@@ -52,5 +53,8 @@ struct ErrorView: View {
 }
 
 #Preview {
-    RootView(authStateManager: AuthStateManager(authRepository: FakeAuthRepository(credentialStore: InMemoryCredentialStore())))
+    RootView(
+        authStateManager: AuthStateManager(authRepository: FakeAuthRepository(credentialStore: InMemoryCredentialStore())),
+        forumViewModel: ForumViewModel(discourseRepository: FakeDiscourseRepository())
+    )
 }

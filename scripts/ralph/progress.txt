@@ -10,6 +10,15 @@ Started: Fr. 30 Jan. 2026 21:15:46 CET
 - Keep domain models independent of API JSON shape - DTOs handle mapping in the data layer
 - Use descriptive comments referencing API concepts without coupling to them
 
+### Repository + ViewModel Pattern
+- Repository protocols define async data access in `PIRATEN/Core/Domain/{Feature}/`
+- Fake implementations live in `PIRATEN/Core/Data/{Feature}/`
+- ViewModels live in `PIRATEN/App/ViewModels/`
+- All repository methods should be `async` to support both in-memory and future network implementations
+- Use `@Published` properties in ViewModels for SwiftUI state binding
+- Wire dependencies through AppContainer as the composition root
+- Pass ViewModels through view hierarchy via initializers (not environment objects)
+
 ---
 
 ## [2026-01-30 21:18] - M2B-001
@@ -27,4 +36,29 @@ Started: Fr. 30 Jan. 2026 21:15:46 CET
 - **Learnings for future iterations:**
   - XcodeProject uses PBXFileSystemSynchronizedRootGroup - new files auto-sync without manual project edits
   - Domain models should not contain Discourse-specific field names like "cooked" - translate to domain terms like "content"
+---
+
+## [2026-01-30 21:28] - M2B-002
+- **What was implemented:** Discourse repository protocol and fake implementation with Forum tab ViewModel
+- **Files changed:**
+  - Created: `PIRATEN/Core/Domain/Discourse/DiscourseRepository.swift`
+  - Created: `PIRATEN/Core/Data/Discourse/FakeDiscourseRepository.swift`
+  - Created: `PIRATEN/App/ViewModels/ForumViewModel.swift`
+  - Modified: `PIRATEN/App/Views/Main/ForumView.swift` - now uses ViewModel, displays topics
+  - Modified: `PIRATEN/App/Views/Main/MainTabView.swift` - accepts ForumViewModel
+  - Modified: `PIRATEN/App/RootView.swift` - passes ForumViewModel
+  - Modified: `PIRATEN/App/PIRATENApp.swift` - injects ForumViewModel from container
+  - Modified: `PIRATEN/Core/Support/AppContainer.swift` - added discourseRepository and forumViewModel
+- **Context7 Swift Concurrency Learnings:**
+  - Swift async/await enables clean async repository APIs
+  - Use `Task { }` to bridge async code from synchronous contexts (e.g., ViewModel methods)
+  - `try? await Task.sleep(nanoseconds:)` simulates network delays in fakes
+  - `@MainActor` annotation on protocols and classes ensures UI-safe execution
+  - `@Published` properties automatically notify SwiftUI of state changes
+  - Returning arrays (empty on error) is simpler than Result types for list fetches
+- **Learnings for future iterations:**
+  - Forum tab pattern: View -> ViewModel (ObservableObject) -> Repository protocol
+  - FakeRepository returns believable German content for Piratenpartei context
+  - `refreshable` modifier provides pull-to-refresh with async support
+  - Load data in `onAppear` with guard to prevent duplicate loads
 ---

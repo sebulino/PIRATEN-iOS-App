@@ -8,9 +8,11 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @ObservedObject var forumViewModel: ForumViewModel
+
     var body: some View {
         TabView {
-            ForumView()
+            ForumView(viewModel: forumViewModel)
                 .tabItem {
                     Label("Forum", systemImage: "bubble.left.and.bubble.right")
                 }
@@ -39,5 +41,5 @@ struct MainTabView: View {
 }
 
 #Preview {
-    MainTabView()
+    MainTabView(forumViewModel: ForumViewModel(discourseRepository: FakeDiscourseRepository()))
 }
