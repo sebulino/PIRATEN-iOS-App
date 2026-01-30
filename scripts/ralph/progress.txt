@@ -148,3 +148,23 @@
   - THREAT_MODEL.md evolves with features - update as new threats identified
   - ADR format: Context → Decision → Rationale for each major choice
 ---
+## 2026-01-30 16:30 - M1-007
+- Added smoke UI test to verify app launches and shows login screen
+- Added accessibility identifiers to LoginView for testability:
+  - loginLogo (flag icon)
+  - loginTitle ("PIRATEN" text)
+  - loginButton (fake login button)
+- Updated PIRATENUITests.swift with testAppLaunchesAndShowsLoginScreen test
+- Test uses waitForExistence(timeout: 5) for reliable element detection
+- Files changed: 2 files
+  - Modified: PIRATEN/App/Views/Auth/LoginView.swift
+  - Modified: PIRATENUITests/PIRATENUITests.swift
+- Build succeeded, all tests passed (including new UI test)
+- **Learnings for future iterations:**
+  - accessibilityIdentifier modifier enables UI test element lookup
+  - XCUIApplication().launch() starts the app in UI tests
+  - app.staticTexts["identifier"] finds static text elements by accessibilityIdentifier
+  - app.buttons["identifier"] finds buttons by accessibilityIdentifier
+  - waitForExistence(timeout:) is preferred over exists for async UI
+  - UITest target (PIRATENUITests) was already created by Xcode template
+---

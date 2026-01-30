@@ -82,7 +82,7 @@
         "UITest target exists",
         "Test verifies app launches and login screen element exists"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }
