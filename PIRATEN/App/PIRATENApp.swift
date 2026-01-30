@@ -13,7 +13,8 @@ struct PIRATENApp: App {
 
     init() {
         // Composition root: wire up dependencies here
-        let authRepository = FakeAuthRepository()
+        let credentialStore = KeychainCredentialStore()
+        let authRepository = FakeAuthRepository(credentialStore: credentialStore)
         _authStateManager = StateObject(wrappedValue: AuthStateManager(authRepository: authRepository))
     }
 

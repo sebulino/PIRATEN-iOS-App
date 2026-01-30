@@ -52,5 +52,5 @@ struct ErrorView: View {
 }
 
 #Preview {
-    RootView(authStateManager: AuthStateManager(authRepository: FakeAuthRepository()))
+    RootView(authStateManager: AuthStateManager(authRepository: FakeAuthRepository(credentialStore: InMemoryCredentialStore())))
 }

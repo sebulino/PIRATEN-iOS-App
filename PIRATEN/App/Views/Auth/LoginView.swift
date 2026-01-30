@@ -56,5 +56,5 @@ struct LoginView: View {
 }
 
 #Preview {
-    LoginView(authStateManager: AuthStateManager(authRepository: FakeAuthRepository()))
+    LoginView(authStateManager: AuthStateManager(authRepository: FakeAuthRepository(credentialStore: InMemoryCredentialStore())))
 }

@@ -17,8 +17,9 @@ enum KeychainError: Error, Equatable {
     case decodingFailed
 }
 
-/// Protocol for Keychain operations to allow testing with mocks
-protocol KeychainServiceProtocol {
+/// Protocol for secure credential storage operations.
+/// This abstraction allows swapping implementations for testing or alternative storage backends.
+protocol CredentialStore {
     func set(_ value: String, forKey key: String) throws
     func get(forKey key: String) throws -> String?
     func delete(forKey key: String) throws
@@ -29,7 +30,7 @@ protocol KeychainServiceProtocol {
 /// This service is designed to store authentication tokens and similar secrets.
 ///
 /// Note: This implementation does NOT log any values, tokens, or PII.
-final class KeychainService: KeychainServiceProtocol {
+final class KeychainCredentialStore: CredentialStore {
 
     /// The service identifier used to namespace Keychain items
     private let service: String
@@ -138,5 +139,27 @@ final class KeychainService: KeychainServiceProtocol {
 
         let status = SecItemCopyMatching(query as CFDictionary, nil)
         return status == errSecSuccess
+    }
+}
+
+/// In-memory implementation of CredentialStore for testing and SwiftUI previews.
+/// Note: This does NOT persist data and should NOT be used in production.
+final class InMemoryCredentialStore: CredentialStore {
+    private var storage: [String: String] = [:]
+
+    func set(_ value: String, forKey key: String) throws {
+        storage[key] = value
+    }
+
+    func get(forKey key: String) throws -> String? {
+        return storage[key]
+    }
+
+    func delete(forKey key: String) throws {
+        storage.removeValue(forKey: key)
+    }
+
+    func contains(key: String) -> Bool {
+        return storage[key] != nil
     }
 }

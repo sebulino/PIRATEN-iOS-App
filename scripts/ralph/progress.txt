@@ -7,6 +7,7 @@ Started: Fr. 30 Jan. 2026 16:41:49 CET
 - **Domain Layer**: Protocols live in `Core/Domain/`, implementations in `Core/Data/`
 - **Auth States**: Use explicit enum states: `unauthenticated`, `authenticating`, `authenticated`, `failed(AuthError)`
 - **Typed Errors**: Domain errors should be enums with `Error` conformance and localized descriptions
+- **Credential Storage**: Use `CredentialStore` protocol; `KeychainCredentialStore` for production, `InMemoryCredentialStore` for tests/previews
 
 ---
 
@@ -35,4 +36,31 @@ Started: Fr. 30 Jan. 2026 16:41:49 CET
   - Xcode 16 uses `PBXFileSystemSynchronizedRootGroup` - files are auto-included
   - Constructor injection in SwiftUI: use underscore syntax `_stateObject = StateObject(wrappedValue:)`
   - Keep domain models (AuthState, AuthError) separate from ViewModels (AuthStateManager)
+---
+
+## [2026-01-30 17:00] - M2A-002
+- Renamed `KeychainServiceProtocol` to `CredentialStore` (clearer domain language)
+- Renamed `KeychainService` to `KeychainCredentialStore` (matches acceptance criteria)
+- Updated `FakeAuthRepository` to store dummy token on authentication
+- Added `InMemoryCredentialStore` for testing and SwiftUI previews
+- Wired `KeychainCredentialStore` into `PIRATENApp` composition root
+- Updated previews in RootView and LoginView to use InMemoryCredentialStore
+- Files changed:
+  - PIRATEN/Core/Support/KeychainService.swift (renamed types, added InMemoryCredentialStore)
+  - PIRATEN/Core/Data/Auth/FakeAuthRepository.swift (added credentialStore dependency)
+  - PIRATEN/App/PIRATENApp.swift (wired KeychainCredentialStore)
+  - PIRATEN/App/RootView.swift (updated preview)
+  - PIRATEN/App/Views/Auth/LoginView.swift (updated preview)
+  - PIRATENTests/KeychainServiceTests.swift (renamed to CredentialStoreTests)
+- **Context7 Keychain/Security Framework Summary:**
+  - Use native Security framework (`SecItemAdd`, `SecItemCopyMatching`, `SecItemDelete`) for Keychain operations
+  - Use `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` for tokens that shouldn't sync/backup
+  - Namespace items with `kSecAttrService` using bundle identifier
+  - Handle `errSecItemNotFound` gracefully (not an error for get/delete)
+  - Delete-before-set pattern avoids duplicate item errors
+  - Third-party libs (KeychainAccess) provide cleaner API but add dependencies
+- **Learnings for future iterations:**
+  - Previews cannot use real Keychain; use `InMemoryCredentialStore` for SwiftUI previews
+  - Constructor injection propagates through entire dependency chain (App → Repository → Store)
+  - Keep protocol naming domain-focused (`CredentialStore`) rather than implementation-focused
 ---

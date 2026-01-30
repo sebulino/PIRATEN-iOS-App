@@ -1,5 +1,5 @@
 //
-//  KeychainServiceTests.swift
+//  KeychainCredentialStoreTests.swift
 //  PIRATENTests
 //
 //  Created by Claude Code on 30.01.26.
@@ -9,9 +9,9 @@ import Foundation
 import Testing
 @testable import PIRATEN
 
-/// Tests for KeychainService functionality.
+/// Tests for KeychainCredentialStore functionality.
 /// Uses a dedicated test service identifier to avoid conflicts with real app data.
-struct KeychainServiceTests {
+struct CredentialStoreTests {
 
     /// A unique service identifier for test isolation
     private let testService = "de.meine-piraten.PIRATEN.tests.\(UUID().uuidString)"
@@ -22,7 +22,7 @@ struct KeychainServiceTests {
     // MARK: - Set/Get Tests
 
     @Test func setAndGetValue() async throws {
-        let keychain = KeychainService(service: testService)
+        let keychain = KeychainCredentialStore(service: testService)
         let testValue = "test_value_123"
 
         // Set value
@@ -37,14 +37,14 @@ struct KeychainServiceTests {
     }
 
     @Test func getReturnsNilForNonexistentKey() async throws {
-        let keychain = KeychainService(service: testService)
+        let keychain = KeychainCredentialStore(service: testService)
 
         let result = try keychain.get(forKey: "nonexistent_key_\(UUID().uuidString)")
         #expect(result == nil)
     }
 
     @Test func setOverwritesExistingValue() async throws {
-        let keychain = KeychainService(service: testService)
+        let keychain = KeychainCredentialStore(service: testService)
         let originalValue = "original_value"
         let updatedValue = "updated_value"
 
@@ -65,7 +65,7 @@ struct KeychainServiceTests {
     // MARK: - Delete Tests
 
     @Test func deleteRemovesValue() async throws {
-        let keychain = KeychainService(service: testService)
+        let keychain = KeychainCredentialStore(service: testService)
         let testValue = "value_to_delete"
 
         // Set value
@@ -84,7 +84,7 @@ struct KeychainServiceTests {
     }
 
     @Test func deleteNonexistentKeyDoesNotThrow() async throws {
-        let keychain = KeychainService(service: testService)
+        let keychain = KeychainCredentialStore(service: testService)
 
         // This should not throw
         try keychain.delete(forKey: "nonexistent_key_\(UUID().uuidString)")
@@ -93,7 +93,7 @@ struct KeychainServiceTests {
     // MARK: - Contains Tests
 
     @Test func containsReturnsTrueForExistingKey() async throws {
-        let keychain = KeychainService(service: testService)
+        let keychain = KeychainCredentialStore(service: testService)
 
         try keychain.set("some_value", forKey: testKey)
 
@@ -104,7 +104,7 @@ struct KeychainServiceTests {
     }
 
     @Test func containsReturnsFalseForNonexistentKey() async throws {
-        let keychain = KeychainService(service: testService)
+        let keychain = KeychainCredentialStore(service: testService)
 
         #expect(keychain.contains(key: "nonexistent_key_\(UUID().uuidString)") == false)
     }
@@ -112,7 +112,7 @@ struct KeychainServiceTests {
     // MARK: - Special Character Tests
 
     @Test func handlesSpecialCharactersInValue() async throws {
-        let keychain = KeychainService(service: testService)
+        let keychain = KeychainCredentialStore(service: testService)
         let specialValue = "special!@#$%^&*()_+-=[]{}|;':\",./<>?äöü中文"
 
         try keychain.set(specialValue, forKey: testKey)
