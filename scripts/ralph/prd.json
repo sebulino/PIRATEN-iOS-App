@@ -35,7 +35,7 @@
         "Tab bar has exactly 5 tabs (Forum, Messages, Knowledge, Todos, Profile)",
         "Each tab shows a placeholder view with a title"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M1-004",

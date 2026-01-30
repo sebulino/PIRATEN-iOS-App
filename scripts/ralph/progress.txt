@@ -45,3 +45,23 @@
   - @StateObject in App struct, @ObservedObject in views for state management
   - Switch statement in SwiftUI for state-based routing works cleanly
 ---
+## 2026-01-30 15:30 - M1-003
+- Implemented MainTabView with TabView containing 5 tabs
+- Created 5 placeholder views: ForumView, MessagesView, KnowledgeView, TodosView, ProfileView
+- Each placeholder view uses NavigationStack with a title and centered text
+- Tab bar icons selected: bubble (Forum), envelope (Messages), book (Knowledge), checklist (Todos), person.circle (Profile)
+- Files changed: 6 files
+  - New: PIRATEN/App/Views/Main/ForumView.swift
+  - New: PIRATEN/App/Views/Main/MessagesView.swift
+  - New: PIRATEN/App/Views/Main/KnowledgeView.swift
+  - New: PIRATEN/App/Views/Main/TodosView.swift
+  - New: PIRATEN/App/Views/Main/ProfileView.swift
+  - Modified: PIRATEN/App/Views/Main/MainTabView.swift
+- Build succeeded, all tests passed
+- **Learnings for future iterations:**
+  - TabView in SwiftUI wraps each view with .tabItem modifier
+  - Label in tabItem provides both text and SF Symbol icon
+  - NavigationStack wraps each tab's content for future navigation capability
+  - All 5 views follow identical structure for consistency
+  - Xcode 16 auto-discovery works perfectly - just create files in correct folders
+---
