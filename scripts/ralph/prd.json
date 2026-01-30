@@ -45,7 +45,7 @@
         "No global singletons except system wrappers",
         "Context7 consulted for DI patterns in SwiftUI apps; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M2A-004",

@@ -9,6 +9,32 @@ Started: Fr. 30 Jan. 2026 16:41:49 CET
 - **Typed Errors**: Domain errors should be enums with `Error` conformance and localized descriptions
 - **Credential Storage**: Use `CredentialStore` protocol; `KeychainCredentialStore` for production, `InMemoryCredentialStore` for tests/previews
 
+- **AppContainer Pattern**: Use a central `AppContainer` class as the composition root. Initialize at app entry point and pass to views via constructor injection.
+- **Constructor Injection in SwiftUI**: Use `let container = AppContainer()` in the `App` struct, then pass `container.authStateManager` to views
+
+---
+
+## [2026-01-30 20:15] - M2A-003
+- Created `AppContainer` as central composition root in `Core/Support/AppContainer.swift`
+- AppContainer constructs `CredentialStore` (KeychainCredentialStore) and `AuthRepository` (FakeAuthRepository)
+- AppContainer provides `AuthStateManager` ViewModel to the view hierarchy
+- Updated `PIRATENApp.swift` to use AppContainer instead of inline dependency wiring
+- No global singletons except system wrappers (CredentialStore wraps Keychain)
+- All ViewModels receive dependencies via initializers
+- Files changed:
+  - PIRATEN/Core/Support/AppContainer.swift (new)
+  - PIRATEN/App/PIRATENApp.swift (updated to use AppContainer)
+- **Context7 DI Patterns in SwiftUI Apps Summary:**
+  - Use `@State` or `@StateObject` to own model objects at the top level
+  - Pass dependencies to views via initializer injection or `.environment()` modifier
+  - Use `.environment(\.keyPath, value)` for custom environment values
+  - Use `.environmentObject(object)` to inject ObservableObject into hierarchy
+  - For composition root pattern: create container at App level, inject dependencies explicitly
+  - Avoid global singletons; prefer explicit dependency injection
+- **Learnings for future iterations:**
+  - AppContainer is `@MainActor` to match SwiftUI's main actor requirements
+  - Use factory initializer for test injection: `init(credentialStore:authRepositoryFactory:)`
+  - Views can access authStateManager from container: `RootView(authStateManager: container.authStateManager)`
 ---
 
 ## [2026-01-30 16:50] - M2A-001

@@ -9,18 +9,17 @@ import SwiftUI
 
 @main
 struct PIRATENApp: App {
-    @StateObject private var authStateManager: AuthStateManager
+    /// The central dependency container for the application.
+    /// All dependencies are constructed here and injected into the view hierarchy.
+    private let container: AppContainer
 
     init() {
-        // Composition root: wire up dependencies here
-        let credentialStore = KeychainCredentialStore()
-        let authRepository = FakeAuthRepository(credentialStore: credentialStore)
-        _authStateManager = StateObject(wrappedValue: AuthStateManager(authRepository: authRepository))
+        self.container = AppContainer()
     }
 
     var body: some Scene {
         WindowGroup {
-            RootView(authStateManager: authStateManager)
+            RootView(authStateManager: container.authStateManager)
         }
     }
 }
