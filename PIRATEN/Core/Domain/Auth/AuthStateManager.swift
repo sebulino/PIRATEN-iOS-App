@@ -8,24 +8,48 @@
 import Foundation
 import Combine
 
-/// Manages the authentication state of the application
+/// Manages the authentication state of the application.
+/// This is the ViewModel layer that coordinates between UI and domain.
+/// It depends on AuthRepository protocol, not concrete implementations.
 @MainActor
 final class AuthStateManager: ObservableObject {
-    @Published private(set) var currentState: AppState = .loggedOut
+    @Published private(set) var currentState: AuthState = .unauthenticated
 
-    /// Performs fake login (toggles between loggedOut and loggedIn)
-    func performFakeLogin() {
-        currentState = .loggingIn
+    private let authRepository: AuthRepository
 
-        // Simulate async login
+    init(authRepository: AuthRepository) {
+        self.authRepository = authRepository
+    }
+
+    /// Initiates the authentication flow
+    func authenticate() {
+        currentState = .authenticating
+
         Task {
-            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-            currentState = .loggedIn
+            let result = await authRepository.authenticate()
+            switch result {
+            case .success:
+                currentState = .authenticated
+            case .failure(let error):
+                currentState = .failed(error)
+            }
         }
     }
 
     /// Performs logout
     func logout() {
-        currentState = .loggedOut
+        Task {
+            await authRepository.logout()
+            currentState = .unauthenticated
+        }
+    }
+
+    /// Checks for existing valid session on app launch
+    func checkExistingSession() {
+        Task {
+            if await authRepository.hasValidSession() {
+                currentState = .authenticated
+            }
+        }
     }
 }

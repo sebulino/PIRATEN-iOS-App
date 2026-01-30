@@ -30,12 +30,12 @@ struct LoginView: View {
 
             Spacer()
 
-            if authStateManager.currentState == .loggingIn {
+            if authStateManager.currentState == .authenticating {
                 ProgressView()
                     .scaleEffect(1.5)
             } else {
                 Button(action: {
-                    authStateManager.performFakeLogin()
+                    authStateManager.authenticate()
                 }) {
                     Text("Anmelden (Fake)")
                         .font(.headline)
@@ -56,5 +56,5 @@ struct LoginView: View {
 }
 
 #Preview {
-    LoginView(authStateManager: AuthStateManager())
+    LoginView(authStateManager: AuthStateManager(authRepository: FakeAuthRepository()))
 }

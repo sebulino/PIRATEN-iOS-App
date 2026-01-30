@@ -9,7 +9,13 @@ import SwiftUI
 
 @main
 struct PIRATENApp: App {
-    @StateObject private var authStateManager = AuthStateManager()
+    @StateObject private var authStateManager: AuthStateManager
+
+    init() {
+        // Composition root: wire up dependencies here
+        let authRepository = FakeAuthRepository()
+        _authStateManager = StateObject(wrappedValue: AuthStateManager(authRepository: authRepository))
+    }
 
     var body: some Scene {
         WindowGroup {

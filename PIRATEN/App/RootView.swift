@@ -13,19 +13,19 @@ struct RootView: View {
     var body: some View {
         Group {
             switch authStateManager.currentState {
-            case .loggedOut, .loggingIn:
+            case .unauthenticated, .authenticating:
                 LoginView(authStateManager: authStateManager)
-            case .loggedIn:
+            case .authenticated:
                 MainTabView()
-            case .error(let message):
-                ErrorView(message: message, authStateManager: authStateManager)
+            case .failed(let error):
+                ErrorView(error: error, authStateManager: authStateManager)
             }
         }
     }
 }
 
 struct ErrorView: View {
-    let message: String
+    let error: AuthError
     @ObservedObject var authStateManager: AuthStateManager
 
     var body: some View {
@@ -38,7 +38,7 @@ struct ErrorView: View {
                 .font(.title)
                 .fontWeight(.bold)
 
-            Text(message)
+            Text(error.localizedDescription)
                 .multilineTextAlignment(.center)
                 .padding()
 
@@ -52,5 +52,5 @@ struct ErrorView: View {
 }
 
 #Preview {
-    RootView(authStateManager: AuthStateManager())
+    RootView(authStateManager: AuthStateManager(authRepository: FakeAuthRepository()))
 }
