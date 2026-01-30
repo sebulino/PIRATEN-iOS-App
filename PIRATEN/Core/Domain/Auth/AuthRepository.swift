@@ -21,4 +21,11 @@ protocol AuthRepository {
     /// Checks if a valid session exists.
     /// - Returns: true if authenticated, false otherwise
     func hasValidSession() async -> Bool
+
+    /// Retrieves the current authenticated user's information.
+    /// - Returns: User if authenticated, nil otherwise
+    ///
+    /// Note: Currently returns PLACEHOLDER DATA for development.
+    /// Real user information will come from Piratenlogin SSO once integrated.
+    func getCurrentUser() async -> User?
 }

@@ -10,6 +10,7 @@ import SwiftUI
 struct MainTabView: View {
     @ObservedObject var forumViewModel: ForumViewModel
     @ObservedObject var todosViewModel: TodosViewModel
+    @ObservedObject var profileViewModel: ProfileViewModel
 
     var body: some View {
         TabView {
@@ -33,17 +34,23 @@ struct MainTabView: View {
                     Label("Todos", systemImage: "checklist")
                 }
 
-            ProfileView()
+            ProfileView(viewModel: profileViewModel)
                 .tabItem {
-                    Label("Profile", systemImage: "person.circle")
+                    Label("Profil", systemImage: "person.circle")
                 }
         }
     }
 }
 
 #Preview {
-    MainTabView(
+    // Preview with fake data - all ViewModels use fake repositories
+    // Note: Profile requires authenticated session for user data
+    let credentialStore = KeychainCredentialStore()
+    let authRepository = FakeAuthRepository(credentialStore: credentialStore)
+
+    return MainTabView(
         forumViewModel: ForumViewModel(discourseRepository: FakeDiscourseRepository()),
-        todosViewModel: TodosViewModel(todoRepository: FakeTodoRepository())
+        todosViewModel: TodosViewModel(todoRepository: FakeTodoRepository()),
+        profileViewModel: ProfileViewModel(authRepository: authRepository)
     )
 }

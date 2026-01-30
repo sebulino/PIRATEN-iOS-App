@@ -44,6 +44,10 @@ final class AppContainer {
     /// Todos view model for displaying tasks.
     let todosViewModel: TodosViewModel
 
+    /// Profile view model for displaying user information.
+    /// Note: Currently displays PLACEHOLDER DATA until SSO integration.
+    let profileViewModel: ProfileViewModel
+
     // MARK: - Initialization
 
     /// Creates the container with default production dependencies.
@@ -60,6 +64,7 @@ final class AppContainer {
         self.authStateManager = AuthStateManager(authRepository: authRepository)
         self.forumViewModel = ForumViewModel(discourseRepository: discourseRepository)
         self.todosViewModel = TodosViewModel(todoRepository: todoRepository)
+        self.profileViewModel = ProfileViewModel(authRepository: authRepository)
     }
 
     /// Creates the container with custom dependencies for testing.
@@ -88,5 +93,6 @@ final class AppContainer {
         self.authStateManager = AuthStateManager(authRepository: authRepository)
         self.forumViewModel = ForumViewModel(discourseRepository: self.discourseRepository)
         self.todosViewModel = TodosViewModel(todoRepository: self.todoRepository)
+        self.profileViewModel = ProfileViewModel(authRepository: self.authRepository)
     }
 }

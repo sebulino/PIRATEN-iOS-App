@@ -9,6 +9,10 @@ import Foundation
 
 /// Fake implementation of AuthRepository for development and testing.
 /// Will be replaced by real SSO implementation in future milestones.
+///
+/// IMPORTANT: All user data returned by this repository is PLACEHOLDER DATA
+/// for development and UI testing purposes only. Real user information will
+/// come from Piratenlogin SSO once integrated.
 @MainActor
 final class FakeAuthRepository: AuthRepository {
 
@@ -17,6 +21,21 @@ final class FakeAuthRepository: AuthRepository {
 
     /// Credential store for persisting tokens
     private let credentialStore: CredentialStore
+
+    // MARK: - Stub User Data (PLACEHOLDER)
+
+    /// Static fake user for development and UI testing.
+    /// This data is NOT real and will be replaced by SSO user info.
+    private let stubUser = User(
+        id: "fake-user-12345",
+        username: "maria.piratin",
+        displayName: "Maria Beispiel",
+        email: "maria.beispiel@piratenpartei.de",
+        avatarUrl: nil,
+        memberSince: Calendar.current.date(from: DateComponents(year: 2019, month: 3, day: 15)),
+        localGroupName: "Kreisverband München",
+        stateAssociationName: "Landesverband Bayern"
+    )
 
     /// Initializes the fake auth repository with a credential store.
     /// - Parameter credentialStore: The credential store to use for token persistence
@@ -48,5 +67,13 @@ final class FakeAuthRepository: AuthRepository {
     func hasValidSession() async -> Bool {
         // Check if a token exists in the credential store
         return credentialStore.contains(key: Self.tokenKey)
+    }
+
+    func getCurrentUser() async -> User? {
+        // Return stub user only if authenticated (placeholder behavior)
+        guard await hasValidSession() else {
+            return nil
+        }
+        return stubUser
     }
 }

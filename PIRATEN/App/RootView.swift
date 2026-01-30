@@ -11,6 +11,7 @@ struct RootView: View {
     @ObservedObject var authStateManager: AuthStateManager
     @ObservedObject var forumViewModel: ForumViewModel
     @ObservedObject var todosViewModel: TodosViewModel
+    @ObservedObject var profileViewModel: ProfileViewModel
 
     var body: some View {
         Group {
@@ -18,7 +19,11 @@ struct RootView: View {
             case .unauthenticated, .authenticating:
                 LoginView(authStateManager: authStateManager)
             case .authenticated:
-                MainTabView(forumViewModel: forumViewModel, todosViewModel: todosViewModel)
+                MainTabView(
+                    forumViewModel: forumViewModel,
+                    todosViewModel: todosViewModel,
+                    profileViewModel: profileViewModel
+                )
             case .failed(let error):
                 ErrorView(error: error, authStateManager: authStateManager)
             }
@@ -54,9 +59,13 @@ struct ErrorView: View {
 }
 
 #Preview {
-    RootView(
-        authStateManager: AuthStateManager(authRepository: FakeAuthRepository(credentialStore: InMemoryCredentialStore())),
+    let credentialStore = InMemoryCredentialStore()
+    let authRepository = FakeAuthRepository(credentialStore: credentialStore)
+
+    return RootView(
+        authStateManager: AuthStateManager(authRepository: authRepository),
         forumViewModel: ForumViewModel(discourseRepository: FakeDiscourseRepository()),
-        todosViewModel: TodosViewModel(todoRepository: FakeTodoRepository())
+        todosViewModel: TodosViewModel(todoRepository: FakeTodoRepository()),
+        profileViewModel: ProfileViewModel(authRepository: authRepository)
     )
 }

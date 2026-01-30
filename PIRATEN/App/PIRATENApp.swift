@@ -22,7 +22,8 @@ struct PIRATENApp: App {
             RootView(
                 authStateManager: container.authStateManager,
                 forumViewModel: container.forumViewModel,
-                todosViewModel: container.todosViewModel
+                todosViewModel: container.todosViewModel,
+                profileViewModel: container.profileViewModel
             )
         }
     }
