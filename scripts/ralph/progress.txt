@@ -1,115 +1,30 @@
 # Ralph Progress Log
-Started: Fr. 30 Jan. 2026 16:41:49 CET
+Started: Fr. 30 Jan. 2026 21:15:46 CET
 ---
 
 ## Codebase Patterns
-- **SwiftUI State Management**: Use `@StateObject` with initializer for dependency injection: `_authStateManager = StateObject(wrappedValue: AuthStateManager(authRepository: authRepository))`
-- **Domain Layer**: Protocols live in `Core/Domain/`, implementations in `Core/Data/`
-- **Auth States**: Use explicit enum states: `unauthenticated`, `authenticating`, `authenticated`, `failed(AuthError)`
-- **Typed Errors**: Domain errors should be enums with `Error` conformance and localized descriptions
-- **Credential Storage**: Use `CredentialStore` protocol; `KeychainCredentialStore` for production, `InMemoryCredentialStore` for tests/previews
 
-- **AppContainer Pattern**: Use a central `AppContainer` class as the composition root. Initialize at app entry point and pass to views via constructor injection.
-- **Constructor Injection in SwiftUI**: Use `let container = AppContainer()` in the `App` struct, then pass `container.authStateManager` to views
-- **xcodebuild Destinations**: Always use UDID-based destinations (`id=<UDID>`) instead of name-based (`name=iPhone 16`) to prevent simulator clone ambiguity and ensure reproducible builds
+### Domain Model Pattern
+- Domain models live in `PIRATEN/Core/Domain/{Feature}/`
+- Use `Identifiable` and `Equatable` protocols for SwiftUI compatibility
+- Keep domain models independent of API JSON shape - DTOs handle mapping in the data layer
+- Use descriptive comments referencing API concepts without coupling to them
 
 ---
 
-## [2026-01-30 20:25] - M2A-004
-- Documented pinned simulator destination in Docs/DECISIONS.md (D-007)
-- Updated CLAUDE.md build commands to use UDID-based destination
-- Pinned destination: iPhone 16 (iOS 26.2) with UDID `F0291949-CCB9-4C91-B947-292F98247041`
-- Verified build and tests pass with the new UDID-based destination
-- Files changed:
-  - Docs/DECISIONS.md (added D-007 decision)
-  - CLAUDE.md (updated build commands section)
-  - scripts/ralph/progress.txt (this entry)
-- **Context7 xcodebuild Destination Usage Summary:**
-  - Use UDID-based destinations (`id=<UDID>`) to avoid ambiguity when multiple simulators share the same name
-  - Name-based destinations (`name=iPhone 16`) can resolve to any matching simulator, causing unpredictable clone creation
-  - Run `xcrun simctl list devices available` to find simulator UUIDs
-  - For CI/CD: explicitly manage simulators and use UDID-based targeting
-  - Test parallelization still creates clones (expected behavior), but UDID targeting prevents resolution-related clones
-  - If UDID becomes unavailable after Xcode update, builds fail explicitly (better than silent misrouting)
+## [2026-01-30 21:18] - M2B-001
+- **What was implemented:** Discourse domain models (Topic, Post, UserSummary)
+- **Files changed:**
+  - Created: `PIRATEN/Core/Domain/Discourse/Topic.swift`
+  - Created: `PIRATEN/Core/Domain/Discourse/Post.swift`
+  - Created: `PIRATEN/Core/Domain/Discourse/UserSummary.swift`
+- **Context7 Discourse API Learnings:**
+  - Topics have: id, title, posts_count, views, like_count, category_id, visible, closed, archived, created_by
+  - Posts have: id, username, cooked (HTML content), post_number, created_at, topic_id, reply_count
+  - UserSummary (created_by): id, username
+  - Discourse API uses `/t/{topic_id}.json` for full topic info, `/posts.json` for creating posts
+  - Search results grouped by posts and topics in `/search.json`
 - **Learnings for future iterations:**
-  - Always document the pinned UDID and how to update it if unavailable
-  - Check `xcodebuild -destination` output to see available simulators for the scheme
-  - iOS runtime versions change with Xcode updates (18.4 → 26.2 in this case)
----
-
-## [2026-01-30 20:15] - M2A-003
-- Created `AppContainer` as central composition root in `Core/Support/AppContainer.swift`
-- AppContainer constructs `CredentialStore` (KeychainCredentialStore) and `AuthRepository` (FakeAuthRepository)
-- AppContainer provides `AuthStateManager` ViewModel to the view hierarchy
-- Updated `PIRATENApp.swift` to use AppContainer instead of inline dependency wiring
-- No global singletons except system wrappers (CredentialStore wraps Keychain)
-- All ViewModels receive dependencies via initializers
-- Files changed:
-  - PIRATEN/Core/Support/AppContainer.swift (new)
-  - PIRATEN/App/PIRATENApp.swift (updated to use AppContainer)
-- **Context7 DI Patterns in SwiftUI Apps Summary:**
-  - Use `@State` or `@StateObject` to own model objects at the top level
-  - Pass dependencies to views via initializer injection or `.environment()` modifier
-  - Use `.environment(\.keyPath, value)` for custom environment values
-  - Use `.environmentObject(object)` to inject ObservableObject into hierarchy
-  - For composition root pattern: create container at App level, inject dependencies explicitly
-  - Avoid global singletons; prefer explicit dependency injection
-- **Learnings for future iterations:**
-  - AppContainer is `@MainActor` to match SwiftUI's main actor requirements
-  - Use factory initializer for test injection: `init(credentialStore:authRepositoryFactory:)`
-  - Views can access authStateManager from container: `RootView(authStateManager: container.authStateManager)`
----
-
-## [2026-01-30 16:50] - M2A-001
-- Renamed `AppState` to `AuthState` with explicit states: unauthenticated, authenticating, authenticated, failed
-- Created `AuthError` enum with typed error cases (invalidCredentials, networkError, serverError, unknown)
-- Created `AuthRepository` protocol in Domain layer for abstraction
-- Created `FakeAuthRepository` implementation in Data layer
-- Updated `AuthStateManager` to use constructor injection with `AuthRepository` protocol
-- Updated all UI components (RootView, LoginView, PIRATENApp) to use new auth states
-- Files changed:
-  - PIRATEN/Core/Domain/Auth/AuthState.swift (renamed from AppState.swift)
-  - PIRATEN/Core/Domain/Auth/AuthRepository.swift (new)
-  - PIRATEN/Core/Domain/Auth/AuthStateManager.swift (updated)
-  - PIRATEN/Core/Data/Auth/FakeAuthRepository.swift (new)
-  - PIRATEN/App/PIRATENApp.swift (updated)
-  - PIRATEN/App/RootView.swift (updated)
-  - PIRATEN/App/Views/Auth/LoginView.swift (updated)
-- **Context7 SwiftUI State Management Summary:**
-  - Use `@StateObject` for owning Observable/ObservableObject instances
-  - Use `@ObservedObject` for views that receive but don't own the state
-  - Prefer `@Observable` macro (Swift 5.9+) over `ObservableObject` for new code
-  - Constructor injection pattern: `_stateObject = StateObject(wrappedValue: instance)`
-  - Environment objects can share state across view hierarchy
-- **Learnings for future iterations:**
-  - Xcode 16 uses `PBXFileSystemSynchronizedRootGroup` - files are auto-included
-  - Constructor injection in SwiftUI: use underscore syntax `_stateObject = StateObject(wrappedValue:)`
-  - Keep domain models (AuthState, AuthError) separate from ViewModels (AuthStateManager)
----
-
-## [2026-01-30 17:00] - M2A-002
-- Renamed `KeychainServiceProtocol` to `CredentialStore` (clearer domain language)
-- Renamed `KeychainService` to `KeychainCredentialStore` (matches acceptance criteria)
-- Updated `FakeAuthRepository` to store dummy token on authentication
-- Added `InMemoryCredentialStore` for testing and SwiftUI previews
-- Wired `KeychainCredentialStore` into `PIRATENApp` composition root
-- Updated previews in RootView and LoginView to use InMemoryCredentialStore
-- Files changed:
-  - PIRATEN/Core/Support/KeychainService.swift (renamed types, added InMemoryCredentialStore)
-  - PIRATEN/Core/Data/Auth/FakeAuthRepository.swift (added credentialStore dependency)
-  - PIRATEN/App/PIRATENApp.swift (wired KeychainCredentialStore)
-  - PIRATEN/App/RootView.swift (updated preview)
-  - PIRATEN/App/Views/Auth/LoginView.swift (updated preview)
-  - PIRATENTests/KeychainServiceTests.swift (renamed to CredentialStoreTests)
-- **Context7 Keychain/Security Framework Summary:**
-  - Use native Security framework (`SecItemAdd`, `SecItemCopyMatching`, `SecItemDelete`) for Keychain operations
-  - Use `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` for tokens that shouldn't sync/backup
-  - Namespace items with `kSecAttrService` using bundle identifier
-  - Handle `errSecItemNotFound` gracefully (not an error for get/delete)
-  - Delete-before-set pattern avoids duplicate item errors
-  - Third-party libs (KeychainAccess) provide cleaner API but add dependencies
-- **Learnings for future iterations:**
-  - Previews cannot use real Keychain; use `InMemoryCredentialStore` for SwiftUI previews
-  - Constructor injection propagates through entire dependency chain (App → Repository → Store)
-  - Keep protocol naming domain-focused (`CredentialStore`) rather than implementation-focused
+  - XcodeProject uses PBXFileSystemSynchronizedRootGroup - new files auto-sync without manual project edits
+  - Domain models should not contain Discourse-specific field names like "cooked" - translate to domain terms like "content"
 ---
