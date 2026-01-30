@@ -9,8 +9,32 @@ import SwiftUI
 
 struct MainTabView: View {
     var body: some View {
-        Text("Logged In - Tab View (Placeholder)")
-            .font(.title)
+        TabView {
+            ForumView()
+                .tabItem {
+                    Label("Forum", systemImage: "bubble.left.and.bubble.right")
+                }
+
+            MessagesView()
+                .tabItem {
+                    Label("Messages", systemImage: "envelope")
+                }
+
+            KnowledgeView()
+                .tabItem {
+                    Label("Knowledge", systemImage: "book")
+                }
+
+            TodosView()
+                .tabItem {
+                    Label("Todos", systemImage: "checklist")
+                }
+
+            ProfileView()
+                .tabItem {
+                    Label("Profile", systemImage: "person.circle")
+                }
+        }
     }
 }
 
