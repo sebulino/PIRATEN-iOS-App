@@ -1,0 +1,88 @@
+{
+  "project": "piraten-ios-m1-bootstrap",
+  "branchName": "ralph/m1-bootstrap",
+  "description": "Milestone 1: bootstrap existing Xcode project into Clean Architecture + MVVM structure with docs, config, and placeholder UI shell.",
+  "userStories": [
+    {
+      "id": "M1-001",
+      "category": "structure",
+      "title": "Create required repo folders and relocate existing Xcode files",
+      "description": "As a developer, I want the repo to match the required folder structure so future features are modular and maintainable.",
+      "acceptanceCriteria": [
+        "Folders exist: App/, Features/, Core/, Resources/, Config/, Tests/, Docs/ (per spec)",
+        "Project still builds and runs after moving files"
+      ],
+      "passes": true
+    },
+    {
+      "id": "M1-002",
+      "category": "app-shell",
+      "title": "Implement AppState auth state machine and fake login toggle",
+      "description": "As a user, I see a login screen when logged out and a tab shell when logged in (stubbed for now).",
+      "acceptanceCriteria": [
+        "Auth states exist: loggedOut, loggingIn, loggedIn, error",
+        "Login screen visible when loggedOut",
+        "Toggling fake login switches to the tab UI"
+      ],
+      "passes": true
+    },
+    {
+      "id": "M1-003",
+      "category": "ui",
+      "title": "Create Tab Bar shell with 5 tabs and placeholder screens",
+      "description": "As a logged-in user, I can navigate Forum/Messages/Knowledge/Todos/Profile via tabs.",
+      "acceptanceCriteria": [
+        "Tab bar has exactly 5 tabs (Forum, Messages, Knowledge, Todos, Profile)",
+        "Each tab shows a placeholder view with a title"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M1-004",
+      "category": "config",
+      "title": "Add xcconfig configuration system with sample secrets file",
+      "description": "As a developer, I can configure URLs and keys without committing secrets.",
+      "acceptanceCriteria": [
+        "Config/Debug.xcconfig and Config/Release.xcconfig exist",
+        "Config/Secrets.sample.xcconfig exists",
+        "No secrets are hardcoded in source files"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M1-005",
+      "category": "security",
+      "title": "Add KeychainService wrapper and minimal unit test",
+      "description": "As a developer, I have a Keychain abstraction ready for tokens later.",
+      "acceptanceCriteria": [
+        "Core/Support/KeychainService.swift exists",
+        "At least one unit test validates set/get/delete behavior (using test key)",
+        "No tokens or PII are logged"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M1-006",
+      "category": "docs",
+      "title": "Add required documentation files and initial content",
+      "description": "As a maintainer, I can understand the architecture, status, and open questions.",
+      "acceptanceCriteria": [
+        "README.md exists with build/run instructions",
+        "Docs/PROJECT_STATUS.md exists and lists Milestone 1 as current",
+        "Docs/DECISIONS.md, Docs/OPEN_QUESTIONS.md, Docs/THREAT_MODEL.md exist"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M1-007",
+      "category": "tests",
+      "title": "Add a smoke UI test: app launches and shows login screen",
+      "description": "As a developer, I have a minimal UI test baseline.",
+      "acceptanceCriteria": [
+        "UITest target exists",
+        "Test verifies app launches and login screen element exists"
+      ],
+      "passes": false
+    }
+  ]
+}

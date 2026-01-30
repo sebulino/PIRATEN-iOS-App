@@ -1,0 +1,47 @@
+## Codebase Patterns
+- Xcode project uses SwiftUI for UI
+- Project structure follows Clean Architecture with App/, Core/, Features/, Resources/, Config/, Tests/, Docs/
+- Use `xcodebuild -scheme PIRATEN -destination 'platform=iOS Simulator,name=iPhone 16'` for builds
+- Files are organized: App entry point in App/, domain entities in Core/, assets in Resources/
+- **Xcode 16 auto-discovery**: Project uses objectVersion 77 with PBXFileSystemSynchronizedRootGroup - files are automatically discovered from filesystem, no manual project.pbxproj editing needed
+- Auth state management: Use @StateObject in App struct, @ObservedObject in child views
+
+---
+
+## 2026-01-30 15:00 - M1-001
+- Verified folder structure matches spec: App/, Features/, Core/, Resources/, Config/, Tests/, Docs/
+- All existing files relocated to appropriate directories:
+  - PIRATENApp.swift, ContentView.swift → PIRATEN/App/
+  - Item.swift → PIRATEN/Core/
+  - Assets.xcassets → PIRATEN/Resources/
+- Files changed: 8 files (renames + new .gitignore, _CLAUDE.md)
+- Project builds successfully for iOS Simulator after reorganization
+- **Learnings for future iterations:**
+  - Folder structure was already partially in place from previous work
+  - Git correctly detects file moves when using `git add .`
+  - Build succeeds with: `xcodebuild -scheme PIRATEN -destination 'platform=iOS Simulator,name=iPhone 16' build`
+  - Test directories (PIRATENTests/, PIRATENUITests/) remain at root level as per Xcode convention
+---
+## 2026-01-30 15:15 - M1-002
+- Implemented AppState enum with auth states: loggedOut, loggingIn, loggedIn, error
+- Created AuthStateManager to handle auth state transitions
+- Created LoginView with fake login button and loading indicator
+- Created placeholder MainTabView for logged-in state
+- Created RootView to route between login and main views based on auth state
+- Updated PIRATENApp to use new auth state management (removed SwiftData boilerplate)
+- Files changed: 6 files
+  - New: PIRATEN/Core/Domain/Auth/AppState.swift
+  - New: PIRATEN/Core/Domain/Auth/AuthStateManager.swift
+  - New: PIRATEN/App/Views/Auth/LoginView.swift
+  - New: PIRATEN/App/Views/Main/MainTabView.swift
+  - New: PIRATEN/App/RootView.swift
+  - Modified: PIRATEN/App/PIRATENApp.swift
+- Project builds successfully
+- **Learnings for future iterations:**
+  - Xcode 16 uses objectVersion 77 with PBXFileSystemSynchronizedRootGroup feature
+  - This means files are automatically discovered from filesystem - no manual project.pbxproj editing needed!
+  - Just create Swift files in the correct folders and Xcode picks them up automatically
+  - Build still requires proper organization: App/ for views, Core/Domain/ for business logic
+  - @StateObject in App struct, @ObservedObject in views for state management
+  - Switch statement in SwiftUI for state-based routing works cleanly
+---
