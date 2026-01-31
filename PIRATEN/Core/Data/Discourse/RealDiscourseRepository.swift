@@ -95,6 +95,26 @@ final class RealDiscourseRepository: DiscourseRepository {
         }
     }
 
+    func fetchMessageThreads(for username: String) async throws -> [MessageThread] {
+        do {
+            let data = try await apiClient.fetchPrivateMessages(for: username)
+            let response = try decodePrivateMessagesResponse(from: data)
+
+            // Map DTOs to domain models
+            let threads = response.topicList.topics.compactMap { dto in
+                dto.toDomainModel(users: response.users)
+            }
+
+            return threads
+        } catch let error as DiscourseError {
+            throw mapToRepositoryError(error)
+        } catch {
+            throw DiscourseRepositoryError.loadFailed(
+                message: "Nachrichten konnten nicht geladen werden"
+            )
+        }
+    }
+
     // MARK: - Private Helpers
 
     /// Decodes the /latest.json response.
@@ -114,6 +134,17 @@ final class RealDiscourseRepository: DiscourseRepository {
         // Note: CodingKeys handle snake_case mapping
         do {
             return try decoder.decode(DiscourseTopicDetailResponse.self, from: data)
+        } catch {
+            throw DiscourseError.decodingError(message: error.localizedDescription)
+        }
+    }
+
+    /// Decodes the /topics/private-messages/{username}.json response.
+    private func decodePrivateMessagesResponse(from data: Data) throws -> DiscoursePrivateMessagesResponse {
+        let decoder = JSONDecoder()
+        // Note: CodingKeys handle snake_case mapping
+        do {
+            return try decoder.decode(DiscoursePrivateMessagesResponse.self, from: data)
         } catch {
             throw DiscourseError.decodingError(message: error.localizedDescription)
         }

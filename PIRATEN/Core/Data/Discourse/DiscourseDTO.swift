@@ -329,3 +329,119 @@ struct DiscoursePostDTO: Decodable {
         )
     }
 }
+
+// MARK: - /topics/private-messages/{username}.json Response DTOs
+
+/// Root response from Discourse /topics/private-messages/{username}.json endpoint.
+/// Similar structure to /latest.json but contains private message topics.
+///
+/// API Reference: GET /topics/private-messages/{username}.json
+/// - Returns private message threads where the user is a participant
+/// - Topics have archetype="private_message" and participants instead of category
+struct DiscoursePrivateMessagesResponse: Decodable {
+    /// Array of user objects referenced by topics via participants
+    let users: [DiscourseUserDTO]
+
+    /// The topic list container with private message topics
+    let topicList: DiscoursePrivateMessageTopicListDTO
+
+    enum CodingKeys: String, CodingKey {
+        case users
+        case topicList = "topic_list"
+    }
+}
+
+/// Container for the list of private message topics.
+struct DiscoursePrivateMessageTopicListDTO: Decodable {
+    /// Array of private message topics
+    let topics: [DiscoursePrivateMessageTopicDTO]
+}
+
+/// A private message topic from the Discourse API.
+/// Maps to the Domain MessageThread model via toDomainModel().
+struct DiscoursePrivateMessageTopicDTO: Decodable {
+    let id: Int
+    let title: String
+    let postsCount: Int
+    let createdAt: String
+    let lastPostedAt: String?
+
+    /// Whether the topic has been read
+    /// Note: Discourse may use highest_post_number vs last_read_post_number to determine this
+    let unseen: Bool?
+
+    /// Posters/participants in this private message thread
+    let posters: [DiscoursePosterDTO]
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case postsCount = "posts_count"
+        case createdAt = "created_at"
+        case lastPostedAt = "last_posted_at"
+        case unseen
+        case posters
+    }
+
+    /// Converts this DTO to a Domain MessageThread model.
+    /// - Parameter users: The users array from the response for looking up participant details
+    /// - Returns: A Domain MessageThread, or nil if conversion fails
+    func toDomainModel(users: [DiscourseUserDTO]) -> MessageThread? {
+        // Map all posters to participants
+        let participants = posters.compactMap { poster in
+            users.first(where: { $0.id == poster.userId })?.toDomainModel()
+        }
+
+        // We need at least one participant
+        guard !participants.isEmpty else {
+            return nil
+        }
+
+        // Parse the ISO 8601 dates
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+        // Parse created_at
+        var parsedCreatedAt = formatter.date(from: createdAt)
+        if parsedCreatedAt == nil {
+            formatter.formatOptions = [.withInternetDateTime]
+            parsedCreatedAt = formatter.date(from: createdAt)
+        }
+
+        guard let createdDate = parsedCreatedAt else {
+            return nil
+        }
+
+        // Parse last_posted_at (use created_at as fallback)
+        var lastActivityDate = createdDate
+        if let lastPosted = lastPostedAt {
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let parsed = formatter.date(from: lastPosted) {
+                lastActivityDate = parsed
+            } else {
+                formatter.formatOptions = [.withInternetDateTime]
+                if let parsed = formatter.date(from: lastPosted) {
+                    lastActivityDate = parsed
+                }
+            }
+        }
+
+        // Find the last poster (typically has description "Most Recent Poster")
+        let lastPoster = posters
+            .last(where: { $0.description?.contains("Recent") == true || $0.description?.contains("Poster") == true })
+            .flatMap { poster in
+                users.first(where: { $0.id == poster.userId })?.toDomainModel()
+            } ?? participants.last
+
+        return MessageThread(
+            id: id,
+            title: title,
+            participants: participants,
+            createdAt: createdDate,
+            lastActivityAt: lastActivityDate,
+            postsCount: postsCount,
+            isRead: unseen != true,
+            lastPoster: lastPoster
+        )
+    }
+}

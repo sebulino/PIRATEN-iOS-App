@@ -10,6 +10,7 @@ import SwiftUI
 struct RootView: View {
     @ObservedObject var authStateManager: AuthStateManager
     @ObservedObject var forumViewModel: ForumViewModel
+    @ObservedObject var messagesViewModel: MessagesViewModel
     @ObservedObject var todosViewModel: TodosViewModel
     @ObservedObject var profileViewModel: ProfileViewModel
 
@@ -24,6 +25,7 @@ struct RootView: View {
             case .authenticated:
                 MainTabView(
                     forumViewModel: forumViewModel,
+                    messagesViewModel: messagesViewModel,
                     todosViewModel: todosViewModel,
                     profileViewModel: profileViewModel,
                     topicDetailViewModelFactory: topicDetailViewModelFactory
@@ -75,6 +77,10 @@ struct ErrorView: View {
     return RootView(
         authStateManager: AuthStateManager(authRepository: authRepository),
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
+        messagesViewModel: MessagesViewModel(
+            discourseRepository: fakeDiscourseRepo,
+            authRepository: authRepository
+        ),
         todosViewModel: TodosViewModel(todoRepository: FakeTodoRepository()),
         profileViewModel: ProfileViewModel(authRepository: authRepository),
         topicDetailViewModelFactory: { topic in

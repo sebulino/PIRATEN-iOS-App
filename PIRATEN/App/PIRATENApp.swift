@@ -22,6 +22,7 @@ struct PIRATENApp: App {
             RootView(
                 authStateManager: container.authStateManager,
                 forumViewModel: container.forumViewModel,
+                messagesViewModel: container.messagesViewModel,
                 todosViewModel: container.todosViewModel,
                 profileViewModel: container.profileViewModel,
                 topicDetailViewModelFactory: { [container] topic in

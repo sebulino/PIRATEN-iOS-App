@@ -65,6 +65,9 @@ final class AppContainer {
     /// Forum view model for displaying topics.
     let forumViewModel: ForumViewModel
 
+    /// Messages view model for displaying private message threads.
+    let messagesViewModel: MessagesViewModel
+
     /// Todos view model for displaying tasks.
     let todosViewModel: TodosViewModel
 
@@ -131,6 +134,10 @@ final class AppContainer {
 
         // Remaining presentation layer
         self.forumViewModel = ForumViewModel(discourseRepository: discourseRepository)
+        self.messagesViewModel = MessagesViewModel(
+            discourseRepository: discourseRepository,
+            authRepository: authRepository
+        )
         self.todosViewModel = TodosViewModel(todoRepository: todoRepository)
         self.profileViewModel = ProfileViewModel(authRepository: authRepository)
     }
@@ -169,6 +176,10 @@ final class AppContainer {
 
         self.authStateManager = AuthStateManager(authRepository: authRepository)
         self.forumViewModel = ForumViewModel(discourseRepository: self.discourseRepository)
+        self.messagesViewModel = MessagesViewModel(
+            discourseRepository: self.discourseRepository,
+            authRepository: self.authRepository
+        )
         self.todosViewModel = TodosViewModel(todoRepository: self.todoRepository)
         self.profileViewModel = ProfileViewModel(authRepository: self.authRepository)
     }

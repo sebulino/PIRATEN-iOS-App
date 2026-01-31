@@ -43,4 +43,12 @@ protocol DiscourseRepository {
     /// - Returns: The topic if found
     /// - Throws: DiscourseRepositoryError if fetch fails or topic not found
     func fetchTopic(byId id: Int) async throws -> Topic
+
+    /// Fetches private message threads for the specified user.
+    /// - Parameter username: The username to fetch private messages for
+    /// - Returns: Array of message threads (PM inbox)
+    /// - Throws: DiscourseRepositoryError if fetch fails
+    ///
+    /// API Endpoint: GET /topics/private-messages/{username}.json
+    func fetchMessageThreads(for username: String) async throws -> [MessageThread]
 }

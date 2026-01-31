@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @ObservedObject var forumViewModel: ForumViewModel
+    @ObservedObject var messagesViewModel: MessagesViewModel
     @ObservedObject var todosViewModel: TodosViewModel
     @ObservedObject var profileViewModel: ProfileViewModel
 
@@ -25,9 +26,9 @@ struct MainTabView: View {
                     Label("Forum", systemImage: "bubble.left.and.bubble.right")
                 }
 
-            MessagesView()
+            MessagesView(viewModel: messagesViewModel)
                 .tabItem {
-                    Label("Messages", systemImage: "envelope")
+                    Label("Nachrichten", systemImage: "envelope")
                 }
 
             KnowledgeView()
@@ -57,6 +58,10 @@ struct MainTabView: View {
 
     return MainTabView(
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
+        messagesViewModel: MessagesViewModel(
+            discourseRepository: fakeDiscourseRepo,
+            authRepository: authRepository
+        ),
         todosViewModel: TodosViewModel(todoRepository: FakeTodoRepository()),
         profileViewModel: ProfileViewModel(authRepository: authRepository),
         topicDetailViewModelFactory: { topic in

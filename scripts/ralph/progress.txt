@@ -12,6 +12,46 @@ Started: Sa. 31 Jan. 2026 17:35:42 CET
 
 ---
 
+## [2026-02-01 00:30] - M3B-004
+- What was implemented:
+  - Created `MessageThread.swift` domain model for private message threads
+  - Added DTOs for private messages response: `DiscoursePrivateMessagesResponse`, `DiscoursePrivateMessageTopicListDTO`, `DiscoursePrivateMessageTopicDTO`
+  - Extended `DiscourseRepository` protocol with `fetchMessageThreads(for:)` method
+  - Implemented `fetchMessageThreads` in `RealDiscourseRepository` using existing `DiscourseAPIClient.fetchPrivateMessages()`
+  - Implemented `fetchMessageThreads` in `FakeDiscourseRepository` with stub PM data
+  - Created `MessagesViewModel.swift` with full state handling matching ForumViewModel pattern
+  - Replaced placeholder `MessagesView` with full implementation showing PM threads list
+  - MessagesView displays: thread title (with unread indicator), participants, post count, last activity time
+  - Loading/empty/error states are implemented with proper German localization
+  - Wired MessagesViewModel through AppContainer, MainTabView, RootView, and PIRATENApp
+- Files changed:
+  - PIRATEN/Core/Domain/Discourse/MessageThread.swift (new)
+  - PIRATEN/Core/Data/Discourse/DiscourseDTO.swift (added PM DTOs)
+  - PIRATEN/Core/Domain/Discourse/DiscourseRepository.swift (added fetchMessageThreads)
+  - PIRATEN/Core/Data/Discourse/RealDiscourseRepository.swift (implemented fetchMessageThreads)
+  - PIRATEN/Core/Data/Discourse/FakeDiscourseRepository.swift (implemented fetchMessageThreads + stub data)
+  - PIRATEN/App/ViewModels/MessagesViewModel.swift (new)
+  - PIRATEN/App/Views/Main/MessagesView.swift (full implementation replacing placeholder)
+  - PIRATEN/App/Views/Main/MainTabView.swift (added messagesViewModel prop, localized tab to "Nachrichten")
+  - PIRATEN/Core/Support/AppContainer.swift (added messagesViewModel)
+  - PIRATEN/App/RootView.swift (added messagesViewModel passthrough)
+  - PIRATEN/App/PIRATENApp.swift (wired messagesViewModel from container)
+  - scripts/ralph/prd.json (marked M3B-004 passes: true)
+- **Context7 / Web Research Summary:**
+  - Discourse PM endpoint: GET `/topics/private-messages/{username}.json`
+  - Response structure mirrors `/latest.json` with `users` array and `topic_list.topics`
+  - PM topics have same fields as regular topics: `id`, `title`, `posts_count`, `created_at`, `last_posted_at`
+  - `posters` array contains participant references with `user_id` and `description` (e.g., "Most Recent Poster")
+  - `unseen` field indicates whether thread has unread posts
+  - PMs are stored as topics with `archetype='private_message'` - fetching single PM uses same `/t/{id}.json` endpoint
+  - Sources: https://meta.discourse.org/t/api-how-to-get-all-private-messages-that-include-a-user-including-sent-messages/214655, https://docs.discourse.org/
+- **Learnings for future iterations:**
+  - MessagesViewModel needs both discourseRepository and authRepository (to get current user's username)
+  - Pattern established: views using repository data get viewModel from AppContainer through view hierarchy
+  - MessageThread model is separate from Topic since PM has different semantics (participants vs category)
+  - Reusing existing DiscourseAPIClient methods reduces code duplication
+---
+
 ## [2026-01-31 23:45] - M3B-003
 - What was implemented:
   - Created `TopicDetailView.swift` with full state handling (idle/loading/loaded/notAuthenticated/authenticationFailed/error)

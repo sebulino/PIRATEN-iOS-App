@@ -154,6 +154,42 @@ final class FakeDiscourseRepository: DiscourseRepository {
         ]
     }
 
+    /// Static fake message threads (placeholder data for development)
+    private var fakeMessageThreads: [MessageThread] {
+        [
+            MessageThread(
+                id: 1001,
+                title: "Abstimmung zur Bundesvorstandssitzung",
+                participants: [fakeUsers[0], fakeUsers[1]],
+                createdAt: Date().addingTimeInterval(-86400 * 3),
+                lastActivityAt: Date().addingTimeInterval(-3600 * 2),
+                postsCount: 5,
+                isRead: true,
+                lastPoster: fakeUsers[1]
+            ),
+            MessageThread(
+                id: 1002,
+                title: "Organisatorisches LPT Bayern",
+                participants: [fakeUsers[0], fakeUsers[2], fakeUsers[3]],
+                createdAt: Date().addingTimeInterval(-86400 * 7),
+                lastActivityAt: Date().addingTimeInterval(-86400 * 1),
+                postsCount: 12,
+                isRead: false,
+                lastPoster: fakeUsers[2]
+            ),
+            MessageThread(
+                id: 1003,
+                title: "Presseanfrage lokale Zeitung",
+                participants: [fakeUsers[0], fakeUsers[3]],
+                createdAt: Date().addingTimeInterval(-86400 * 2),
+                lastActivityAt: Date().addingTimeInterval(-86400 * 2),
+                postsCount: 2,
+                isRead: true,
+                lastPoster: fakeUsers[3]
+            )
+        ]
+    }
+
     // MARK: - DiscourseRepository
 
     func fetchTopics() async throws -> [Topic] {
@@ -181,5 +217,11 @@ final class FakeDiscourseRepository: DiscourseRepository {
             throw DiscourseRepositoryError.loadFailed(message: "Topic nicht gefunden")
         }
         return topic
+    }
+
+    func fetchMessageThreads(for username: String) async throws -> [MessageThread] {
+        // Simulate network delay (placeholder behavior)
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        return fakeMessageThreads
     }
 }
