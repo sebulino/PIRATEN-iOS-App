@@ -12,6 +12,40 @@ Started: Sa. 31 Jan. 2026 17:35:42 CET
 
 ---
 
+## [2026-01-31 23:45] - M3B-003
+- What was implemented:
+  - Created `TopicDetailView.swift` with full state handling (idle/loading/loaded/notAuthenticated/authenticationFailed/error)
+  - Created `TopicDetailViewModel.swift` to coordinate between view and repository
+  - Added DTOs for topic detail response: `DiscourseTopicDetailResponse`, `DiscoursePostStreamDTO`, `DiscoursePostDTO`
+  - Implemented `fetchPosts(forTopicId:)` and `fetchTopic(byId:)` in `RealDiscourseRepository`
+  - Added navigation from `ForumView` to `TopicDetailView` via `NavigationLink`
+  - Added `makeTopicDetailViewModel(for:)` factory method to `AppContainer`
+  - Posts display with author, content excerpt (HTML stripped), post number, timestamp, reply/like counts
+  - Error states provide retry button; auth errors show login prompt
+- Files changed:
+  - PIRATEN/App/Views/Main/TopicDetailView.swift (new)
+  - PIRATEN/App/ViewModels/TopicDetailViewModel.swift (new)
+  - PIRATEN/Core/Data/Discourse/DiscourseDTO.swift (added topic detail DTOs)
+  - PIRATEN/Core/Data/Discourse/RealDiscourseRepository.swift (implemented fetchPosts/fetchTopic)
+  - PIRATEN/App/Views/Main/ForumView.swift (added navigation + factory prop)
+  - PIRATEN/App/Views/Main/MainTabView.swift (added factory prop passthrough)
+  - PIRATEN/App/RootView.swift (added factory prop passthrough)
+  - PIRATEN/App/PIRATENApp.swift (wired factory from AppContainer)
+  - PIRATEN/Core/Support/AppContainer.swift (added makeTopicDetailViewModel factory)
+  - scripts/ralph/prd.json (marked M3B-003 passes: true)
+- **Context7 / Web Research Summary:**
+  - Discourse `/t/{topic_id}.json` returns topic metadata + `post_stream` object
+  - `post_stream.posts[]` contains first 20 posts; `post_stream.stream[]` contains all post IDs
+  - Post fields: `id`, `post_number`, `username`, `name`, `avatar_template`, `created_at`, `cooked` (HTML content), `reply_count`, `reads`, `like_count`
+  - Dates are ISO 8601 format with optional fractional seconds
+  - Sources: https://meta.discourse.org/t/api-getting-all-posts-in-a-topic/41018, https://meta.discourse.org/t/fetch-all-posts-from-a-topic-using-the-api/260886
+- **Learnings for future iterations:**
+  - ViewModel factory pattern works well for on-demand view model creation with DI
+  - SwiftUI NavigationLink with factory closure enables clean navigation while preserving DI
+  - HTML stripping via regex is simple for excerpts; full HTML rendering would need AttributedString or WebView
+  - `compactMap` over posts handles graceful failure when date parsing fails
+---
+
 ## [2026-01-31 21:11] - M3B-002
 - What was implemented:
   - Verified RealDiscourseRepository already implements DiscourseRepository with `/latest.json` fetching

@@ -13,6 +13,9 @@ struct ForumView: View {
     /// Optional callback for when user taps login button in unauthenticated state
     var onLoginTapped: (() -> Void)?
 
+    /// Factory for creating TopicDetailViewModels
+    var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
+
     var body: some View {
         NavigationStack {
             Group {
@@ -56,7 +59,16 @@ struct ForumView: View {
     @ViewBuilder
     private var topicsList: some View {
         List(viewModel.topics) { topic in
-            TopicRow(topic: topic)
+            if let factory = topicDetailViewModelFactory {
+                NavigationLink(destination: TopicDetailView(
+                    viewModel: factory(topic),
+                    onLoginTapped: onLoginTapped
+                )) {
+                    TopicRow(topic: topic)
+                }
+            } else {
+                TopicRow(topic: topic)
+            }
         }
         .refreshable {
             viewModel.refresh()
@@ -185,5 +197,11 @@ private struct TopicRow: View {
 
 #Preview {
     // Preview with fake data - uses FakeDiscourseRepository
-    ForumView(viewModel: ForumViewModel(discourseRepository: FakeDiscourseRepository()))
+    let fakeRepo = FakeDiscourseRepository()
+    ForumView(
+        viewModel: ForumViewModel(discourseRepository: fakeRepo),
+        topicDetailViewModelFactory: { topic in
+            TopicDetailViewModel(topic: topic, discourseRepository: fakeRepo)
+        }
+    )
 }

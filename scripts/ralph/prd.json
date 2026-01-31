@@ -42,7 +42,7 @@
         "Error states do not crash; provide retry",
         "Context7 consulted for Discourse topic detail endpoint and response fields; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M3B-004",

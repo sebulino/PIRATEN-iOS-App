@@ -13,6 +13,9 @@ struct RootView: View {
     @ObservedObject var todosViewModel: TodosViewModel
     @ObservedObject var profileViewModel: ProfileViewModel
 
+    /// Factory for creating TopicDetailViewModels
+    var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
+
     var body: some View {
         Group {
             switch authStateManager.currentState {
@@ -22,7 +25,8 @@ struct RootView: View {
                 MainTabView(
                     forumViewModel: forumViewModel,
                     todosViewModel: todosViewModel,
-                    profileViewModel: profileViewModel
+                    profileViewModel: profileViewModel,
+                    topicDetailViewModelFactory: topicDetailViewModelFactory
                 )
             case .failed(let error):
                 ErrorView(error: error, authStateManager: authStateManager)
@@ -66,11 +70,15 @@ struct ErrorView: View {
 #Preview {
     let credentialStore = InMemoryCredentialStore()
     let authRepository = FakeAuthRepository(credentialStore: credentialStore)
+    let fakeDiscourseRepo = FakeDiscourseRepository()
 
     return RootView(
         authStateManager: AuthStateManager(authRepository: authRepository),
-        forumViewModel: ForumViewModel(discourseRepository: FakeDiscourseRepository()),
+        forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
         todosViewModel: TodosViewModel(todoRepository: FakeTodoRepository()),
-        profileViewModel: ProfileViewModel(authRepository: authRepository)
+        profileViewModel: ProfileViewModel(authRepository: authRepository),
+        topicDetailViewModelFactory: { topic in
+            TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
+        }
     )
 }

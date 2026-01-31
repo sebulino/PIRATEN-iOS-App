@@ -12,9 +12,15 @@ struct MainTabView: View {
     @ObservedObject var todosViewModel: TodosViewModel
     @ObservedObject var profileViewModel: ProfileViewModel
 
+    /// Factory for creating TopicDetailViewModels
+    var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
+
     var body: some View {
         TabView {
-            ForumView(viewModel: forumViewModel)
+            ForumView(
+                viewModel: forumViewModel,
+                topicDetailViewModelFactory: topicDetailViewModelFactory
+            )
                 .tabItem {
                     Label("Forum", systemImage: "bubble.left.and.bubble.right")
                 }
@@ -47,10 +53,14 @@ struct MainTabView: View {
     // Note: Profile requires authenticated session for user data
     let credentialStore = KeychainCredentialStore()
     let authRepository = FakeAuthRepository(credentialStore: credentialStore)
+    let fakeDiscourseRepo = FakeDiscourseRepository()
 
     return MainTabView(
-        forumViewModel: ForumViewModel(discourseRepository: FakeDiscourseRepository()),
+        forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
         todosViewModel: TodosViewModel(todoRepository: FakeTodoRepository()),
-        profileViewModel: ProfileViewModel(authRepository: authRepository)
+        profileViewModel: ProfileViewModel(authRepository: authRepository),
+        topicDetailViewModelFactory: { topic in
+            TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
+        }
     )
 }

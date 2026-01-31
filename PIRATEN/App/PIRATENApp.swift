@@ -23,7 +23,10 @@ struct PIRATENApp: App {
                 authStateManager: container.authStateManager,
                 forumViewModel: container.forumViewModel,
                 todosViewModel: container.todosViewModel,
-                profileViewModel: container.profileViewModel
+                profileViewModel: container.profileViewModel,
+                topicDetailViewModelFactory: { [container] topic in
+                    container.makeTopicDetailViewModel(for: topic)
+                }
             )
             .onOpenURL { url in
                 // Handle OAuth redirect callback

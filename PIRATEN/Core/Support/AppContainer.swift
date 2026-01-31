@@ -72,6 +72,16 @@ final class AppContainer {
     /// Note: Currently displays PLACEHOLDER DATA until SSO integration.
     let profileViewModel: ProfileViewModel
 
+    // MARK: - ViewModel Factories
+
+    /// Creates a TopicDetailViewModel for the given topic.
+    /// Used for navigating from topic list to detail view.
+    /// - Parameter topic: The topic to display in detail
+    /// - Returns: A configured TopicDetailViewModel
+    func makeTopicDetailViewModel(for topic: Topic) -> TopicDetailViewModel {
+        TopicDetailViewModel(topic: topic, discourseRepository: discourseRepository)
+    }
+
     // MARK: - Initialization
 
     /// Creates the container with default production dependencies.

@@ -49,17 +49,50 @@ final class RealDiscourseRepository: DiscourseRepository {
     }
 
     func fetchPosts(forTopicId topicId: Int) async throws -> [Post] {
-        // Not implemented in this story - will be implemented in M3B-003
-        throw DiscourseRepositoryError.loadFailed(
-            message: "Beiträge laden ist noch nicht implementiert"
-        )
+        do {
+            let data = try await apiClient.fetchTopic(id: topicId)
+            let response = try decodeTopicDetailResponse(from: data)
+
+            // Map post DTOs to domain models
+            // Discourse /t/{id}.json returns posts in post_stream.posts (first 20)
+            let posts = response.postStream.posts.compactMap { dto in
+                dto.toDomainModel()
+            }
+
+            return posts
+        } catch let error as DiscourseError {
+            throw mapToRepositoryError(error)
+        } catch {
+            throw DiscourseRepositoryError.loadFailed(
+                message: "Beiträge konnten nicht geladen werden"
+            )
+        }
     }
 
     func fetchTopic(byId id: Int) async throws -> Topic {
-        // Not implemented in this story - will be implemented in M3B-003
-        throw DiscourseRepositoryError.loadFailed(
-            message: "Einzelnes Thema laden ist noch nicht implementiert"
-        )
+        do {
+            let data = try await apiClient.fetchTopic(id: id)
+            let response = try decodeTopicDetailResponse(from: data)
+
+            // Get the first post's author as the topic creator
+            guard let firstPost = response.postStream.posts.first,
+                  let firstPostDomain = firstPost.toDomainModel(),
+                  let topic = response.toDomainModel(firstPostAuthor: firstPostDomain.author) else {
+                throw DiscourseRepositoryError.loadFailed(
+                    message: "Thema konnte nicht verarbeitet werden"
+                )
+            }
+
+            return topic
+        } catch let error as DiscourseError {
+            throw mapToRepositoryError(error)
+        } catch let error as DiscourseRepositoryError {
+            throw error
+        } catch {
+            throw DiscourseRepositoryError.loadFailed(
+                message: "Thema konnte nicht geladen werden"
+            )
+        }
     }
 
     // MARK: - Private Helpers
@@ -70,6 +103,17 @@ final class RealDiscourseRepository: DiscourseRepository {
         // Note: CodingKeys handle snake_case mapping
         do {
             return try decoder.decode(DiscourseLatestResponse.self, from: data)
+        } catch {
+            throw DiscourseError.decodingError(message: error.localizedDescription)
+        }
+    }
+
+    /// Decodes the /t/{topic_id}.json response.
+    private func decodeTopicDetailResponse(from data: Data) throws -> DiscourseTopicDetailResponse {
+        let decoder = JSONDecoder()
+        // Note: CodingKeys handle snake_case mapping
+        do {
+            return try decoder.decode(DiscourseTopicDetailResponse.self, from: data)
         } catch {
             throw DiscourseError.decodingError(message: error.localizedDescription)
         }

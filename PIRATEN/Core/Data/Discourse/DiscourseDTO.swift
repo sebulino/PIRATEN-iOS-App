@@ -160,3 +160,172 @@ struct DiscourseUserDTO: Decodable {
         )
     }
 }
+
+// MARK: - /t/{topic_id}.json Response DTOs
+
+/// Root response from Discourse /t/{topic_id}.json endpoint.
+/// Contains topic metadata and the post stream with posts.
+///
+/// API Reference: GET /t/{topic_id}.json
+/// - Returns topic details plus first 20 posts in post_stream.posts
+/// - post_stream.stream contains all post IDs for pagination
+struct DiscourseTopicDetailResponse: Decodable {
+    let id: Int
+    let title: String
+    let postsCount: Int
+    let views: Int
+    let likeCount: Int
+    let categoryId: Int
+    let visible: Bool
+    let closed: Bool
+    let archived: Bool
+    let createdAt: String
+
+    /// Contains posts and the full stream of post IDs
+    let postStream: DiscoursePostStreamDTO
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case postsCount = "posts_count"
+        case views
+        case likeCount = "like_count"
+        case categoryId = "category_id"
+        case visible
+        case closed
+        case archived
+        case createdAt = "created_at"
+        case postStream = "post_stream"
+    }
+
+    /// Converts this DTO to a Domain Topic model.
+    /// - Parameter firstPostAuthor: The author of the first post (topic creator)
+    /// - Returns: A Domain Topic
+    func toDomainModel(firstPostAuthor: UserSummary) -> Topic? {
+        // Parse the ISO 8601 date
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+        var parsedDate = formatter.date(from: createdAt)
+        if parsedDate == nil {
+            formatter.formatOptions = [.withInternetDateTime]
+            parsedDate = formatter.date(from: createdAt)
+        }
+
+        guard let date = parsedDate else {
+            return nil
+        }
+
+        return Topic(
+            id: id,
+            title: title,
+            createdBy: firstPostAuthor,
+            createdAt: date,
+            postsCount: postsCount,
+            viewCount: views,
+            likeCount: likeCount,
+            categoryId: categoryId,
+            isVisible: visible,
+            isClosed: closed,
+            isArchived: archived
+        )
+    }
+}
+
+/// Container for posts and the full post ID stream.
+struct DiscoursePostStreamDTO: Decodable {
+    /// Array of posts (first 20 by default)
+    let posts: [DiscoursePostDTO]
+
+    /// Array of all post IDs in the topic (for pagination)
+    let stream: [Int]?
+}
+
+/// A post from the Discourse API.
+/// Maps to the Domain Post model via toDomainModel().
+struct DiscoursePostDTO: Decodable {
+    let id: Int
+    let topicId: Int
+    let postNumber: Int
+    let username: String
+    let name: String?
+    let avatarTemplate: String?
+    let createdAt: String
+
+    /// HTML-rendered post content (Discourse calls it "cooked")
+    let cooked: String
+
+    let replyCount: Int
+    let reads: Int?
+
+    /// Number of likes (from actions_summary or direct field)
+    /// Note: likes may come from actions_summary array in some responses
+    let likeCount: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case topicId = "topic_id"
+        case postNumber = "post_number"
+        case username
+        case name
+        case avatarTemplate = "avatar_template"
+        case createdAt = "created_at"
+        case cooked
+        case replyCount = "reply_count"
+        case reads
+        case likeCount = "like_count"
+    }
+
+    /// Converts this DTO to a Domain Post model.
+    /// - Returns: A Domain Post, or nil if conversion fails
+    func toDomainModel() -> Post? {
+        // Parse the ISO 8601 date
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+        var parsedDate = formatter.date(from: createdAt)
+        if parsedDate == nil {
+            formatter.formatOptions = [.withInternetDateTime]
+            parsedDate = formatter.date(from: createdAt)
+        }
+
+        guard let date = parsedDate else {
+            return nil
+        }
+
+        // Build author UserSummary
+        let author = buildAuthor()
+
+        return Post(
+            id: id,
+            topicId: topicId,
+            postNumber: postNumber,
+            author: author,
+            createdAt: date,
+            content: cooked,
+            replyCount: replyCount,
+            likeCount: likeCount ?? 0,
+            isRead: (reads ?? 0) > 0
+        )
+    }
+
+    /// Builds a UserSummary from the post's author fields.
+    private func buildAuthor() -> UserSummary {
+        var avatarUrl: URL? = nil
+        if let template = avatarTemplate {
+            let resolvedPath = template.replacingOccurrences(of: "{size}", with: "120")
+            if resolvedPath.hasPrefix("http") {
+                avatarUrl = URL(string: resolvedPath)
+            } else {
+                avatarUrl = URL(string: "https://diskussion.piratenpartei.de\(resolvedPath)")
+            }
+        }
+
+        return UserSummary(
+            id: 0, // Post response doesn't include user ID directly
+            username: username,
+            displayName: name,
+            avatarUrl: avatarUrl
+        )
+    }
+}
