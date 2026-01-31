@@ -28,7 +28,7 @@
         "Unauthenticated state shows a clear prompt to login",
         "Context7 consulted for latest Discourse API response shape and mapping guidance; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M3B-003",

@@ -12,6 +12,35 @@ Started: Sa. 31 Jan. 2026 17:35:42 CET
 
 ---
 
+## [2026-01-31 21:11] - M3B-002
+- What was implemented:
+  - Verified RealDiscourseRepository already implements DiscourseRepository with `/latest.json` fetching
+  - DiscourseDTO.swift provides mapping from API response to Domain Topic model:
+    - `DiscourseLatestResponse` → parses root with `users` and `topic_list`
+    - `DiscourseTopicDTO` → includes `toDomainModel(users:)` for clean domain conversion
+    - `DiscourseUserDTO` → maps to `UserSummary` with avatar URL resolution
+  - ForumView already has complete state handling:
+    - `.idle/.loading` → ProgressView
+    - `.loaded` with empty → empty state with refresh button
+    - `.loaded` with topics → topic list with pull-to-refresh
+    - `.notAuthenticated` → login prompt with "Anmeldung erforderlich" message
+    - `.authenticationFailed` → re-login prompt with "Sitzung abgelaufen" message
+    - `.error` → error state with retry button
+  - AppContainer wires RealDiscourseRepository with DiscourseAPIClient and AuthenticatedHTTPClient
+- Files changed:
+  - scripts/ralph/prd.json (marked M3B-002 passes: true)
+- **Context7 / Web Research Summary:**
+  - Discourse /latest.json returns nested JSON with `topic_list.topics` array and `users` array
+  - Topics contain `posters` array with `user_id` references for looking up authors
+  - Date format is ISO 8601 with optional fractional seconds
+  - Avatar URLs use `{size}` placeholder template pattern (e.g., 120 for medium)
+  - Sources: https://docs.discourse.org/, https://github.com/discourse/discourse_api_docs
+- **Learnings for future iterations:**
+  - M3B-002 was already fully implemented during M3B-001 scaffolding
+  - The DTO-to-Domain mapping pattern with `toDomainModel()` is clean and testable
+  - `compactMap` over topics handles graceful failure when poster lookup fails
+---
+
 ## [2026-01-31 22:15] - M3B-001
 - What was implemented:
   - Created `DiscourseAPIClient.swift` with authenticated HTTP client integration

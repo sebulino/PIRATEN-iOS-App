@@ -24,6 +24,9 @@ final class AppContainer {
     /// Redirect URI for OAuth callback
     private static let redirectURI = URL(string: "de.meine-piraten://oauth-callback")!
 
+    /// Discourse forum base URL
+    private static let discourseBaseURL = URL(string: "https://diskussion.piratenpartei.de")!
+
     // MARK: - Support Layer (System Wrappers)
 
     /// Credential storage backed by iOS Keychain.
@@ -47,7 +50,7 @@ final class AppContainer {
     let authRepository: AuthRepository
 
     /// Discourse forum repository implementation.
-    /// Currently uses FakeDiscourseRepository; will be swapped for real Discourse API later.
+    /// Uses RealDiscourseRepository with authenticated HTTP client.
     let discourseRepository: DiscourseRepository
 
     /// Todo repository implementation.
@@ -92,11 +95,31 @@ final class AppContainer {
             tokenRefresher: tokenRefresher,
             credentialStore: credentialStore
         )
-        self.discourseRepository = FakeDiscourseRepository()
+
+        // Presentation layer - auth state manager first (needed for HTTP client)
+        self.authStateManager = AuthStateManager(authRepository: authRepository)
+
+        // HTTP layer for Discourse API
+        let baseHTTPClient = URLSessionHTTPClient()
+        let tokenProvider = AuthStateTokenProvider(authStateManager: authStateManager)
+        let authenticatedHTTPClient = AuthenticatedHTTPClient(
+            baseClient: baseHTTPClient,
+            tokenProvider: tokenProvider,
+            onAuthError: { [weak authStateManager] in
+                await authStateManager?.handleAuthenticationError()
+            }
+        )
+
+        // Discourse API client and repository
+        let discourseAPIClient = DiscourseAPIClient(
+            httpClient: authenticatedHTTPClient,
+            baseURL: Self.discourseBaseURL
+        )
+        self.discourseRepository = RealDiscourseRepository(apiClient: discourseAPIClient)
+
         self.todoRepository = FakeTodoRepository()
 
-        // Presentation layer
-        self.authStateManager = AuthStateManager(authRepository: authRepository)
+        // Remaining presentation layer
         self.forumViewModel = ForumViewModel(discourseRepository: discourseRepository)
         self.todosViewModel = TodosViewModel(todoRepository: todoRepository)
         self.profileViewModel = ProfileViewModel(authRepository: authRepository)

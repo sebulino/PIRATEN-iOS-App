@@ -156,13 +156,13 @@ final class FakeDiscourseRepository: DiscourseRepository {
 
     // MARK: - DiscourseRepository
 
-    func fetchTopics() async -> [Topic] {
+    func fetchTopics() async throws -> [Topic] {
         // Simulate network delay (placeholder behavior)
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
         return fakeTopics
     }
 
-    func fetchPosts(forTopicId topicId: Int) async -> [Post] {
+    func fetchPosts(forTopicId topicId: Int) async throws -> [Post] {
         // Simulate network delay (placeholder behavior)
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
 
@@ -173,9 +173,13 @@ final class FakeDiscourseRepository: DiscourseRepository {
         return []
     }
 
-    func fetchTopic(byId id: Int) async -> Topic? {
+    func fetchTopic(byId id: Int) async throws -> Topic {
         // Simulate network delay (placeholder behavior)
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-        return fakeTopics.first { $0.id == id }
+
+        guard let topic = fakeTopics.first(where: { $0.id == id }) else {
+            throw DiscourseRepositoryError.loadFailed(message: "Topic nicht gefunden")
+        }
+        return topic
     }
 }

@@ -37,7 +37,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		0FE527032F2E100000000001 /* Exceptions for PIRATEN */ = {
+		0FE527032F2E100000000001 /* Exceptions for "PIRATEN" folder in "PIRATEN" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -50,7 +50,7 @@
 		0FE526D32F2BD101002C9449 /* PIRATEN */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				0FE527032F2E100000000001 /* Exceptions for PIRATEN */,
+				0FE527032F2E100000000001 /* Exceptions for "PIRATEN" folder in "PIRATEN" target */,
 			);
 			path = PIRATEN;
 			sourceTree = "<group>";
