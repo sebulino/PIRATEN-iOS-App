@@ -154,6 +154,73 @@ final class FakeDiscourseRepository: DiscourseRepository {
         ]
     }
 
+    /// Static fake posts for message thread 1001 (placeholder data for PM detail view)
+    private var fakePostsForMessageThread1001: [Post] {
+        [
+            Post(
+                id: 10001,
+                topicId: 1001,
+                postNumber: 1,
+                author: fakeUsers[0],
+                createdAt: Date().addingTimeInterval(-86400 * 3),
+                content: "Hallo zusammen, wir müssen noch die Agenda für die Bundesvorstandssitzung abstimmen. Hat jemand Vorschläge?",
+                replyCount: 2,
+                likeCount: 0,
+                isRead: true
+            ),
+            Post(
+                id: 10002,
+                topicId: 1001,
+                postNumber: 2,
+                author: fakeUsers[1],
+                createdAt: Date().addingTimeInterval(-86400 * 3 + 7200),
+                content: "Ich würde gerne den Punkt 'Digitalisierungsstrategie' auf die Agenda setzen. Das Thema wird immer dringender.",
+                replyCount: 1,
+                likeCount: 0,
+                isRead: true
+            ),
+            Post(
+                id: 10003,
+                topicId: 1001,
+                postNumber: 3,
+                author: fakeUsers[0],
+                createdAt: Date().addingTimeInterval(-3600 * 2),
+                content: "Guter Vorschlag! Ich nehme das auf. Gibt es weitere Punkte?",
+                replyCount: 0,
+                likeCount: 0,
+                isRead: true
+            )
+        ]
+    }
+
+    /// Static fake posts for message thread 1002 (placeholder data for PM detail view)
+    private var fakePostsForMessageThread1002: [Post] {
+        [
+            Post(
+                id: 10101,
+                topicId: 1002,
+                postNumber: 1,
+                author: fakeUsers[0],
+                createdAt: Date().addingTimeInterval(-86400 * 7),
+                content: "Der LPT Bayern steht an. Wir müssen noch die Räumlichkeiten organisieren.",
+                replyCount: 0,
+                likeCount: 0,
+                isRead: true
+            ),
+            Post(
+                id: 10102,
+                topicId: 1002,
+                postNumber: 2,
+                author: fakeUsers[2],
+                createdAt: Date().addingTimeInterval(-86400 * 1),
+                content: "Ich habe eine Location in München gefunden. Details im Anhang.",
+                replyCount: 0,
+                likeCount: 0,
+                isRead: false
+            )
+        ]
+    }
+
     /// Static fake message threads (placeholder data for development)
     private var fakeMessageThreads: [MessageThread] {
         [
@@ -202,11 +269,17 @@ final class FakeDiscourseRepository: DiscourseRepository {
         // Simulate network delay (placeholder behavior)
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
 
-        // Only return posts for topic 1 in this fake implementation
-        if topicId == 1 {
+        // Return posts for known topic/message thread IDs
+        switch topicId {
+        case 1:
             return fakePostsForTopic1
+        case 1001:
+            return fakePostsForMessageThread1001
+        case 1002:
+            return fakePostsForMessageThread1002
+        default:
+            return []
         }
-        return []
     }
 
     func fetchTopic(byId id: Int) async throws -> Topic {

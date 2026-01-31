@@ -12,6 +12,40 @@ Started: Sa. 31 Jan. 2026 17:35:42 CET
 
 ---
 
+## [2026-02-01 01:00] - M3B-005
+- What was implemented:
+  - Created `MessageThreadDetailViewModel.swift` for PM thread detail state management
+  - Created `MessageThreadDetailView.swift` for displaying PM posts with loading/error states
+  - Added navigation from `MessagesView` to `MessageThreadDetailView` via `NavigationLink`
+  - Added `makeMessageThreadDetailViewModel(for:)` factory method to `AppContainer`
+  - Wired factory through `MainTabView`, `RootView`, and `PIRATENApp`
+  - Extended `FakeDiscourseRepository` with stub posts for message threads 1001 and 1002
+  - Posts display with author, content (HTML stripped), and timestamp
+  - MessagePostRow styled for conversational PM context (no post numbers, more line limit)
+- Files changed:
+  - PIRATEN/App/ViewModels/MessageThreadDetailViewModel.swift (new)
+  - PIRATEN/App/Views/Main/MessageThreadDetailView.swift (new)
+  - PIRATEN/App/Views/Main/MessagesView.swift (added navigation + factory prop)
+  - PIRATEN/App/Views/Main/MainTabView.swift (added factory prop passthrough)
+  - PIRATEN/Core/Support/AppContainer.swift (added makeMessageThreadDetailViewModel factory)
+  - PIRATEN/App/RootView.swift (added factory prop passthrough)
+  - PIRATEN/App/PIRATENApp.swift (wired factory from AppContainer)
+  - PIRATEN/Core/Data/Discourse/FakeDiscourseRepository.swift (added PM thread posts stub data)
+  - scripts/ralph/prd.json (marked M3B-005 passes: true)
+- **Context7 / Web Research Summary:**
+  - Discourse PM threads use the same `/t/{id}.json` endpoint as regular topics
+  - PM topics have `archetype='private_message'` but otherwise identical structure
+  - Posts in PM threads have same fields: `id`, `post_number`, `username`, `cooked`, `created_at`
+  - Reusing existing `fetchPosts(forTopicId:)` method works for both forum topics and PM threads
+  - Privacy: VM and View do not log content, participants, or thread identifiers
+  - Sources: Previous M3B-004 research confirmed PM/topic API equivalence
+- **Learnings for future iterations:**
+  - ViewModel factory pattern applies equally to message thread detail as to topic detail
+  - Private messages share the Post domain model - no separate MessagePost needed
+  - NavigationLink with factory closure pattern proven for both forum and messages
+  - HTML stripping reused from TopicDetailView - could be extracted to shared utility
+---
+
 ## [2026-02-01 00:30] - M3B-004
 - What was implemented:
   - Created `MessageThread.swift` domain model for private message threads

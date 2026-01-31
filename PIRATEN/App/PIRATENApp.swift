@@ -27,6 +27,9 @@ struct PIRATENApp: App {
                 profileViewModel: container.profileViewModel,
                 topicDetailViewModelFactory: { [container] topic in
                     container.makeTopicDetailViewModel(for: topic)
+                },
+                messageThreadDetailViewModelFactory: { [container] thread in
+                    container.makeMessageThreadDetailViewModel(for: thread)
                 }
             )
             .onOpenURL { url in

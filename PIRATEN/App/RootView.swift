@@ -17,6 +17,9 @@ struct RootView: View {
     /// Factory for creating TopicDetailViewModels
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
 
+    /// Factory for creating MessageThreadDetailViewModels
+    var messageThreadDetailViewModelFactory: ((MessageThread) -> MessageThreadDetailViewModel)?
+
     var body: some View {
         Group {
             switch authStateManager.currentState {
@@ -28,7 +31,8 @@ struct RootView: View {
                     messagesViewModel: messagesViewModel,
                     todosViewModel: todosViewModel,
                     profileViewModel: profileViewModel,
-                    topicDetailViewModelFactory: topicDetailViewModelFactory
+                    topicDetailViewModelFactory: topicDetailViewModelFactory,
+                    messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory
                 )
             case .failed(let error):
                 ErrorView(error: error, authStateManager: authStateManager)
@@ -85,6 +89,9 @@ struct ErrorView: View {
         profileViewModel: ProfileViewModel(authRepository: authRepository),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
+        },
+        messageThreadDetailViewModelFactory: { thread in
+            MessageThreadDetailViewModel(thread: thread, discourseRepository: fakeDiscourseRepo)
         }
     )
 }

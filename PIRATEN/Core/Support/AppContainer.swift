@@ -85,6 +85,14 @@ final class AppContainer {
         TopicDetailViewModel(topic: topic, discourseRepository: discourseRepository)
     }
 
+    /// Creates a MessageThreadDetailViewModel for the given message thread.
+    /// Used for navigating from message list to thread detail view.
+    /// - Parameter thread: The message thread to display in detail
+    /// - Returns: A configured MessageThreadDetailViewModel
+    func makeMessageThreadDetailViewModel(for thread: MessageThread) -> MessageThreadDetailViewModel {
+        MessageThreadDetailViewModel(thread: thread, discourseRepository: discourseRepository)
+    }
+
     // MARK: - Initialization
 
     /// Creates the container with default production dependencies.

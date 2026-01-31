@@ -13,6 +13,9 @@ struct MessagesView: View {
     /// Optional callback for when user taps login button in unauthenticated state
     var onLoginTapped: (() -> Void)?
 
+    /// Factory for creating MessageThreadDetailViewModels
+    var messageThreadDetailViewModelFactory: ((MessageThread) -> MessageThreadDetailViewModel)?
+
     var body: some View {
         NavigationStack {
             Group {
@@ -56,7 +59,18 @@ struct MessagesView: View {
     @ViewBuilder
     private var messageThreadsList: some View {
         List(viewModel.messageThreads) { thread in
-            MessageThreadRow(thread: thread)
+            if let factory = messageThreadDetailViewModelFactory {
+                NavigationLink {
+                    MessageThreadDetailView(
+                        viewModel: factory(thread),
+                        onLoginTapped: onLoginTapped
+                    )
+                } label: {
+                    MessageThreadRow(thread: thread)
+                }
+            } else {
+                MessageThreadRow(thread: thread)
+            }
         }
         .refreshable {
             viewModel.refresh()
@@ -216,6 +230,9 @@ private struct MessageThreadRow: View {
         viewModel: MessagesViewModel(
             discourseRepository: fakeDiscourseRepo,
             authRepository: fakeAuthRepo
-        )
+        ),
+        messageThreadDetailViewModelFactory: { thread in
+            MessageThreadDetailViewModel(thread: thread, discourseRepository: fakeDiscourseRepo)
+        }
     )
 }

@@ -16,6 +16,9 @@ struct MainTabView: View {
     /// Factory for creating TopicDetailViewModels
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
 
+    /// Factory for creating MessageThreadDetailViewModels
+    var messageThreadDetailViewModelFactory: ((MessageThread) -> MessageThreadDetailViewModel)?
+
     var body: some View {
         TabView {
             ForumView(
@@ -26,7 +29,10 @@ struct MainTabView: View {
                     Label("Forum", systemImage: "bubble.left.and.bubble.right")
                 }
 
-            MessagesView(viewModel: messagesViewModel)
+            MessagesView(
+                viewModel: messagesViewModel,
+                messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory
+            )
                 .tabItem {
                     Label("Nachrichten", systemImage: "envelope")
                 }
@@ -66,6 +72,9 @@ struct MainTabView: View {
         profileViewModel: ProfileViewModel(authRepository: authRepository),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
+        },
+        messageThreadDetailViewModelFactory: { thread in
+            MessageThreadDetailViewModel(thread: thread, discourseRepository: fakeDiscourseRepo)
         }
     )
 }
