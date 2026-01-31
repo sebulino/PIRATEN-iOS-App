@@ -13,16 +13,34 @@ import Foundation
 @MainActor
 final class AppContainer {
 
+    // MARK: - OIDC Configuration Constants
+
+    /// Piratenlogin SSO issuer URL (Keycloak realm)
+    private static let issuerURL = URL(string: "https://sso.piratenpartei.de/realms/Piratenlogin")!
+
+    /// OAuth2 client ID for the iOS app (public client)
+    private static let clientID = "piraten-ios-app"
+
+    /// Redirect URI for OAuth callback
+    private static let redirectURI = URL(string: "de.meine-piraten://oauth-callback")!
+
     // MARK: - Support Layer (System Wrappers)
 
     /// Credential storage backed by iOS Keychain.
     /// This is the only "singleton-like" component, as it wraps a system service.
     let credentialStore: CredentialStore
 
+    // MARK: - OIDC Services
+
+    /// OIDC discovery service for fetching configuration from the issuer
+    let discoveryService: OIDCDiscoveryService
+
+    /// OIDC authorization service for handling the OAuth flow
+    let authService: AppAuthOIDCAuthService
+
     // MARK: - Data Layer (Repositories)
 
-    /// Authentication repository implementation.
-    /// Currently uses FakeAuthRepository; will be swapped for real SSO implementation later.
+    /// Authentication repository implementation using real OIDC/OAuth2.
     let authRepository: AuthRepository
 
     /// Discourse forum repository implementation.
@@ -55,8 +73,20 @@ final class AppContainer {
         // Support layer
         self.credentialStore = KeychainCredentialStore()
 
-        // Data layer
-        self.authRepository = FakeAuthRepository(credentialStore: credentialStore)
+        // OIDC services
+        self.discoveryService = AppAuthOIDCDiscoveryService(issuerURL: Self.issuerURL)
+        self.authService = AppAuthOIDCAuthService(
+            clientID: Self.clientID,
+            redirectURI: Self.redirectURI,
+            scopes: ["openid", "profile", "offline_access"]
+        )
+
+        // Data layer - real OIDC auth repository
+        self.authRepository = OIDCAuthRepository(
+            discoveryService: discoveryService,
+            authService: authService,
+            credentialStore: credentialStore
+        )
         self.discourseRepository = FakeDiscourseRepository()
         self.todoRepository = FakeTodoRepository()
 
@@ -80,6 +110,14 @@ final class AppContainer {
         todoRepository: TodoRepository? = nil
     ) {
         self.credentialStore = credentialStore
+
+        // OIDC services (still needed for testing container consistency)
+        self.discoveryService = AppAuthOIDCDiscoveryService(issuerURL: Self.issuerURL)
+        self.authService = AppAuthOIDCAuthService(
+            clientID: Self.clientID,
+            redirectURI: Self.redirectURI,
+            scopes: ["openid", "profile", "offline_access"]
+        )
 
         if let factory = authRepositoryFactory {
             self.authRepository = factory(credentialStore)

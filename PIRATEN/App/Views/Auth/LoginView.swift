@@ -30,14 +30,27 @@ struct LoginView: View {
 
             Spacer()
 
+            // Show error message if authentication failed
+            if case .failed(let error) = authStateManager.currentState {
+                Text(error.localizedDescription)
+                    .font(.footnote)
+                    .foregroundColor(.red)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+                    .accessibilityIdentifier("loginError")
+            }
+
             if authStateManager.currentState == .authenticating {
                 ProgressView()
                     .scaleEffect(1.5)
+                Text("Anmeldung wird vorbereitet...")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
             } else {
                 Button(action: {
                     authStateManager.authenticate()
                 }) {
-                    Text("Anmelden (Fake)")
+                    Text("Mit Piratenlogin anmelden")
                         .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)

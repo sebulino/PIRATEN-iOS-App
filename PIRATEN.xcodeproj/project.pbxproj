@@ -36,9 +36,22 @@
 		0FE527022F2BD200002C9449 /* Secrets.sample.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.sample.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		0FE527032F2E100000000001 /* Exceptions for PIRATEN */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 0FE526D02F2BD101002C9449 /* PIRATEN */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0FE526D32F2BD101002C9449 /* PIRATEN */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0FE527032F2E100000000001 /* Exceptions for PIRATEN */,
+			);
 			path = PIRATEN;
 			sourceTree = "<group>";
 		};
@@ -425,6 +438,7 @@
 				DEVELOPMENT_TEAM = AJ6EE3AM82;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PIRATEN/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -457,6 +471,7 @@
 				DEVELOPMENT_TEAM = AJ6EE3AM82;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PIRATEN/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

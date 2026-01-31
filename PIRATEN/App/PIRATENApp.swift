@@ -25,6 +25,11 @@ struct PIRATENApp: App {
                 todosViewModel: container.todosViewModel,
                 profileViewModel: container.profileViewModel
             )
+            .onOpenURL { url in
+                // Handle OAuth redirect callback
+                // The URL will be de.meine-piraten://oauth-callback with auth code
+                _ = container.authService.resumeAuthorizationFlow(with: url)
+            }
         }
     }
 }
