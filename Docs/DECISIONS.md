@@ -173,6 +173,40 @@ If the pinned simulator is unavailable after an Xcode update:
 
 ---
 
+## D-008: Local-Only Logout (No end_session_endpoint Call)
+
+**Date:** 2026-01-31
+**Status:** Accepted
+
+### Context
+The OIDC discovery document from the Keycloak issuer provides an `end_session_endpoint`. This endpoint can be used to terminate the server-side session in addition to clearing local tokens. The question is whether to use it.
+
+Options:
+1. **Local-only logout**: Clear tokens from Keychain only
+2. **RP-Initiated logout**: Also call `end_session_endpoint` with `id_token_hint`
+
+### Decision
+Use **local-only logout** for now. Do not call `end_session_endpoint`.
+
+### Rationale
+1. **Simplicity**: Local logout is sufficient for mobile apps - the refresh token will naturally expire
+2. **Reliability**: The end_session_endpoint requires opening a browser window, which may be confusing for users ("why does the browser open when I logout?")
+3. **No SSO with other apps**: We are the only Piratenpartei mobile app using this SSO - there are no other RPs that would benefit from server-side session termination
+4. **Privacy**: Calling the endpoint requires redirecting through a browser, potentially exposing the logout action to browser extensions/history
+5. **Offline support**: Local logout works even when offline; server logout would fail
+
+### When to revisit
+Consider implementing RP-Initiated logout if:
+- Other Piratenpartei apps share the same SSO and need coordinated logout
+- Security requirements mandate immediate server-side token revocation
+- A token revocation endpoint (RFC 7009) becomes available (preferred over end_session)
+
+### References
+- [OpenID Connect RP-Initiated Logout 1.0](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
+- The `endSessionEndpoint` is discovered and stored in `OIDCConfiguration` but not currently used
+
+---
+
 ## Future Decisions
 
 Decisions pending external input:

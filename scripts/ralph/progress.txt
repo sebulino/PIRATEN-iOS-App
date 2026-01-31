@@ -39,6 +39,35 @@ Started: Sa. 31 Jan. 2026 11:15:30 CET
 - Check `response.isAuthenticationError` property for quick auth failure detection
 - Use `StubHTTPClient` for testing with configurable URL→response mappings
 
+### OIDC Logout Pattern
+- Prefer local-only logout (token deletion) for mobile apps over RP-Initiated logout
+- Clear all token types from Keychain: access_token, refresh_token, id_token, expiration
+- Use `try?` for token deletion to avoid errors on missing items
+- Reset auth state to `.unauthenticated` after token cleanup
+- Document end_session_endpoint decision in DECISIONS.md (use vs not use)
+
+---
+
+## [2026-01-31 17:15] - M3A-006
+- What was implemented:
+  - Verified existing logout implementation clears all tokens from KeychainCredentialStore
+  - Verified AuthStateManager.logout() resets state to .unauthenticated and UI returns to login
+  - Documented decision to NOT use end_session_endpoint in Docs/DECISIONS.md (D-008)
+  - Rationale: Local logout is simpler, works offline, and no SSO coordination needed
+- Files changed:
+  - Docs/DECISIONS.md (added D-008: Local-Only Logout decision)
+- **Context7 Summary (OIDC Logout / end_session_endpoint):**
+  - OIDC RP-Initiated Logout 1.0 defines end_session_endpoint for server-side logout
+  - Requires id_token_hint parameter for the OP to validate the request
+  - post_logout_redirect_uri can use native app schemes (de.meine-piraten://)
+  - Front-channel logout is fragile (browser-dependent), back-channel is more reliable
+  - Best practice: Decommission local security context first, then optionally call end_session
+  - For mobile apps without SSO coordination, local token deletion is often sufficient
+- **Learnings for future iterations:**
+  - The endSessionEndpoint is discovered and available in OIDCConfiguration if needed later
+  - Token revocation (RFC 7009) is preferable to end_session for immediate invalidation
+  - Local logout works offline; server logout requires connectivity
+  - Consider end_session if other Piratenpartei apps share the SSO in the future
 ---
 
 ## [2026-01-31 16:30] - M3A-005

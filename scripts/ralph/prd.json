@@ -70,7 +70,7 @@
         "No Discourse endpoints are implemented yet; include a small local stub request example if needed",
         "Context7 consulted for URLSession modern patterns (async/await) and auth header best practices; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M3A-006",
@@ -83,7 +83,7 @@
         "If discovery provides an end_session_endpoint, document decision to use or not use it in Docs/DECISIONS.md",
         "Context7 consulted for OIDC logout/end-session guidance and AppAuth considerations; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M3A-007",
