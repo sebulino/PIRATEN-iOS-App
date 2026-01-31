@@ -46,6 +46,49 @@ Started: Sa. 31 Jan. 2026 11:15:30 CET
 - Reset auth state to `.unauthenticated` after token cleanup
 - Document end_session_endpoint decision in DECISIONS.md (use vs not use)
 
+### Documentation Pattern
+- Use Docs/DECISIONS.md to record architectural decisions with date, status, context, decision, and rationale
+- Use Docs/OPEN_QUESTIONS.md to track blocking questions with status, blocking milestone, and what's needed
+- Mark questions as "Partially Implemented" when work has proceeded with assumptions
+- Reference RFC numbers and official specs in decisions for credibility
+- Include configuration tables for quick reference of auth parameters
+
+---
+
+## [2026-01-31 18:00] - M3A-007
+- What was implemented:
+  - Documented auth configuration in Docs/DECISIONS.md (D-009, D-010):
+    - Issuer: https://sso.piratenpartei.de/realms/Piratenlogin
+    - Client ID: piraten-ios-app (public client)
+    - Redirect URI: de.meine-piraten://oauth-callback
+    - Scopes: openid profile offline_access
+  - Added D-009: AppAuth-iOS decision with RFC 8252 rationale
+  - Added D-010: Full OAuth2/OIDC configuration table
+  - Updated Docs/OPEN_QUESTIONS.md with:
+    - Q-009: Discourse API session handling questions
+    - Q-010: Token lifetimes and rotation policies
+    - Updated Q-002 and Q-008 with current status
+  - No secrets committed; only public client configuration documented
+- Files changed:
+  - Docs/DECISIONS.md (added D-009, D-010)
+  - Docs/OPEN_QUESTIONS.md (added Q-009, Q-010; updated Q-002, Q-008)
+- **Context7 Summary (OIDC Discovery Fields + RFC 8252):**
+  - RFC 8252 mandates PKCE for all native app OAuth2 flows (code interception attack mitigation)
+  - Native apps are public clients - no client secret, PKCE provides protection instead
+  - External user-agent (ASWebAuthenticationSession) required, not embedded webviews
+  - Implicit flow NOT recommended for native apps (cannot use PKCE, no refresh tokens)
+  - OIDC discovery (/.well-known/openid-configuration) provides all endpoints dynamically:
+    - authorization_endpoint, token_endpoint, userinfo_endpoint
+    - end_session_endpoint, jwks_uri, issuer
+    - scopes_supported, claims_supported, grant_types_supported
+  - Discovery response must validate issuer matches request URL (prevents impersonation)
+  - OpenID Foundation AppAuth is the reference implementation for RFC 8252
+- **Learnings for future iterations:**
+  - Always reference RFC 8252 when explaining why PKCE and external browser are used
+  - Document exact auth config values in DECISIONS.md for onboarding
+  - Keep OPEN_QUESTIONS.md updated with partial implementation status
+  - Discourse auth strategy remains open - multiple options possible depending on server config
+  - Token lifetimes are server-configured (Keycloak) - document what's needed, not assumptions
 ---
 
 ## [2026-01-31 17:15] - M3A-006

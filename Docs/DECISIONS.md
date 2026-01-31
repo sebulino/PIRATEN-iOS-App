@@ -207,9 +207,88 @@ Consider implementing RP-Initiated logout if:
 
 ---
 
+## D-009: AppAuth-iOS for OAuth2/OIDC Implementation
+
+**Date:** 2026-01-31
+**Status:** Accepted
+
+### Context
+The app needs to authenticate users via the Piratenpartei SSO (Keycloak). We needed to choose an OAuth2/OIDC implementation approach.
+
+Options considered:
+1. **Manual implementation** using URLSession and ASWebAuthenticationSession
+2. **AppAuth-iOS** (OpenID Foundation reference implementation)
+3. **Third-party alternatives** (Auth0 SDK, Firebase Auth, etc.)
+
+### Decision
+Use **AppAuth-iOS** (https://github.com/openid/AppAuth-iOS) via Swift Package Manager.
+
+### Rationale
+1. **RFC 8252 Compliance**: AppAuth is specifically designed to implement OAuth 2.0 for Native Apps (RFC 8252) best practices
+2. **PKCE Built-in**: Automatically generates code_challenge/code_verifier for PKCE (RFC 7636), which is mandatory for native apps
+3. **OpenID Foundation Reference**: Official reference implementation, well-maintained and audited
+4. **ASWebAuthenticationSession Integration**: Uses the system browser automatically on iOS 12+, preventing embedded webview security issues
+5. **Discovery Support**: Handles OIDC discovery (/.well-known/openid-configuration) automatically
+6. **No Vendor Lock-in**: Works with any standards-compliant OIDC provider (Keycloak, Okta, Auth0, etc.)
+
+### References
+- [RFC 8252 - OAuth 2.0 for Native Apps](https://www.rfc-editor.org/rfc/rfc8252.html)
+- [RFC 7636 - Proof Key for Code Exchange (PKCE)](https://www.rfc-editor.org/rfc/rfc7636)
+- [AppAuth-iOS Repository](https://github.com/openid/AppAuth-iOS)
+
+---
+
+## D-010: OAuth2/OIDC Configuration for Piratenlogin
+
+**Date:** 2026-01-31
+**Status:** Accepted
+
+### Context
+Document the exact OAuth2/OIDC configuration used for Piratenlogin SSO authentication.
+
+### Configuration
+
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| **Issuer** | `https://sso.piratenpartei.de/realms/Piratenlogin` | Keycloak realm URL |
+| **Client ID** | `piraten-ios-app` | Public client (no secret) |
+| **Redirect URI** | `de.meine-piraten://oauth-callback` | Custom URL scheme |
+| **Scopes** | `openid profile offline_access` | Standard OIDC scopes |
+| **Grant Type** | Authorization Code + PKCE | RFC 8252 recommended |
+| **Token Endpoint Auth** | None (public client) | Native apps don't use client secrets |
+
+### OIDC Discovery
+
+Endpoints are NOT hardcoded. They are fetched dynamically from:
+```
+https://sso.piratenpartei.de/realms/Piratenlogin/.well-known/openid-configuration
+```
+
+The discovery document provides:
+- `authorization_endpoint` - For authorization code request
+- `token_endpoint` - For token exchange
+- `userinfo_endpoint` - For fetching user claims
+- `end_session_endpoint` - For RP-initiated logout (currently unused, see D-008)
+- `jwks_uri` - For token signature verification
+- `issuer` - For token validation
+
+### Scopes Explained
+
+| Scope | Purpose |
+|-------|---------|
+| `openid` | Required for OIDC; returns ID token with `sub` claim |
+| `profile` | Returns user profile claims (name, preferred_username, etc.) |
+| `offline_access` | Returns refresh token for session renewal |
+
+### Security Notes
+- **No client secret**: Native apps are public clients per RFC 8252; PKCE provides authorization code protection instead
+- **Private-use URI scheme**: `de.meine-piraten://` is registered in Info.plist; potential for scheme hijacking is mitigated by PKCE
+- **Tokens in Keychain only**: Never stored in UserDefaults or logged
+
+---
+
 ## Future Decisions
 
 Decisions pending external input:
-- SSO provider and flow (see OPEN_QUESTIONS.md)
-- Discourse authentication strategy
+- Discourse authentication strategy (see OPEN_QUESTIONS.md)
 - meine-piraten.de API integration approach

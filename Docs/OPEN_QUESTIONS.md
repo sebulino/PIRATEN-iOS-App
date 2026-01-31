@@ -37,21 +37,50 @@ Assuming OAuth2/OIDC. Auth UI is stubbed with a fake login toggle.
 **Status:** Open
 **Blocking:** Forum/Messages features
 **Asked:** 2026-01-30
+**Updated:** 2026-01-31
 
 **Question:**
 How does the app authenticate to Discourse?
-- Same SSO as member login?
-- Discourse SSO (DiscourseConnect)?
-- API key per user?
-- Separate OAuth app?
+- **Option A: Bearer token passthrough** - Use the same access token from Piratenlogin SSO directly with Discourse API
+- **Option B: DiscourseConnect (legacy SSO)** - Discourse's proprietary SSO protocol with HMAC signatures
+- **Option C: Separate OAuth2 app** - Discourse configured as its own OAuth2 provider
+- **Option D: User API key** - Per-user API keys generated via Discourse user settings
 
 **What we need:**
-- Auth flow documentation
-- Required credentials/tokens
+- Confirmation of which auth method Discourse is configured for
+- Whether Discourse trusts the same Keycloak issuer as the app
+- Required headers/tokens for API requests
 - API base URL
 
+**Technical Context:**
+The app now has working OAuth2/OIDC with Piratenlogin. Access tokens include:
+- `sub` claim (user identifier)
+- `profile` scope claims (name, preferred_username)
+
+If Discourse trusts the same Keycloak realm, Option A (bearer passthrough) would be simplest.
+
 **Current assumption:**
-Forum features are UI stubs only.
+Forum features are UI stubs only. AuthenticatedHTTPClient is ready to inject Bearer tokens once Discourse integration is confirmed.
+
+---
+
+### Q-009: Discourse API Session Handling
+
+**Status:** Open
+**Blocking:** Forum/Messages features
+**Asked:** 2026-01-31
+
+**Question:**
+How should the app maintain sessions with Discourse API?
+
+**What we need:**
+- Does Discourse require session cookies in addition to/instead of bearer tokens?
+- Are there CSRF token requirements for write operations?
+- Is there a rate limit specific to authenticated API users?
+- Does Discourse return a `current_user` endpoint for session validation?
+
+**Current assumption:**
+Standard REST API with Bearer token authentication assumed until confirmed.
 
 ---
 
@@ -126,23 +155,55 @@ OAuth2/OIDC with PKCE assumed per mobile best practices. Using `ASWebAuthenticat
 
 ### Q-008: Token Refresh Strategy
 
-**Status:** Open
+**Status:** Open → Partially Implemented
 **Blocking:** Session management
 **Asked:** 2026-01-30
+**Updated:** 2026-01-31
 
 **Question:**
 How should the app handle token refresh and session continuity?
 
-**What we need:**
-- Refresh token availability confirmation
-- Token refresh endpoint and method
-- Sliding session vs fixed expiration
-- Background refresh capability requirements
-- Offline access token scope availability
-- Grace period for expired tokens
+**What we implemented:**
+- ✅ Refresh token is obtained via `offline_access` scope
+- ✅ Token refresh uses AppAuth's OIDAuthorizationService.perform() with grant_type=refresh_token
+- ✅ Access token expiration is tracked and refresh triggered at 60-second threshold
+- ✅ Refresh failure transitions user to unauthenticated state
+
+**Still need confirmation:**
+- Access token lifetime (observed: appears to be short-lived, ~5 min?)
+- Refresh token lifetime and rotation policy
+- Whether Keycloak uses sliding window or fixed expiration for refresh tokens
+- Maximum session duration before re-authentication is required
 
 **Current assumption:**
-Refresh tokens assumed available. App will attempt silent refresh before session expiration. No offline access until confirmed.
+Token refresh is implemented and working. Exact token lifetimes are server-configured and not yet documented.
+
+---
+
+### Q-010: Token Lifetimes and Rotation Policies
+
+**Status:** Open
+**Blocking:** Documentation completeness
+**Asked:** 2026-01-31
+
+**Question:**
+What are the configured token lifetimes and rotation policies for Piratenlogin?
+
+**What we need (Keycloak realm settings):**
+- **Access token lifespan**: How long until access token expires?
+- **Refresh token lifespan**: Maximum lifetime of refresh tokens?
+- **Refresh token rotation**: Is a new refresh token issued on each refresh? (Keycloak default: yes)
+- **Client session idle**: How long can the session be idle before requiring re-auth?
+- **Client session max**: Maximum session length regardless of activity?
+- **Offline session idle/max**: If using offline tokens, what are the limits?
+
+**Why this matters:**
+- Affects how often the app needs to refresh tokens in background
+- Determines whether users need to re-authenticate after extended absence
+- Impacts battery usage if background refresh is needed
+
+**Current assumption:**
+Using Keycloak defaults. App handles rotation by preserving new refresh tokens when returned.
 
 ---
 
