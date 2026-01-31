@@ -23,10 +23,4 @@ protocol TokenRefresher: Sendable {
     ) async throws -> OIDCTokenBundle
 }
 
-/// Extension to add refresh-related error case
-extension AuthError {
-    /// Creates a refresh failed error with the given reason.
-    static func refreshFailed(_ reason: String) -> AuthError {
-        return .tokenError("Token-Aktualisierung fehlgeschlagen: \(reason)")
-    }
-}
+// Note: AuthError.refreshFailed case is defined in AuthState.swift

@@ -30,6 +30,7 @@ enum AuthError: Error, Equatable {
     case serverError(String)
     case discoveryFailed(String)
     case tokenError(String)
+    case refreshFailed(String)
     case cancelled
     case unknown(String)
 
@@ -45,6 +46,8 @@ enum AuthError: Error, Equatable {
             return "OIDC-Konfiguration konnte nicht geladen werden: \(message)"
         case .tokenError(let message):
             return "Token-Fehler: \(message)"
+        case .refreshFailed(let message):
+            return "Token-Aktualisierung fehlgeschlagen: \(message)"
         case .cancelled:
             return "Anmeldung abgebrochen"
         case .unknown(let message):
