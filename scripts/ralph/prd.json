@@ -1,100 +1,98 @@
 {
-  "project": "piraten-ios-m3a-auth-session",
-  "branchName": "ralph/m3a-auth-session",
-  "description": "Milestone 3a: Real OAuth2/OpenID Connect authentication & session management using AppAuth-iOS (Authorization Code + PKCE). Establish secure token storage, refresh, logout, and authenticated HTTP client plumbing. No Discourse API integration yet.",
+  "project": "piraten-ios-m3b-discourse-clients",
+  "branchName": "ralph/m3b-discourse-clients",
+  "description": "Milestone 3b: Authenticated Discourse API clients (Forum + Messages) using the session from Milestone 3a. Implement read-only forum browsing and basic private messages listing/reading. No posting. Robust error handling.",
   "userStories": [
     {
-      "id": "M3A-001",
-      "category": "auth-oidc",
-      "title": "Add AppAuth-iOS dependency and basic OIDC discovery wiring",
-      "description": "Integrate AppAuth-iOS via SPM and implement OIDC discovery against the issuer. Do not hardcode endpoints; use discovery.",
+      "id": "M3B-001",
+      "category": "discourse-api",
+      "title": "Implement DiscourseAPI client scaffolding (authenticated)",
+      "description": "Create a DiscourseAPI client using AuthenticatedHTTPClient with base URL https://diskussion.piratenpartei.de. No UI changes yet.",
       "acceptanceCriteria": [
-        "AppAuth-iOS is added via Swift Package Manager and builds",
-        "OIDC discovery loads configuration from issuer https://sso.piratenpartei.de/realms/Piratenlogin",
-        "No endpoints are hardcoded; authorization/token endpoints come from discovery",
-        "Discovery errors are surfaced as user-friendly auth errors",
-        "Context7 consulted for AppAuth-iOS integration and OIDC discovery usage; summary added to progress.txt"
+        "DiscourseAPI client exists with baseURL and request helpers",
+        "All requests use AuthenticatedHTTPClient and attach Authorization: Bearer <access_token> when authenticated (or chosen auth mechanism documented)",
+        "Networking is async/await and errors map to domain errors",
+        "Context7 consulted for Discourse API authentication patterns and endpoint conventions; summary added to progress.txt"
       ],
       "passes": true
     },
     {
-      "id": "M3A-002",
-      "category": "auth-ui",
-      "title": "Implement login flow with ASWebAuthenticationSession via AppAuth (PKCE)",
-      "description": "Replace fake login toggle with real login using AppAuth authorization code + PKCE and the custom redirect URI.",
+      "id": "M3B-002",
+      "category": "forum",
+      "title": "Fetch and display latest topics from /latest.json",
+      "description": "Replace FakeDiscourseRepository with RealDiscourseRepository that fetches latest topics via authenticated /latest.json and maps to domain models.",
       "acceptanceCriteria": [
-        "Login initiates AppAuth authorization request with code_challenge (PKCE) and scopes: openid profile offline_access",
-        "Redirect URI de.meine-piraten://oauth-callback is handled in-app (Info.plist configured)",
-        "On success, app transitions to authenticated state and displays the main tabs",
-        "On failure/cancel, app returns to unauthenticated state with a non-crashing error message",
-        "Context7 consulted for iOS URL scheme redirect handling + AppAuth best practices; summary added to progress.txt"
+        "RealDiscourseRepository implements DiscourseRepository and fetches /latest.json",
+        "Topic list maps API response into Domain Topic model (no leaking raw JSON models into UI)",
+        "Forum tab shows real latest topics with loading/empty/error states",
+        "Unauthenticated state shows a clear prompt to login",
+        "Context7 consulted for latest Discourse API response shape and mapping guidance; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
-      "id": "M3A-003",
-      "category": "tokens",
-      "title": "Persist tokens securely and restore session on app launch",
-      "description": "Store refresh/access/id tokens in Keychain via CredentialStore and restore authenticated session on relaunch if valid.",
+      "id": "M3B-003",
+      "category": "forum-detail",
+      "title": "Topic detail: fetch posts for a selected topic",
+      "description": "Implement topic detail screen that loads posts for a topic (read-only).",
       "acceptanceCriteria": [
-        "Tokens are stored using KeychainCredentialStore (no plaintext persistence)",
-        "On app launch, session restoration checks token presence and validity (expiration if available) and restores state",
-        "No token values are logged",
-        "Unit tests cover storing and retrieving token bundle (can use test keychain entries)",
-        "Context7 consulted for secure token storage patterns on iOS; summary added to progress.txt"
+        "Selecting a topic navigates to a detail view",
+        "Detail view fetches posts for that topic via Discourse API (endpoint documented in code comments and/or Docs/DECISIONS.md)",
+        "Posts map into Domain Post model and render with author + content excerpt",
+        "Error states do not crash; provide retry",
+        "Context7 consulted for Discourse topic detail endpoint and response fields; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
-      "id": "M3A-004",
-      "category": "refresh",
-      "title": "Implement token refresh and expiration handling",
-      "description": "Use AppAuth token refresh with refresh_token and handle expiry/refresh failures gracefully.",
+      "id": "M3B-004",
+      "category": "messages",
+      "title": "Messages: list private message topics (inbox)",
+      "description": "Implement repository methods and UI to list private messages (read-only).",
       "acceptanceCriteria": [
-        "A TokenRefresher component exists (or equivalent) that refreshes access tokens using AppAuth",
-        "Authenticated API calls (stubbed) can request a valid access token and trigger refresh if needed",
-        "If refresh fails (revoked/expired), user is transitioned to unauthenticated with a clear message",
-        "Context7 consulted for AppAuth token refresh patterns and error handling; summary added to progress.txt"
+        "Messages tab displays a list of PM threads (subject, last activity)",
+        "PM list is fetched via Discourse API using authenticated requests (endpoint documented)",
+        "Domain model for MessageThread exists or reuse Topic with a clear discriminator",
+        "Loading/empty/error states are implemented",
+        "Context7 consulted for Discourse private messages endpoints and required params; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
-      "id": "M3A-005",
-      "category": "http",
-      "title": "Create AuthenticatedHTTPClient boundary (no real endpoints yet)",
-      "description": "Introduce an HTTP client abstraction that can attach Bearer tokens and centralize error mapping for future API clients.",
+      "id": "M3B-005",
+      "category": "messages-detail",
+      "title": "Messages: read a private message thread",
+      "description": "Implement a message thread detail screen (read-only).",
       "acceptanceCriteria": [
-        "HTTPClient protocol exists with request building and response decoding helpers",
-        "AuthenticatedHTTPClient attaches Authorization: Bearer <access_token> when authenticated",
-        "401/403 responses map to a domain auth error and can trigger re-auth flow (no infinite loops)",
-        "No Discourse endpoints are implemented yet; include a small local stub request example if needed",
-        "Context7 consulted for URLSession modern patterns (async/await) and auth header best practices; summary added to progress.txt"
+        "Selecting a message thread navigates to detail",
+        "Detail fetches posts in the PM thread and renders them",
+        "Sensitive content is not logged; debug logs scrub identifiers",
+        "Context7 consulted for Discourse PM thread reading endpoint and safe handling guidance; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
-      "id": "M3A-006",
-      "category": "logout",
-      "title": "Implement logout and session cleanup",
-      "description": "Provide a robust logout that clears tokens and resets app state. (Optional: end-session endpoint if present via discovery.)",
+      "id": "M3B-006",
+      "category": "resilience",
+      "title": "Auth error handling across API clients",
+      "description": "Ensure 401/403 results consistently trigger re-auth flow without loops and present clear UI.",
       "acceptanceCriteria": [
-        "Logout clears token bundle from KeychainCredentialStore",
-        "Auth state resets to unauthenticated and UI returns to login screen",
-        "If discovery provides an end_session_endpoint, document decision to use or not use it in Docs/DECISIONS.md",
-        "Context7 consulted for OIDC logout/end-session guidance and AppAuth considerations; summary added to progress.txt"
+        "401/403 from Discourse calls triggers a single re-auth transition and stops further retries",
+        "UI shows a clear 'session expired, please log in again' message",
+        "No infinite refresh loops; backoff or single-attempt rule documented",
+        "Context7 consulted for recommended patterns around token refresh + API retry; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
-      "id": "M3A-007",
+      "id": "M3B-007",
       "category": "docs",
-      "title": "Document auth configuration and open questions",
-      "description": "Capture the exact auth config and any remaining unknowns for Discourse session propagation and messaging auth.",
+      "title": "Document Discourse integration decisions and remaining gaps",
+      "description": "Record endpoints used, auth mechanism chosen, and what is not yet implemented (posting, notifications, attachments).",
       "acceptanceCriteria": [
-        "Docs/DECISIONS.md includes: issuer, clientID, redirectUri, scopes, and why AppAuth-iOS was chosen",
-        "Docs/OPEN_QUESTIONS.md includes: how Discourse accepts auth (bearer vs cookie vs separate SSO), required scopes/claims, token lifetimes/rotation policies",
-        "No secrets are committed; only public client configuration is documented",
-        "Context7 consulted for OIDC discovery fields and recommended native app flow (RFC 8252); summary added to progress.txt"
+        "Docs/DECISIONS.md lists Discourse base URL, endpoints used, and auth mechanism",
+        "Docs/OPEN_QUESTIONS.md updated with: sending messages/posting, rate limiting, pagination strategy, search strategy",
+        "Context7 consulted for any version-specific Discourse API notes relevant to endpoints used; summary added to progress.txt"
       ],
       "passes": false
     }

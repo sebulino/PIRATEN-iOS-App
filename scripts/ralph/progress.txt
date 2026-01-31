@@ -1,250 +1,38 @@
 # Ralph Progress Log
-Started: Sa. 31 Jan. 2026 11:15:30 CET
+Started: Sa. 31 Jan. 2026 17:35:42 CET
+---
 
 ## Codebase Patterns
 
-### OIDC Discovery Pattern
-- Use `OIDAuthorizationService.discoverConfiguration(forIssuer:)` for OIDC discovery
-- Wrap callback-based AppAuth API in `withCheckedThrowingContinuation` for async/await
-- Access additional endpoints via `configuration.discoveryDocument` (userinfo, jwks)
-- Map AppAuth types to domain models to avoid leaking framework types
-
-### AppAuth Authorization Flow Pattern
-- Use `OIDAuthState.authState(byPresenting:presenting:)` for authorization code flow
-- AppAuth handles PKCE automatically (code_challenge/code_verifier generation)
-- Store `OIDExternalUserAgentSession` reference during auth flow for redirect handling
-- Handle redirect URL via `.onOpenURL` in SwiftUI with `resumeExternalUserAgentFlow(with:)`
-- Map OIDErrorCode.userCanceledAuthorizationFlow to domain AuthError.cancelled
-
-### iOS Keychain Token Storage Pattern
-- Use `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` for device-locked, non-synced token storage
-- Delete existing item before SecItemAdd to handle overwrites (errSecDuplicateItem)
-- Store token expiration as Unix timestamp string for easy parsing
-- Check expiration with 60-second grace period before considering token invalid
-- Fall back to refresh token presence if access token is about to expire
-
-### AppAuth Token Refresh Pattern
-- Use `OIDAuthorizationService.perform()` with an `OIDTokenRequest` for manual token refresh
-- Build token request with grantType `OIDGrantTypeRefreshToken` and the stored refresh token
-- Handle OAuth token errors (OIDOAuthTokenErrorDomain) as session expiration requiring re-auth
-- Refresh tokens may or may not be rotated by server - preserve new refresh token if returned
-- Provide `getValidAccessToken()` method that auto-refreshes when token expires within 60s
-
-### Authenticated HTTP Client Pattern
-- Use protocol abstraction (`HTTPClient`) to decouple from URLSession implementation
-- Wrap base client with `AuthenticatedHTTPClient` for Bearer token injection
-- `TokenProvider` protocol allows flexible token retrieval (from AuthStateManager, mock, etc.)
-- Map HTTP status codes to domain errors: 401→unauthorized, 403→forbidden, 404→notFound
-- Use `onAuthError` callback for 401/403 to trigger re-auth without infinite loops
-- Check `response.isAuthenticationError` property for quick auth failure detection
-- Use `StubHTTPClient` for testing with configurable URL→response mappings
-
-### OIDC Logout Pattern
-- Prefer local-only logout (token deletion) for mobile apps over RP-Initiated logout
-- Clear all token types from Keychain: access_token, refresh_token, id_token, expiration
-- Use `try?` for token deletion to avoid errors on missing items
-- Reset auth state to `.unauthenticated` after token cleanup
-- Document end_session_endpoint decision in DECISIONS.md (use vs not use)
-
-### Documentation Pattern
-- Use Docs/DECISIONS.md to record architectural decisions with date, status, context, decision, and rationale
-- Use Docs/OPEN_QUESTIONS.md to track blocking questions with status, blocking milestone, and what's needed
-- Mark questions as "Partially Implemented" when work has proceeded with assumptions
-- Reference RFC numbers and official specs in decisions for credibility
-- Include configuration tables for quick reference of auth parameters
+### Discourse API Client Architecture
+- Use `DiscourseAPIClient` for all Discourse API calls (not the repository directly)
+- API client returns raw `Data` for decoding flexibility; repository maps to domain models
+- Error handling: `DiscourseError` provides German localized messages for UI display
+- Auth: Bearer token injected via `AuthenticatedHTTPClient`; no explicit token handling in API client
 
 ---
 
-## [2026-01-31 18:00] - M3A-007
+## [2026-01-31 22:15] - M3B-001
 - What was implemented:
-  - Documented auth configuration in Docs/DECISIONS.md (D-009, D-010):
-    - Issuer: https://sso.piratenpartei.de/realms/Piratenlogin
-    - Client ID: piraten-ios-app (public client)
-    - Redirect URI: de.meine-piraten://oauth-callback
-    - Scopes: openid profile offline_access
-  - Added D-009: AppAuth-iOS decision with RFC 8252 rationale
-  - Added D-010: Full OAuth2/OIDC configuration table
-  - Updated Docs/OPEN_QUESTIONS.md with:
-    - Q-009: Discourse API session handling questions
-    - Q-010: Token lifetimes and rotation policies
-    - Updated Q-002 and Q-008 with current status
-  - No secrets committed; only public client configuration documented
+  - Created `DiscourseAPIClient.swift` with authenticated HTTP client integration
+  - Created `DiscourseError.swift` for domain-level Discourse errors
+  - API client uses `AuthenticatedHTTPClient` which injects `Authorization: Bearer <token>` header
+  - Implemented request helpers for: `/latest.json`, `/t/{id}.json`, `/topics/private-messages/{username}.json`
+  - Error mapping from HTTP status codes to user-friendly German error messages
 - Files changed:
-  - Docs/DECISIONS.md (added D-009, D-010)
-  - Docs/OPEN_QUESTIONS.md (added Q-009, Q-010; updated Q-002, Q-008)
-- **Context7 Summary (OIDC Discovery Fields + RFC 8252):**
-  - RFC 8252 mandates PKCE for all native app OAuth2 flows (code interception attack mitigation)
-  - Native apps are public clients - no client secret, PKCE provides protection instead
-  - External user-agent (ASWebAuthenticationSession) required, not embedded webviews
-  - Implicit flow NOT recommended for native apps (cannot use PKCE, no refresh tokens)
-  - OIDC discovery (/.well-known/openid-configuration) provides all endpoints dynamically:
-    - authorization_endpoint, token_endpoint, userinfo_endpoint
-    - end_session_endpoint, jwks_uri, issuer
-    - scopes_supported, claims_supported, grant_types_supported
-  - Discovery response must validate issuer matches request URL (prevents impersonation)
-  - OpenID Foundation AppAuth is the reference implementation for RFC 8252
+  - PIRATEN/Core/Data/Discourse/DiscourseAPIClient.swift (new)
+  - PIRATEN/Core/Data/Discourse/DiscourseError.swift (new)
+  - scripts/ralph/prd.json (marked M3B-001 passes: true)
+- **Context7 / Web Research Summary:**
+  - Discourse API supports authentication via HTTP headers (not just URL params)
+  - Standard API keys use `Api-Key` + `Api-Username` headers
+  - User API keys use `User-Api-Key` header
+  - OAuth2 bearer tokens use `Authorization: Bearer <token>` header
+  - Rate limits for authenticated users: 20 requests/minute, 2,880 requests/day
+  - Source: https://meta.discourse.org/t/api-can-i-authenticate-without-putting-the-key-in-the-url/29425
+  - Source: https://meta.discourse.org/t/user-api-keys-specification/48536
 - **Learnings for future iterations:**
-  - Always reference RFC 8252 when explaining why PKCE and external browser are used
-  - Document exact auth config values in DECISIONS.md for onboarding
-  - Keep OPEN_QUESTIONS.md updated with partial implementation status
-  - Discourse auth strategy remains open - multiple options possible depending on server config
-  - Token lifetimes are server-configured (Keycloak) - document what's needed, not assumptions
----
-
-## [2026-01-31 17:15] - M3A-006
-- What was implemented:
-  - Verified existing logout implementation clears all tokens from KeychainCredentialStore
-  - Verified AuthStateManager.logout() resets state to .unauthenticated and UI returns to login
-  - Documented decision to NOT use end_session_endpoint in Docs/DECISIONS.md (D-008)
-  - Rationale: Local logout is simpler, works offline, and no SSO coordination needed
-- Files changed:
-  - Docs/DECISIONS.md (added D-008: Local-Only Logout decision)
-- **Context7 Summary (OIDC Logout / end_session_endpoint):**
-  - OIDC RP-Initiated Logout 1.0 defines end_session_endpoint for server-side logout
-  - Requires id_token_hint parameter for the OP to validate the request
-  - post_logout_redirect_uri can use native app schemes (de.meine-piraten://)
-  - Front-channel logout is fragile (browser-dependent), back-channel is more reliable
-  - Best practice: Decommission local security context first, then optionally call end_session
-  - For mobile apps without SSO coordination, local token deletion is often sufficient
-- **Learnings for future iterations:**
-  - The endSessionEndpoint is discovered and available in OIDCConfiguration if needed later
-  - Token revocation (RFC 7009) is preferable to end_session for immediate invalidation
-  - Local logout works offline; server logout requires connectivity
-  - Consider end_session if other Piratenpartei apps share the SSO in the future
----
-
-## [2026-01-31 16:30] - M3A-005
-- What was implemented:
-  - Verified existing HTTPClient protocol with request building and response decoding helpers
-  - Verified AuthenticatedHTTPClient attaches Authorization: Bearer header when authenticated
-  - Verified 401/403 responses map to domain auth errors and can trigger re-auth flow
-  - Added comprehensive unit tests for HTTP client infrastructure (30+ test cases)
-  - StubHTTPClient provides local stub request examples for testing
-- Files changed:
-  - PIRATENTests/HTTPClientTests.swift (new file - comprehensive HTTP client tests)
-- **Context7 Summary (URLSession async/await + Bearer Token Best Practices):**
-  - Use `URLSession.shared.data(from:)` with async/await for clean network code
-  - Set "Authorization" header manually for Bearer tokens (Apple's reserved header workaround)
-  - Use Swift actors for thread-safe token management when multiple requests need tokens
-  - Implement retry logic with single retry limit for 401 errors to avoid infinite loops
-  - Check token validity before requests when possible (proactive refresh)
-  - Handle URLError.cancelled separately from network errors
-  - Use generics for reusable authorized request methods with JSON decoding
-  - Test with stub clients that capture requests for header verification
-- **Learnings for future iterations:**
-  - Protocol-based HTTPClient allows easy swapping between URLSession and stub implementations
-  - AuthenticatedHTTPClient wrapper pattern keeps token injection separate from base networking
-  - TokenProvider protocol decouples HTTP client from specific auth implementations
-  - onAuthError callback enables 401/403 handling without circular dependencies
-  - StubHTTPClient with configurable URL→response mapping simplifies testing
-  - RequestCapturingStubClient pattern useful for verifying headers in tests
----
-
-## [2026-01-31 15:45] - M3A-004
-- What was implemented:
-  - Created TokenRefresher protocol in domain layer for token refresh abstraction
-  - Implemented AppAuthTokenRefresher using AppAuth's OIDAuthorizationService.perform()
-  - Added getValidAccessToken() to AuthRepository for auto-refresh on demand
-  - Integrated TokenRefresher into OIDCAuthRepository with automatic refresh when token expires
-  - Added refresh failure handling in AuthStateManager - transitions to unauthenticated with error
-  - Added handleAuthenticationError() to AuthStateManager for 401/403 API responses
-- Files changed:
-  - PIRATEN/Core/Domain/Auth/TokenRefresher.swift (new file - protocol)
-  - PIRATEN/Core/Data/OIDC/AppAuthTokenRefresher.swift (new file - AppAuth implementation)
-  - PIRATEN/Core/Domain/Auth/AuthRepository.swift (added getValidAccessToken method)
-  - PIRATEN/Core/Data/Auth/OIDCAuthRepository.swift (integrated token refresh logic)
-  - PIRATEN/Core/Data/Auth/FakeAuthRepository.swift (added getValidAccessToken stub)
-  - PIRATEN/Core/Domain/Auth/AuthStateManager.swift (added refresh failure handling)
-  - PIRATEN/Core/Support/AppContainer.swift (wired TokenRefresher dependency)
-- **Context7 Summary (AppAuth Token Refresh):**
-  - Use OIDAuthState.performAction() for automatic refresh (requires storing full OIDAuthState)
-  - For manual refresh: use OIDAuthorizationService.perform() with OIDTokenRequest
-  - Build OIDTokenRequest with grantType OIDGrantTypeRefreshToken, refreshToken parameter
-  - OAuth token errors (invalid_grant) indicate revoked/expired refresh token
-  - Token response may include new refresh token (rotation) - preserve if present
-  - No need for scope parameter on refresh - uses scopes from original authorization
-- **Learnings for future iterations:**
-  - AppAuth returns OIDOAuthTokenErrorDomain errors for OAuth-level failures (invalid_grant, etc.)
-  - OIDGeneralErrorDomain is for network/transport errors
-  - Token expiration check with 60-second grace period prevents race conditions
-  - getValidAccessToken() pattern allows API clients to always get fresh token without refresh logic
----
-
-## [2026-01-31 11:35] - M3A-003
-- What was implemented:
-  - Added session restoration on app launch via `.task` modifier in RootView
-  - `checkExistingSession()` now called when app starts to restore authenticated state
-  - Verified no token values are logged anywhere in codebase (grep confirmed)
-  - Added comprehensive unit tests for token bundle storage and retrieval
-- Files changed:
-  - PIRATEN/App/RootView.swift (added .task for session restoration)
-  - PIRATENTests/KeychainServiceTests.swift (added TokenBundleStorageTests suite)
-- **Context7 Summary (iOS Keychain Secure Token Storage):**
-  - KeychainAccess library recommends `.accessibility(.afterFirstUnlock)` for background apps
-  - Use `.whenUnlockedThisDeviceOnly` for device-only tokens that shouldn't sync
-  - Biometric protection available via `authenticationPolicy: [.biometryAny]` if needed
-  - Always run keychain operations that may trigger auth UI on background thread
-  - Store OAuth tokens with service name (bundle identifier) for namespacing
-  - AppAuth OIDAuthState supports NSSecureCoding for full state serialization
-- **Learnings for future iterations:**
-  - Session restoration must be called early in app lifecycle (use .task not onAppear)
-  - Token expiration should be checked with grace period (60s) to avoid race conditions
-  - Existing KeychainCredentialStore already implements kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-  - InMemoryCredentialStore is useful for SwiftUI previews and unit tests
----
-
-## [2026-01-31 14:28] - M3A-002
-- What was implemented:
-  - Created OIDCAuthService protocol and AppAuthOIDCAuthService implementation
-  - Created OIDCAuthRepository coordinating discovery, authorization, and token storage
-  - Configured Info.plist with URL scheme de.meine-piraten for OAuth redirect
-  - Updated AppContainer to wire up real OIDC auth with discovery service
-  - Added .onOpenURL handler in PIRATENApp to resume authorization flow
-  - Updated LoginView to show "Mit Piratenlogin anmelden" and display auth errors
-- Files changed:
-  - PIRATEN/Info.plist (new file - URL scheme config)
-  - PIRATEN/Core/Domain/Auth/OIDCAuthService.swift (new file - protocol + token bundle)
-  - PIRATEN/Core/Data/OIDC/AppAuthOIDCAuthService.swift (new file - AppAuth implementation)
-  - PIRATEN/Core/Data/Auth/OIDCAuthRepository.swift (new file - auth repository)
-  - PIRATEN/Core/Support/AppContainer.swift (wiring for real OIDC auth)
-  - PIRATEN/App/PIRATENApp.swift (onOpenURL for redirect)
-  - PIRATEN/App/Views/Auth/LoginView.swift (updated button text, error display)
-  - PIRATEN.xcodeproj/project.pbxproj (Info.plist file exclusion)
-- **Context7 Summary (AppAuth-iOS Authorization Flow + iOS URL Scheme):**
-  - Use OIDAuthorizationRequest with clientId, scopes, redirectURL, responseType OIDResponseTypeCode
-  - OIDAuthState.authState(byPresenting:presenting:) handles full auth code flow + token exchange
-  - PKCE (code_challenge) is generated automatically by AppAuth
-  - Register URL scheme in Info.plist via CFBundleURLTypes/CFBundleURLSchemes
-  - Handle redirect in app via application(_:open:options:) or SwiftUI .onOpenURL
-  - Call resumeExternalUserAgentFlow(with:) on the stored OIDExternalUserAgentSession
-- **Learnings for future iterations:**
-  - PBXFileSystemSynchronizedRootGroup requires membershipExceptions to exclude Info.plist from copy
-  - GENERATE_INFOPLIST_FILE=YES + INFOPLIST_FILE works together (merge behavior)
-  - AppAuth uses ASWebAuthenticationSession automatically on iOS 12+
-  - User cancellation returns OIDErrorCode.userCanceledAuthorizationFlow
----
-
-## [2026-01-31 13:30] - M3A-001
-- What was implemented:
-  - Added AppAuth-iOS 1.7.6 as SPM dependency
-  - Created OIDCConfiguration domain model (issuer, endpoints)
-  - Created OIDCDiscoveryService protocol in domain layer
-  - Implemented AppAuthOIDCDiscoveryService using AppAuth's discovery
-  - Added discoveryFailed, tokenError, cancelled error cases to AuthError
-- Files changed:
-  - PIRATEN.xcodeproj/project.pbxproj (SPM package reference)
-  - PIRATEN/Core/Domain/Auth/AuthState.swift (new error cases)
-  - PIRATEN/Core/Domain/Auth/OIDCConfiguration.swift (new file)
-  - PIRATEN/Core/Data/OIDC/AppAuthOIDCDiscoveryService.swift (new file)
-- **Context7 Summary (AppAuth-iOS):**
-  - AppAuth-iOS supports SPM via `https://github.com/openid/AppAuth-iOS.git` (1.3.0+)
-  - Use `OIDAuthorizationService.discoverConfiguration(forIssuer:)` for async discovery
-  - OIDServiceConfiguration holds authorizationEndpoint, tokenEndpoint, issuer
-  - Additional metadata accessible via discoveryDocument property
-  - No hardcoded endpoints needed - discovery fetches from /.well-known/openid-configuration
-  - PKCE is automatically supported when using authorization code flow
-- **Learnings for future iterations:**
-  - OIDServiceConfiguration does not directly expose userinfoEndpoint/jwksURL - use discoveryDocument
-  - The issuer URL for Keycloak includes the realm: https://sso.piratenpartei.de/realms/Piratenlogin
-  - AppAuth callback-based APIs require explicit continuation handling for Swift concurrency
+  - The project uses `PBXFileSystemSynchronizedRootGroup` - new files are auto-added to build
+  - Discourse PMs are topics with `archetype='private_message'` - same endpoint works
+  - Discourse error responses have shape: `{ "errors": [...], "error_type": "..." }`
 ---
