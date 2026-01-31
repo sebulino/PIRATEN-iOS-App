@@ -28,6 +28,9 @@ enum AuthError: Error, Equatable {
     case invalidCredentials
     case networkError(String)
     case serverError(String)
+    case discoveryFailed(String)
+    case tokenError(String)
+    case cancelled
     case unknown(String)
 
     var localizedDescription: String {
@@ -38,6 +41,12 @@ enum AuthError: Error, Equatable {
             return "Netzwerkfehler: \(message)"
         case .serverError(let message):
             return "Serverfehler: \(message)"
+        case .discoveryFailed(let message):
+            return "OIDC-Konfiguration konnte nicht geladen werden: \(message)"
+        case .tokenError(let message):
+            return "Token-Fehler: \(message)"
+        case .cancelled:
+            return "Anmeldung abgebrochen"
         case .unknown(let message):
             return "Unbekannter Fehler: \(message)"
         }
