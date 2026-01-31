@@ -28,6 +28,11 @@ struct RootView: View {
                 ErrorView(error: error, authStateManager: authStateManager)
             }
         }
+        .task {
+            // Check for existing valid session on app launch
+            // This restores authentication state if tokens are present in Keychain
+            authStateManager.checkExistingSession()
+        }
     }
 }
 

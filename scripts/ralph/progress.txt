@@ -9,6 +9,74 @@ Started: Sa. 31 Jan. 2026 11:15:30 CET
 - Access additional endpoints via `configuration.discoveryDocument` (userinfo, jwks)
 - Map AppAuth types to domain models to avoid leaking framework types
 
+### AppAuth Authorization Flow Pattern
+- Use `OIDAuthState.authState(byPresenting:presenting:)` for authorization code flow
+- AppAuth handles PKCE automatically (code_challenge/code_verifier generation)
+- Store `OIDExternalUserAgentSession` reference during auth flow for redirect handling
+- Handle redirect URL via `.onOpenURL` in SwiftUI with `resumeExternalUserAgentFlow(with:)`
+- Map OIDErrorCode.userCanceledAuthorizationFlow to domain AuthError.cancelled
+
+### iOS Keychain Token Storage Pattern
+- Use `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` for device-locked, non-synced token storage
+- Delete existing item before SecItemAdd to handle overwrites (errSecDuplicateItem)
+- Store token expiration as Unix timestamp string for easy parsing
+- Check expiration with 60-second grace period before considering token invalid
+- Fall back to refresh token presence if access token is about to expire
+
+---
+
+## [2026-01-31 11:35] - M3A-003
+- What was implemented:
+  - Added session restoration on app launch via `.task` modifier in RootView
+  - `checkExistingSession()` now called when app starts to restore authenticated state
+  - Verified no token values are logged anywhere in codebase (grep confirmed)
+  - Added comprehensive unit tests for token bundle storage and retrieval
+- Files changed:
+  - PIRATEN/App/RootView.swift (added .task for session restoration)
+  - PIRATENTests/KeychainServiceTests.swift (added TokenBundleStorageTests suite)
+- **Context7 Summary (iOS Keychain Secure Token Storage):**
+  - KeychainAccess library recommends `.accessibility(.afterFirstUnlock)` for background apps
+  - Use `.whenUnlockedThisDeviceOnly` for device-only tokens that shouldn't sync
+  - Biometric protection available via `authenticationPolicy: [.biometryAny]` if needed
+  - Always run keychain operations that may trigger auth UI on background thread
+  - Store OAuth tokens with service name (bundle identifier) for namespacing
+  - AppAuth OIDAuthState supports NSSecureCoding for full state serialization
+- **Learnings for future iterations:**
+  - Session restoration must be called early in app lifecycle (use .task not onAppear)
+  - Token expiration should be checked with grace period (60s) to avoid race conditions
+  - Existing KeychainCredentialStore already implements kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+  - InMemoryCredentialStore is useful for SwiftUI previews and unit tests
+---
+
+## [2026-01-31 14:28] - M3A-002
+- What was implemented:
+  - Created OIDCAuthService protocol and AppAuthOIDCAuthService implementation
+  - Created OIDCAuthRepository coordinating discovery, authorization, and token storage
+  - Configured Info.plist with URL scheme de.meine-piraten for OAuth redirect
+  - Updated AppContainer to wire up real OIDC auth with discovery service
+  - Added .onOpenURL handler in PIRATENApp to resume authorization flow
+  - Updated LoginView to show "Mit Piratenlogin anmelden" and display auth errors
+- Files changed:
+  - PIRATEN/Info.plist (new file - URL scheme config)
+  - PIRATEN/Core/Domain/Auth/OIDCAuthService.swift (new file - protocol + token bundle)
+  - PIRATEN/Core/Data/OIDC/AppAuthOIDCAuthService.swift (new file - AppAuth implementation)
+  - PIRATEN/Core/Data/Auth/OIDCAuthRepository.swift (new file - auth repository)
+  - PIRATEN/Core/Support/AppContainer.swift (wiring for real OIDC auth)
+  - PIRATEN/App/PIRATENApp.swift (onOpenURL for redirect)
+  - PIRATEN/App/Views/Auth/LoginView.swift (updated button text, error display)
+  - PIRATEN.xcodeproj/project.pbxproj (Info.plist file exclusion)
+- **Context7 Summary (AppAuth-iOS Authorization Flow + iOS URL Scheme):**
+  - Use OIDAuthorizationRequest with clientId, scopes, redirectURL, responseType OIDResponseTypeCode
+  - OIDAuthState.authState(byPresenting:presenting:) handles full auth code flow + token exchange
+  - PKCE (code_challenge) is generated automatically by AppAuth
+  - Register URL scheme in Info.plist via CFBundleURLTypes/CFBundleURLSchemes
+  - Handle redirect in app via application(_:open:options:) or SwiftUI .onOpenURL
+  - Call resumeExternalUserAgentFlow(with:) on the stored OIDExternalUserAgentSession
+- **Learnings for future iterations:**
+  - PBXFileSystemSynchronizedRootGroup requires membershipExceptions to exclude Info.plist from copy
+  - GENERATE_INFOPLIST_FILE=YES + INFOPLIST_FILE works together (merge behavior)
+  - AppAuth uses ASWebAuthenticationSession automatically on iOS 12+
+  - User cancellation returns OIDErrorCode.userCanceledAuthorizationFlow
 ---
 
 ## [2026-01-31 13:30] - M3A-001

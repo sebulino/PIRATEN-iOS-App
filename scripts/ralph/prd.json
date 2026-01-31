@@ -1,76 +1,102 @@
 {
-  "project": "piraten-ios-m2b-integrations-stubs",
-  "branchName": "ralph/m2b-integrations-stubs",
-  "description": "Milestone 2b: Discourse and Todos boundaries with fake repositories, believable stub UI, and docs hardening. No real network calls. Enforce Context7 usage for API/library correctness.",
+  "project": "piraten-ios-m3a-auth-session",
+  "branchName": "ralph/m3a-auth-session",
+  "description": "Milestone 3a: Real OAuth2/OpenID Connect authentication & session management using AppAuth-iOS (Authorization Code + PKCE). Establish secure token storage, refresh, logout, and authenticated HTTP client plumbing. No Discourse API integration yet.",
   "userStories": [
     {
-      "id": "M2B-001",
-      "category": "discourse-domain",
-      "title": "Discourse domain models",
-      "description": "Define domain models for forum content without calling Discourse APIs.",
+      "id": "M3A-001",
+      "category": "auth-oidc",
+      "title": "Add AppAuth-iOS dependency and basic OIDC discovery wiring",
+      "description": "Integrate AppAuth-iOS via SPM and implement OIDC discovery against the issuer. Do not hardcode endpoints; use discovery.",
       "acceptanceCriteria": [
-        "Domain models exist for Topic, Post, and UserSummary",
-        "Models are independent of API JSON shape",
-        "No networking code added",
-        "Models live in Domain/Discourse",
-        "Context7 consulted for Discourse API concepts and typical entities; summary added to progress.txt"
+        "AppAuth-iOS is added via Swift Package Manager and builds",
+        "OIDC discovery loads configuration from issuer https://sso.piratenpartei.de/realms/Piratenlogin",
+        "No endpoints are hardcoded; authorization/token endpoints come from discovery",
+        "Discovery errors are surfaced as user-friendly auth errors",
+        "Context7 consulted for AppAuth-iOS integration and OIDC discovery usage; summary added to progress.txt"
       ],
       "passes": true
     },
     {
-      "id": "M2B-002",
-      "category": "discourse-repository",
-      "title": "Discourse repository protocol and fake implementation",
-      "description": "Provide a repository abstraction for forum data with a fake implementation and wire it into the Forum tab ViewModel.",
+      "id": "M3A-002",
+      "category": "auth-ui",
+      "title": "Implement login flow with ASWebAuthenticationSession via AppAuth (PKCE)",
+      "description": "Replace fake login toggle with real login using AppAuth authorization code + PKCE and the custom redirect URI.",
       "acceptanceCriteria": [
-        "DiscourseRepository protocol exists",
-        "FakeDiscourseRepository returns static in-memory data",
-        "Forum tab displays fake topics via a ViewModel (no hard-coded UI placeholders)",
-        "No HTTP or WebSocket calls are made",
-        "Context7 consulted for Swift concurrency patterns (async/await) in repository APIs; summary added to progress.txt"
+        "Login initiates AppAuth authorization request with code_challenge (PKCE) and scopes: openid profile offline_access",
+        "Redirect URI de.meine-piraten://oauth-callback is handled in-app (Info.plist configured)",
+        "On success, app transitions to authenticated state and displays the main tabs",
+        "On failure/cancel, app returns to unauthenticated state with a non-crashing error message",
+        "Context7 consulted for iOS URL scheme redirect handling + AppAuth best practices; summary added to progress.txt"
       ],
       "passes": true
     },
     {
-      "id": "M2B-003",
-      "category": "todos-domain",
-      "title": "Todos domain and repository stub",
-      "description": "Create a clean boundary for meine-piraten.de tasks using a fake repository.",
+      "id": "M3A-003",
+      "category": "tokens",
+      "title": "Persist tokens securely and restore session on app launch",
+      "description": "Store refresh/access/id tokens in Keychain via CredentialStore and restore authenticated session on relaunch if valid.",
       "acceptanceCriteria": [
-        "Todo domain entity exists",
-        "TodoRepository protocol exists",
-        "FakeTodoRepository returns sample todos",
-        "Todos tab displays fake tasks via a ViewModel",
-        "Context7 consulted for best practices in modeling task lists in SwiftUI (identifiable, list rendering); summary added to progress.txt"
+        "Tokens are stored using KeychainCredentialStore (no plaintext persistence)",
+        "On app launch, session restoration checks token presence and validity (expiration if available) and restores state",
+        "No token values are logged",
+        "Unit tests cover storing and retrieving token bundle (can use test keychain entries)",
+        "Context7 consulted for secure token storage patterns on iOS; summary added to progress.txt"
       ],
       "passes": true
     },
     {
-      "id": "M2B-004",
-      "category": "ui",
-      "title": "Believable stub data across Forum, Todos, Profile",
-      "description": "Replace empty placeholders with believable stub content so the app looks usable while integrations are pending.",
+      "id": "M3A-004",
+      "category": "refresh",
+      "title": "Implement token refresh and expiration handling",
+      "description": "Use AppAuth token refresh with refresh_token and handle expiry/refresh failures gracefully.",
       "acceptanceCriteria": [
-        "Forum tab shows topic titles and authors",
-        "Todos tab shows task title and owning group",
-        "Profile tab shows stub user information (from AuthRepository / domain model)",
-        "Placeholder nature is clear in code comments",
-        "Context7 consulted for current SwiftUI List and NavigationStack patterns; summary added to progress.txt"
+        "A TokenRefresher component exists (or equivalent) that refreshes access tokens using AppAuth",
+        "Authenticated API calls (stubbed) can request a valid access token and trigger refresh if needed",
+        "If refresh fails (revoked/expired), user is transitioned to unauthenticated with a clear message",
+        "Context7 consulted for AppAuth token refresh patterns and error handling; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
-      "id": "M2B-005",
-      "category": "docs-security",
-      "title": "Documentation: open questions and threat model update for integrations",
-      "description": "Document unknowns and security considerations before real integrations.",
+      "id": "M3A-005",
+      "category": "http",
+      "title": "Create AuthenticatedHTTPClient boundary (no real endpoints yet)",
+      "description": "Introduce an HTTP client abstraction that can attach Bearer tokens and centralize error mapping for future API clients.",
       "acceptanceCriteria": [
-        "Docs/OPEN_QUESTIONS.md updated with: Piratenlogin protocol details, Discourse auth strategy, Todos API schema, rate limiting/permissions",
-        "Docs/THREAT_MODEL.md updated for tokens, local storage, member data exposure and trust boundaries",
-        "No secrets or endpoints are introduced",
-        "Context7 consulted for current mobile auth security guidance (token storage, session handling); summary added to progress.txt"
+        "HTTPClient protocol exists with request building and response decoding helpers",
+        "AuthenticatedHTTPClient attaches Authorization: Bearer <access_token> when authenticated",
+        "401/403 responses map to a domain auth error and can trigger re-auth flow (no infinite loops)",
+        "No Discourse endpoints are implemented yet; include a small local stub request example if needed",
+        "Context7 consulted for URLSession modern patterns (async/await) and auth header best practices; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
+    },
+    {
+      "id": "M3A-006",
+      "category": "logout",
+      "title": "Implement logout and session cleanup",
+      "description": "Provide a robust logout that clears tokens and resets app state. (Optional: end-session endpoint if present via discovery.)",
+      "acceptanceCriteria": [
+        "Logout clears token bundle from KeychainCredentialStore",
+        "Auth state resets to unauthenticated and UI returns to login screen",
+        "If discovery provides an end_session_endpoint, document decision to use or not use it in Docs/DECISIONS.md",
+        "Context7 consulted for OIDC logout/end-session guidance and AppAuth considerations; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M3A-007",
+      "category": "docs",
+      "title": "Document auth configuration and open questions",
+      "description": "Capture the exact auth config and any remaining unknowns for Discourse session propagation and messaging auth.",
+      "acceptanceCriteria": [
+        "Docs/DECISIONS.md includes: issuer, clientID, redirectUri, scopes, and why AppAuth-iOS was chosen",
+        "Docs/OPEN_QUESTIONS.md includes: how Discourse accepts auth (bearer vs cookie vs separate SSO), required scopes/claims, token lifetimes/rotation policies",
+        "No secrets are committed; only public client configuration is documented",
+        "Context7 consulted for OIDC discovery fields and recommended native app flow (RFC 8252); summary added to progress.txt"
+      ],
+      "passes": false
     }
   ]
 }
