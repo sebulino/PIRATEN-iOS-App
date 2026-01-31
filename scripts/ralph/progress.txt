@@ -88,3 +88,50 @@ Started: Fr. 30 Jan. 2026 21:15:46 CET
   - Group name (`groupName`) represents organizational unit for task ownership
   - Fake data uses German text and realistic Piratenpartei working group names
 ---
+
+## [2026-01-30 22:15] - M2B-004
+- **What was implemented:** Believable stub data across Forum, Todos, Profile tabs
+- **Files changed:**
+  - Created: `PIRATEN/Core/Domain/Auth/User.swift` - User domain model
+  - Created: `PIRATEN/App/ViewModels/ProfileViewModel.swift` - Profile tab ViewModel
+  - Modified: `PIRATEN/Core/Domain/Auth/AuthRepository.swift` - Added getCurrentUser() method
+  - Modified: `PIRATEN/Core/Data/Auth/FakeAuthRepository.swift` - Added stub user data
+  - Modified: `PIRATEN/App/Views/Main/ProfileView.swift` - Full profile UI with ViewModel
+  - Modified: `PIRATEN/App/Views/Main/MainTabView.swift` - Accepts ProfileViewModel
+  - Modified: `PIRATEN/App/RootView.swift` - Passes ProfileViewModel
+  - Modified: `PIRATEN/App/PIRATENApp.swift` - Injects ProfileViewModel from container
+  - Modified: `PIRATEN/Core/Support/AppContainer.swift` - Added profileViewModel
+- **Context7 SwiftUI List and NavigationStack Learnings:**
+  - `List` with `Section` groups data naturally (contact, membership sections)
+  - `NavigationStack` is the modern replacement for `NavigationView`
+  - Custom row views keep List cells clean and reusable (ProfileRow pattern)
+  - `refreshable` modifier adds pull-to-refresh functionality
+  - Use `@ViewBuilder` for conditional content in computed properties
+  - Icon + label pattern with `Label` view for consistent row layouts
+- **Learnings for future iterations:**
+  - User model designed to accommodate SSO user claims (id, username, displayName, email)
+  - Member-specific data (memberSince, localGroupName, stateAssociationName) anticipated from party systems
+  - All placeholder comments explicitly state "PLACEHOLDER DATA" in code comments
+  - Profile shows info banner explaining this is test data until SSO integration
+  - Forum and Todos tabs already had believable stub data from M2B-002/003
+---
+
+## [2026-01-30 22:45] - M2B-005
+- **What was implemented:** Documentation update for open questions and threat model for integrations
+- **Files changed:**
+  - Modified: `Docs/OPEN_QUESTIONS.md` - Added Q-006 (Rate Limiting), Q-007 (Piratenlogin Protocol), Q-008 (Token Refresh Strategy)
+  - Modified: `Docs/THREAT_MODEL.md` - Added Trust Boundaries section (TB-001 through TB-004), Token Security detailed section, Local Storage Security section, Member Data Exposure section
+- **Context7 Mobile Auth Security Learnings (OWASP MASTG + Cheat Sheets):**
+  - Use `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` for Keychain items (prevents backup extraction)
+  - Consider `kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly` for items requiring device passcode
+  - Biometric protection via `SecAccessControlCreateFlags.biometryCurrentSet` invalidates on biometric changes
+  - Refresh tokens should use same Keychain protections as access tokens
+  - Token transmission: TLS 1.2+ required, tokens in Authorization header only (never in URLs)
+  - Token lifetime management: short-lived access tokens + secure refresh token rotation
+  - OIDC JWT validation: verify signature, iss, aud, exp, iat claims
+- **Learnings for future iterations:**
+  - Thin-client model: no persistent caching of sensitive content (forum posts, messages, tasks)
+  - Trust boundary documentation helps clarify security responsibilities
+  - Open questions should include detailed protocol requirements (grant types, PKCE, token rotation)
+  - Data classification (critical/high/medium/low sensitivity) guides storage decisions
+---

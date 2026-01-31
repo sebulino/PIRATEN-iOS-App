@@ -77,6 +77,75 @@ Todos view is a placeholder. No API calls implemented.
 
 ---
 
+### Q-006: Rate Limiting and Permissions
+
+**Status:** Open
+**Blocking:** All external integrations
+**Asked:** 2026-01-30
+
+**Question:**
+What rate limits and permission models apply to external APIs?
+
+**What we need for each service (Discourse, meine-piraten.de):**
+- Rate limit thresholds (requests per minute/hour)
+- Rate limit response headers or error codes
+- Permission model (role-based? group-based?)
+- Required scopes or permissions for app access
+- Handling of rate limit exhaustion (retry strategies)
+
+**Current assumption:**
+No rate limiting implemented. Fake repositories have simulated delays only.
+
+---
+
+### Q-007: Piratenlogin Protocol Details
+
+**Status:** Open
+**Blocking:** Authentication implementation
+**Asked:** 2026-01-30
+
+**Question:**
+What is the exact protocol implementation of Piratenlogin?
+
+**What we need:**
+- OAuth2 vs OIDC confirmation
+- Authorization server discovery document URL (if OIDC)
+- Supported grant types (authorization code, PKCE required?)
+- Token endpoint authentication method (client_secret_post, client_secret_basic, none?)
+- Supported response types
+- PKCE requirement (plain vs S256)
+- Refresh token availability and rotation policy
+- Token lifetimes (access token, refresh token, ID token)
+- Custom claims in ID token (if OIDC)
+- Logout/revocation endpoint availability
+
+**Current assumption:**
+OAuth2/OIDC with PKCE assumed per mobile best practices. Using `ASWebAuthenticationSession` for system browser flow.
+
+---
+
+### Q-008: Token Refresh Strategy
+
+**Status:** Open
+**Blocking:** Session management
+**Asked:** 2026-01-30
+
+**Question:**
+How should the app handle token refresh and session continuity?
+
+**What we need:**
+- Refresh token availability confirmation
+- Token refresh endpoint and method
+- Sliding session vs fixed expiration
+- Background refresh capability requirements
+- Offline access token scope availability
+- Grace period for expired tokens
+
+**Current assumption:**
+Refresh tokens assumed available. App will attempt silent refresh before session expiration. No offline access until confirmed.
+
+---
+
 ### Q-004: Discourse Instance URL
 
 **Status:** Open

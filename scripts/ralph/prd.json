@@ -57,7 +57,7 @@
         "Placeholder nature is clear in code comments",
         "Context7 consulted for current SwiftUI List and NavigationStack patterns; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M2B-005",
@@ -70,7 +70,7 @@
         "No secrets or endpoints are introduced",
         "Context7 consulted for current mobile auth security guidance (token storage, session handling); summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }
