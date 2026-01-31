@@ -30,6 +30,42 @@ Started: Sa. 31 Jan. 2026 11:15:30 CET
 - Refresh tokens may or may not be rotated by server - preserve new refresh token if returned
 - Provide `getValidAccessToken()` method that auto-refreshes when token expires within 60s
 
+### Authenticated HTTP Client Pattern
+- Use protocol abstraction (`HTTPClient`) to decouple from URLSession implementation
+- Wrap base client with `AuthenticatedHTTPClient` for Bearer token injection
+- `TokenProvider` protocol allows flexible token retrieval (from AuthStateManager, mock, etc.)
+- Map HTTP status codes to domain errors: 401→unauthorized, 403→forbidden, 404→notFound
+- Use `onAuthError` callback for 401/403 to trigger re-auth without infinite loops
+- Check `response.isAuthenticationError` property for quick auth failure detection
+- Use `StubHTTPClient` for testing with configurable URL→response mappings
+
+---
+
+## [2026-01-31 16:30] - M3A-005
+- What was implemented:
+  - Verified existing HTTPClient protocol with request building and response decoding helpers
+  - Verified AuthenticatedHTTPClient attaches Authorization: Bearer header when authenticated
+  - Verified 401/403 responses map to domain auth errors and can trigger re-auth flow
+  - Added comprehensive unit tests for HTTP client infrastructure (30+ test cases)
+  - StubHTTPClient provides local stub request examples for testing
+- Files changed:
+  - PIRATENTests/HTTPClientTests.swift (new file - comprehensive HTTP client tests)
+- **Context7 Summary (URLSession async/await + Bearer Token Best Practices):**
+  - Use `URLSession.shared.data(from:)` with async/await for clean network code
+  - Set "Authorization" header manually for Bearer tokens (Apple's reserved header workaround)
+  - Use Swift actors for thread-safe token management when multiple requests need tokens
+  - Implement retry logic with single retry limit for 401 errors to avoid infinite loops
+  - Check token validity before requests when possible (proactive refresh)
+  - Handle URLError.cancelled separately from network errors
+  - Use generics for reusable authorized request methods with JSON decoding
+  - Test with stub clients that capture requests for header verification
+- **Learnings for future iterations:**
+  - Protocol-based HTTPClient allows easy swapping between URLSession and stub implementations
+  - AuthenticatedHTTPClient wrapper pattern keeps token injection separate from base networking
+  - TokenProvider protocol decouples HTTP client from specific auth implementations
+  - onAuthError callback enables 401/403 handling without circular dependencies
+  - StubHTTPClient with configurable URL→response mapping simplifies testing
+  - RequestCapturingStubClient pattern useful for verifying headers in tests
 ---
 
 ## [2026-01-31 15:45] - M3A-004
