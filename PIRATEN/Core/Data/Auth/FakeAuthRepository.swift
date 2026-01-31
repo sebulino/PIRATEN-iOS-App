@@ -69,6 +69,14 @@ final class FakeAuthRepository: AuthRepository {
         return credentialStore.contains(key: Self.tokenKey)
     }
 
+    func getValidAccessToken() async throws -> String? {
+        // Return the stored token if it exists (fake implementation doesn't refresh)
+        guard credentialStore.contains(key: Self.tokenKey) else {
+            return nil
+        }
+        return try credentialStore.get(forKey: Self.tokenKey)
+    }
+
     func getCurrentUser() async -> User? {
         // Return stub user only if authenticated (placeholder behavior)
         guard await hasValidSession() else {

@@ -23,6 +23,43 @@ Started: Sa. 31 Jan. 2026 11:15:30 CET
 - Check expiration with 60-second grace period before considering token invalid
 - Fall back to refresh token presence if access token is about to expire
 
+### AppAuth Token Refresh Pattern
+- Use `OIDAuthorizationService.perform()` with an `OIDTokenRequest` for manual token refresh
+- Build token request with grantType `OIDGrantTypeRefreshToken` and the stored refresh token
+- Handle OAuth token errors (OIDOAuthTokenErrorDomain) as session expiration requiring re-auth
+- Refresh tokens may or may not be rotated by server - preserve new refresh token if returned
+- Provide `getValidAccessToken()` method that auto-refreshes when token expires within 60s
+
+---
+
+## [2026-01-31 15:45] - M3A-004
+- What was implemented:
+  - Created TokenRefresher protocol in domain layer for token refresh abstraction
+  - Implemented AppAuthTokenRefresher using AppAuth's OIDAuthorizationService.perform()
+  - Added getValidAccessToken() to AuthRepository for auto-refresh on demand
+  - Integrated TokenRefresher into OIDCAuthRepository with automatic refresh when token expires
+  - Added refresh failure handling in AuthStateManager - transitions to unauthenticated with error
+  - Added handleAuthenticationError() to AuthStateManager for 401/403 API responses
+- Files changed:
+  - PIRATEN/Core/Domain/Auth/TokenRefresher.swift (new file - protocol)
+  - PIRATEN/Core/Data/OIDC/AppAuthTokenRefresher.swift (new file - AppAuth implementation)
+  - PIRATEN/Core/Domain/Auth/AuthRepository.swift (added getValidAccessToken method)
+  - PIRATEN/Core/Data/Auth/OIDCAuthRepository.swift (integrated token refresh logic)
+  - PIRATEN/Core/Data/Auth/FakeAuthRepository.swift (added getValidAccessToken stub)
+  - PIRATEN/Core/Domain/Auth/AuthStateManager.swift (added refresh failure handling)
+  - PIRATEN/Core/Support/AppContainer.swift (wired TokenRefresher dependency)
+- **Context7 Summary (AppAuth Token Refresh):**
+  - Use OIDAuthState.performAction() for automatic refresh (requires storing full OIDAuthState)
+  - For manual refresh: use OIDAuthorizationService.perform() with OIDTokenRequest
+  - Build OIDTokenRequest with grantType OIDGrantTypeRefreshToken, refreshToken parameter
+  - OAuth token errors (invalid_grant) indicate revoked/expired refresh token
+  - Token response may include new refresh token (rotation) - preserve if present
+  - No need for scope parameter on refresh - uses scopes from original authorization
+- **Learnings for future iterations:**
+  - AppAuth returns OIDOAuthTokenErrorDomain errors for OAuth-level failures (invalid_grant, etc.)
+  - OIDGeneralErrorDomain is for network/transport errors
+  - Token expiration check with 60-second grace period prevents race conditions
+  - getValidAccessToken() pattern allows API clients to always get fresh token without refresh logic
 ---
 
 ## [2026-01-31 11:35] - M3A-003

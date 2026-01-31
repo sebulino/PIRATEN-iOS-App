@@ -52,4 +52,32 @@ final class AuthStateManager: ObservableObject {
             }
         }
     }
+
+    /// Requests a valid access token, refreshing if necessary.
+    /// If refresh fails, transitions to unauthenticated state.
+    /// - Returns: A valid access token, or nil if not authenticated
+    func getValidAccessToken() async -> String? {
+        do {
+            return try await authRepository.getValidAccessToken()
+        } catch {
+            // Token refresh failed - session is no longer valid
+            // Transition to unauthenticated with a clear error message
+            await authRepository.logout()
+            currentState = .failed(
+                AuthError.refreshFailed("Sitzung abgelaufen - bitte erneut anmelden")
+            )
+            return nil
+        }
+    }
+
+    /// Handles authentication errors from API calls.
+    /// Call this when an API returns 401/403 to trigger re-auth flow.
+    func handleAuthenticationError() {
+        Task {
+            await authRepository.logout()
+            currentState = .failed(
+                AuthError.tokenError("Authentifizierung fehlgeschlagen - bitte erneut anmelden")
+            )
+        }
+    }
 }

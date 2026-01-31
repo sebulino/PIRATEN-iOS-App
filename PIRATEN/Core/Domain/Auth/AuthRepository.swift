@@ -22,6 +22,15 @@ protocol AuthRepository {
     /// - Returns: true if authenticated, false otherwise
     func hasValidSession() async -> Bool
 
+    /// Retrieves a valid access token, refreshing if necessary.
+    /// - Returns: A valid access token, or nil if not authenticated or refresh fails
+    /// - Throws: AuthError if refresh fails due to revoked/expired refresh token
+    ///
+    /// Use this method before making authenticated API calls.
+    /// If the access token is expired but a refresh token is available,
+    /// this will automatically attempt to refresh the token.
+    func getValidAccessToken() async throws -> String?
+
     /// Retrieves the current authenticated user's information.
     /// - Returns: User if authenticated, nil otherwise
     ///

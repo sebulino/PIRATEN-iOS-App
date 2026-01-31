@@ -38,6 +38,9 @@ final class AppContainer {
     /// OIDC authorization service for handling the OAuth flow
     let authService: AppAuthOIDCAuthService
 
+    /// Token refresher for refreshing access tokens
+    let tokenRefresher: TokenRefresher
+
     // MARK: - Data Layer (Repositories)
 
     /// Authentication repository implementation using real OIDC/OAuth2.
@@ -80,11 +83,13 @@ final class AppContainer {
             redirectURI: Self.redirectURI,
             scopes: ["openid", "profile", "offline_access"]
         )
+        self.tokenRefresher = AppAuthTokenRefresher(clientID: Self.clientID)
 
         // Data layer - real OIDC auth repository
         self.authRepository = OIDCAuthRepository(
             discoveryService: discoveryService,
             authService: authService,
+            tokenRefresher: tokenRefresher,
             credentialStore: credentialStore
         )
         self.discourseRepository = FakeDiscourseRepository()
@@ -118,6 +123,7 @@ final class AppContainer {
             redirectURI: Self.redirectURI,
             scopes: ["openid", "profile", "offline_access"]
         )
+        self.tokenRefresher = AppAuthTokenRefresher(clientID: Self.clientID)
 
         if let factory = authRepositoryFactory {
             self.authRepository = factory(credentialStore)

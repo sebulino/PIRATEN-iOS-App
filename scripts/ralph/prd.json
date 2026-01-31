@@ -56,7 +56,7 @@
         "If refresh fails (revoked/expired), user is transitioned to unauthenticated with a clear message",
         "Context7 consulted for AppAuth token refresh patterns and error handling; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M3A-005",
