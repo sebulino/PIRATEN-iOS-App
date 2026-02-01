@@ -1,0 +1,74 @@
+{
+  "project": "piraten-ios-m5-todos-write",
+  "branchName": "ralph/m5-todos-write",
+  "description": "Milestone 5: Actionable Todos. Users can create, claim, complete, and comment on Todos. Todos belong to an owning organization type (Kreisverband/Landesverband/Bundesverband/Arbeitsgemeinschaft). Deletion is supported but not exposed in the UI (soft/hidden).",
+  "userStories": [
+    {
+      "id": "M5-001",
+      "category": "todos-domain",
+      "title": "Extend Todo domain model with ownership and lifecycle fields",
+      "description": "Introduce explicit ownership types and lifecycle/assignment fields for Todos.",
+      "acceptanceCriteria": [
+        "Todo has ownerType enum: Kreisverband, Landesverband, Bundesverband, Arbeitsgemeinschaft",
+        "Todo has ownerId/ownerName (string) and fields for status (open/claimed/done) and assignee (optional)",
+        "Domain model changes do not leak transport-layer JSON into UI",
+        "Context7 consulted for Swift modeling best practices (Codable/Identifiable) where applicable; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M5-002",
+      "category": "todos-create",
+      "title": "Create Todo UI and repository method (POST)",
+      "description": "Allow authenticated users to create Todos with required ownership fields.",
+      "acceptanceCriteria": [
+        "Todos tab includes a Create button opening a form (title, description, ownerType, ownerName/ownerId)",
+        "Validation ensures required fields and reasonable length limits",
+        "TodoRepository includes createTodo(...) API; FakeTodoRepository updated; Real implementation can be stubbed if API write not yet available",
+        "Creation success inserts the Todo into list; failure shows clear error",
+        "Context7 consulted for SwiftUI form patterns and safe validation; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M5-003",
+      "category": "todos-claim-complete",
+      "title": "Claim and complete Todo actions",
+      "description": "Enable low-risk participation by claiming and completing Todos.",
+      "acceptanceCriteria": [
+        "Todo detail shows actions based on status: Claim / Mark Done / Unclaim (if applicable)",
+        "TodoRepository exposes claimTodo and completeTodo methods (and unclaim if supported)",
+        "UI updates state immediately on success; handles failure with revert and message",
+        "No deletion control shown in UI",
+        "Context7 consulted for state-driven SwiftUI action patterns; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M5-004",
+      "category": "todos-comments",
+      "title": "Todo comments (lightweight)",
+      "description": "Allow adding short comments/updates to a Todo (if backend supports; otherwise keep as local-only stub with clear label).",
+      "acceptanceCriteria": [
+        "Todo detail supports viewing a list of comments and adding a comment",
+        "TodoRepository includes addComment(todoId, text) method; fake implementation works end-to-end",
+        "Comment content is not logged; identifiers scrubbed",
+        "Context7 consulted for list + input composition patterns; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M5-005",
+      "category": "todos-delete-hidden",
+      "title": "Implement Todo deletion capability but keep it hidden from UI",
+      "description": "Deletion is supported at repository level for admins/maintenance but not shown in the view.",
+      "acceptanceCriteria": [
+        "TodoRepository includes deleteTodo(todoId) method",
+        "No UI element exposes delete; deletion may be callable via debug-only path or internal admin flag that defaults off",
+        "Deletion behavior documented in Docs/DECISIONS.md (why hidden)",
+        "Context7 consulted for safe feature-flag patterns; summary added to progress.txt"
+      ],
+      "passes": false
+    }
+  ]
+}

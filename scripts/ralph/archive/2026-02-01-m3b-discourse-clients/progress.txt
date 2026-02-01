@@ -1,0 +1,243 @@
+# Ralph Progress Log
+Started: Sa. 31 Jan. 2026 17:35:42 CET
+---
+
+## Codebase Patterns
+
+### Discourse API Client Architecture
+- Use `DiscourseAPIClient` for all Discourse API calls (not the repository directly)
+- API client returns raw `Data` for decoding flexibility; repository maps to domain models
+- Error handling: `DiscourseError` provides German localized messages for UI display
+- Auth: Bearer token injected via `AuthenticatedHTTPClient`; no explicit token handling in API client
+
+### Auth Error Handling (M3B-006)
+- Single-attempt rule: `AuthStateManager.isHandlingAuthError` flag prevents concurrent 401/403 handling
+- First auth error triggers logout + `.sessionExpired` state; subsequent errors ignored
+- Flag reset on: successful re-authentication OR explicit logout
+- No automatic retry of token refresh - user must explicitly re-authenticate
+- `SessionExpiredView` provides clear "Sitzung abgelaufen" message with login button
+
+---
+
+## [2026-02-01 02:45] - M3B-007
+- What was implemented:
+  - Verified Docs/DECISIONS.md D-012 contains complete Discourse integration documentation:
+    - Base URL: https://diskussion.piratenpartei.de
+    - Endpoints: /latest.json, /t/{topic_id}.json, /topics/private-messages/{username}.json
+    - Auth mechanism: Bearer Token Passthrough (assumed)
+  - Verified Docs/OPEN_QUESTIONS.md contains all required future gaps:
+    - Q-011: Posting and Reply Functionality (sending messages/posting)
+    - Q-006: Rate Limiting and Retry Strategy (updated with Discourse defaults)
+    - Q-012: Pagination Strategy
+    - Q-013: Search Functionality
+  - Context7 consulted for Discourse API version-specific notes
+- Files changed:
+  - scripts/ralph/progress.txt (this entry)
+  - scripts/ralph/prd.json (marked M3B-007 passes: true)
+- **Context7 / Web Research Summary:**
+  - Discourse API uses RESTful JSON endpoints without explicit API versioning
+  - Endpoints are stable: `/latest.json`, `/t/{id}.json`, `/posts.json`, `/search.json`
+  - Response structure documented: `post_stream.posts[]` for topic detail, `topic_list.topics[]` for lists
+  - Post fields: `id`, `username`, `cooked` (HTML), `post_number`, `created_at` (ISO 8601)
+  - Auth methods: `Api-Key` + `Api-Username` headers for admin keys, `Authorization: Bearer` for OAuth
+  - No deprecation warnings found for endpoints used in M3B
+  - Sources: /discourse/discourse_api_docs, /discourse/discourse-developer-docs
+- **Learnings for future iterations:**
+  - Discourse API is stable without formal versioning - endpoints don't include version numbers
+  - Documentation milestone mainly requires verifying existing docs are complete
+  - Context7 provides current API reference but not historical changelog/deprecation info
+---
+
+## [2026-02-01 02:15] - M3B-006
+- What was implemented:
+  - Added `AuthState.sessionExpired` case for distinct session expiry handling
+  - Added `isHandlingAuthError` guard flag to `AuthStateManager` to prevent concurrent auth error handling
+  - Updated `handleAuthenticationError()` to check guard flag and transition to `.sessionExpired` state
+  - Flag reset on successful authentication (`authenticate()`) or explicit logout (`logout()`)
+  - Created `SessionExpiredView` in RootView.swift with clear German "Sitzung abgelaufen" message
+  - Updated `RootView` to handle new `.sessionExpired` state with dedicated view
+  - Documented single-attempt rule in `Docs/DECISIONS.md` (D-011)
+  - Documented Discourse integration endpoints in `Docs/DECISIONS.md` (D-012)
+  - Updated `Docs/OPEN_QUESTIONS.md` with Q-011 (posting), Q-012 (pagination), Q-013 (search)
+  - Updated Q-006 (rate limiting) with known defaults and recommended approach
+- Files changed:
+  - PIRATEN/Core/Domain/Auth/AuthState.swift (added `.sessionExpired` case)
+  - PIRATEN/Core/Domain/Auth/AuthStateManager.swift (added guard flag, updated methods)
+  - PIRATEN/App/RootView.swift (added `SessionExpiredView`, handled new state)
+  - Docs/DECISIONS.md (added D-011, D-012)
+  - Docs/OPEN_QUESTIONS.md (added Q-011, Q-012, Q-013, updated Q-006)
+  - scripts/ralph/prd.json (marked M3B-006 passes: true)
+- **Context7 / Web Research Summary:**
+  - Token refresh patterns from angular-oauth2-oidc: emit events for session changes, attempt single refresh, logout on failure
+  - Retry policies from retry-ts: `limitRetries(n)` prevents infinite loops; exponential backoff with cap recommended
+  - Session change handling: Angular OAuth uses debounce + shouldRunSilentRefresh flag pattern
+  - Best practice: single-attempt re-auth transition prevents cascading failures when multiple API calls fail
+  - Sources: https://github.com/manfredsteyer/angular-oauth2-oidc, https://github.com/gcanti/retry-ts
+- **Learnings for future iterations:**
+  - Guard flag pattern (`isHandlingAuthError`) is simple and effective for preventing concurrent state transitions
+  - New auth state case requires handling in RootView and any other observers of `authStateManager.currentState`
+  - `.sessionExpired` is distinct from `.failed` - provides cleaner UX messaging
+  - Context7 patterns translate well to Swift async/await even from RxJS-based libraries
+---
+
+## [2026-02-01 01:00] - M3B-005
+- What was implemented:
+  - Created `MessageThreadDetailViewModel.swift` for PM thread detail state management
+  - Created `MessageThreadDetailView.swift` for displaying PM posts with loading/error states
+  - Added navigation from `MessagesView` to `MessageThreadDetailView` via `NavigationLink`
+  - Added `makeMessageThreadDetailViewModel(for:)` factory method to `AppContainer`
+  - Wired factory through `MainTabView`, `RootView`, and `PIRATENApp`
+  - Extended `FakeDiscourseRepository` with stub posts for message threads 1001 and 1002
+  - Posts display with author, content (HTML stripped), and timestamp
+  - MessagePostRow styled for conversational PM context (no post numbers, more line limit)
+- Files changed:
+  - PIRATEN/App/ViewModels/MessageThreadDetailViewModel.swift (new)
+  - PIRATEN/App/Views/Main/MessageThreadDetailView.swift (new)
+  - PIRATEN/App/Views/Main/MessagesView.swift (added navigation + factory prop)
+  - PIRATEN/App/Views/Main/MainTabView.swift (added factory prop passthrough)
+  - PIRATEN/Core/Support/AppContainer.swift (added makeMessageThreadDetailViewModel factory)
+  - PIRATEN/App/RootView.swift (added factory prop passthrough)
+  - PIRATEN/App/PIRATENApp.swift (wired factory from AppContainer)
+  - PIRATEN/Core/Data/Discourse/FakeDiscourseRepository.swift (added PM thread posts stub data)
+  - scripts/ralph/prd.json (marked M3B-005 passes: true)
+- **Context7 / Web Research Summary:**
+  - Discourse PM threads use the same `/t/{id}.json` endpoint as regular topics
+  - PM topics have `archetype='private_message'` but otherwise identical structure
+  - Posts in PM threads have same fields: `id`, `post_number`, `username`, `cooked`, `created_at`
+  - Reusing existing `fetchPosts(forTopicId:)` method works for both forum topics and PM threads
+  - Privacy: VM and View do not log content, participants, or thread identifiers
+  - Sources: Previous M3B-004 research confirmed PM/topic API equivalence
+- **Learnings for future iterations:**
+  - ViewModel factory pattern applies equally to message thread detail as to topic detail
+  - Private messages share the Post domain model - no separate MessagePost needed
+  - NavigationLink with factory closure pattern proven for both forum and messages
+  - HTML stripping reused from TopicDetailView - could be extracted to shared utility
+---
+
+## [2026-02-01 00:30] - M3B-004
+- What was implemented:
+  - Created `MessageThread.swift` domain model for private message threads
+  - Added DTOs for private messages response: `DiscoursePrivateMessagesResponse`, `DiscoursePrivateMessageTopicListDTO`, `DiscoursePrivateMessageTopicDTO`
+  - Extended `DiscourseRepository` protocol with `fetchMessageThreads(for:)` method
+  - Implemented `fetchMessageThreads` in `RealDiscourseRepository` using existing `DiscourseAPIClient.fetchPrivateMessages()`
+  - Implemented `fetchMessageThreads` in `FakeDiscourseRepository` with stub PM data
+  - Created `MessagesViewModel.swift` with full state handling matching ForumViewModel pattern
+  - Replaced placeholder `MessagesView` with full implementation showing PM threads list
+  - MessagesView displays: thread title (with unread indicator), participants, post count, last activity time
+  - Loading/empty/error states are implemented with proper German localization
+  - Wired MessagesViewModel through AppContainer, MainTabView, RootView, and PIRATENApp
+- Files changed:
+  - PIRATEN/Core/Domain/Discourse/MessageThread.swift (new)
+  - PIRATEN/Core/Data/Discourse/DiscourseDTO.swift (added PM DTOs)
+  - PIRATEN/Core/Domain/Discourse/DiscourseRepository.swift (added fetchMessageThreads)
+  - PIRATEN/Core/Data/Discourse/RealDiscourseRepository.swift (implemented fetchMessageThreads)
+  - PIRATEN/Core/Data/Discourse/FakeDiscourseRepository.swift (implemented fetchMessageThreads + stub data)
+  - PIRATEN/App/ViewModels/MessagesViewModel.swift (new)
+  - PIRATEN/App/Views/Main/MessagesView.swift (full implementation replacing placeholder)
+  - PIRATEN/App/Views/Main/MainTabView.swift (added messagesViewModel prop, localized tab to "Nachrichten")
+  - PIRATEN/Core/Support/AppContainer.swift (added messagesViewModel)
+  - PIRATEN/App/RootView.swift (added messagesViewModel passthrough)
+  - PIRATEN/App/PIRATENApp.swift (wired messagesViewModel from container)
+  - scripts/ralph/prd.json (marked M3B-004 passes: true)
+- **Context7 / Web Research Summary:**
+  - Discourse PM endpoint: GET `/topics/private-messages/{username}.json`
+  - Response structure mirrors `/latest.json` with `users` array and `topic_list.topics`
+  - PM topics have same fields as regular topics: `id`, `title`, `posts_count`, `created_at`, `last_posted_at`
+  - `posters` array contains participant references with `user_id` and `description` (e.g., "Most Recent Poster")
+  - `unseen` field indicates whether thread has unread posts
+  - PMs are stored as topics with `archetype='private_message'` - fetching single PM uses same `/t/{id}.json` endpoint
+  - Sources: https://meta.discourse.org/t/api-how-to-get-all-private-messages-that-include-a-user-including-sent-messages/214655, https://docs.discourse.org/
+- **Learnings for future iterations:**
+  - MessagesViewModel needs both discourseRepository and authRepository (to get current user's username)
+  - Pattern established: views using repository data get viewModel from AppContainer through view hierarchy
+  - MessageThread model is separate from Topic since PM has different semantics (participants vs category)
+  - Reusing existing DiscourseAPIClient methods reduces code duplication
+---
+
+## [2026-01-31 23:45] - M3B-003
+- What was implemented:
+  - Created `TopicDetailView.swift` with full state handling (idle/loading/loaded/notAuthenticated/authenticationFailed/error)
+  - Created `TopicDetailViewModel.swift` to coordinate between view and repository
+  - Added DTOs for topic detail response: `DiscourseTopicDetailResponse`, `DiscoursePostStreamDTO`, `DiscoursePostDTO`
+  - Implemented `fetchPosts(forTopicId:)` and `fetchTopic(byId:)` in `RealDiscourseRepository`
+  - Added navigation from `ForumView` to `TopicDetailView` via `NavigationLink`
+  - Added `makeTopicDetailViewModel(for:)` factory method to `AppContainer`
+  - Posts display with author, content excerpt (HTML stripped), post number, timestamp, reply/like counts
+  - Error states provide retry button; auth errors show login prompt
+- Files changed:
+  - PIRATEN/App/Views/Main/TopicDetailView.swift (new)
+  - PIRATEN/App/ViewModels/TopicDetailViewModel.swift (new)
+  - PIRATEN/Core/Data/Discourse/DiscourseDTO.swift (added topic detail DTOs)
+  - PIRATEN/Core/Data/Discourse/RealDiscourseRepository.swift (implemented fetchPosts/fetchTopic)
+  - PIRATEN/App/Views/Main/ForumView.swift (added navigation + factory prop)
+  - PIRATEN/App/Views/Main/MainTabView.swift (added factory prop passthrough)
+  - PIRATEN/App/RootView.swift (added factory prop passthrough)
+  - PIRATEN/App/PIRATENApp.swift (wired factory from AppContainer)
+  - PIRATEN/Core/Support/AppContainer.swift (added makeTopicDetailViewModel factory)
+  - scripts/ralph/prd.json (marked M3B-003 passes: true)
+- **Context7 / Web Research Summary:**
+  - Discourse `/t/{topic_id}.json` returns topic metadata + `post_stream` object
+  - `post_stream.posts[]` contains first 20 posts; `post_stream.stream[]` contains all post IDs
+  - Post fields: `id`, `post_number`, `username`, `name`, `avatar_template`, `created_at`, `cooked` (HTML content), `reply_count`, `reads`, `like_count`
+  - Dates are ISO 8601 format with optional fractional seconds
+  - Sources: https://meta.discourse.org/t/api-getting-all-posts-in-a-topic/41018, https://meta.discourse.org/t/fetch-all-posts-from-a-topic-using-the-api/260886
+- **Learnings for future iterations:**
+  - ViewModel factory pattern works well for on-demand view model creation with DI
+  - SwiftUI NavigationLink with factory closure enables clean navigation while preserving DI
+  - HTML stripping via regex is simple for excerpts; full HTML rendering would need AttributedString or WebView
+  - `compactMap` over posts handles graceful failure when date parsing fails
+---
+
+## [2026-01-31 21:11] - M3B-002
+- What was implemented:
+  - Verified RealDiscourseRepository already implements DiscourseRepository with `/latest.json` fetching
+  - DiscourseDTO.swift provides mapping from API response to Domain Topic model:
+    - `DiscourseLatestResponse` → parses root with `users` and `topic_list`
+    - `DiscourseTopicDTO` → includes `toDomainModel(users:)` for clean domain conversion
+    - `DiscourseUserDTO` → maps to `UserSummary` with avatar URL resolution
+  - ForumView already has complete state handling:
+    - `.idle/.loading` → ProgressView
+    - `.loaded` with empty → empty state with refresh button
+    - `.loaded` with topics → topic list with pull-to-refresh
+    - `.notAuthenticated` → login prompt with "Anmeldung erforderlich" message
+    - `.authenticationFailed` → re-login prompt with "Sitzung abgelaufen" message
+    - `.error` → error state with retry button
+  - AppContainer wires RealDiscourseRepository with DiscourseAPIClient and AuthenticatedHTTPClient
+- Files changed:
+  - scripts/ralph/prd.json (marked M3B-002 passes: true)
+- **Context7 / Web Research Summary:**
+  - Discourse /latest.json returns nested JSON with `topic_list.topics` array and `users` array
+  - Topics contain `posters` array with `user_id` references for looking up authors
+  - Date format is ISO 8601 with optional fractional seconds
+  - Avatar URLs use `{size}` placeholder template pattern (e.g., 120 for medium)
+  - Sources: https://docs.discourse.org/, https://github.com/discourse/discourse_api_docs
+- **Learnings for future iterations:**
+  - M3B-002 was already fully implemented during M3B-001 scaffolding
+  - The DTO-to-Domain mapping pattern with `toDomainModel()` is clean and testable
+  - `compactMap` over topics handles graceful failure when poster lookup fails
+---
+
+## [2026-01-31 22:15] - M3B-001
+- What was implemented:
+  - Created `DiscourseAPIClient.swift` with authenticated HTTP client integration
+  - Created `DiscourseError.swift` for domain-level Discourse errors
+  - API client uses `AuthenticatedHTTPClient` which injects `Authorization: Bearer <token>` header
+  - Implemented request helpers for: `/latest.json`, `/t/{id}.json`, `/topics/private-messages/{username}.json`
+  - Error mapping from HTTP status codes to user-friendly German error messages
+- Files changed:
+  - PIRATEN/Core/Data/Discourse/DiscourseAPIClient.swift (new)
+  - PIRATEN/Core/Data/Discourse/DiscourseError.swift (new)
+  - scripts/ralph/prd.json (marked M3B-001 passes: true)
+- **Context7 / Web Research Summary:**
+  - Discourse API supports authentication via HTTP headers (not just URL params)
+  - Standard API keys use `Api-Key` + `Api-Username` headers
+  - User API keys use `User-Api-Key` header
+  - OAuth2 bearer tokens use `Authorization: Bearer <token>` header
+  - Rate limits for authenticated users: 20 requests/minute, 2,880 requests/day
+  - Source: https://meta.discourse.org/t/api-can-i-authenticate-without-putting-the-key-in-the-url/29425
+  - Source: https://meta.discourse.org/t/user-api-keys-specification/48536
+- **Learnings for future iterations:**
+  - The project uses `PBXFileSystemSynchronizedRootGroup` - new files are auto-added to build
+  - Discourse PMs are topics with `archetype='private_message'` - same endpoint works
+  - Discourse error responses have shape: `{ "errors": [...], "error_type": "..." }`
+---

@@ -81,6 +81,7 @@ fi
 
 echo "Starting Ralph - Tool: $TOOL - Max iterations: $MAX_ITERATIONS"
 
+now="$(date '+%Y-%m-%d %H:%M:%S')"
 for i in $(seq 1 $MAX_ITERATIONS); do
   echo ""
   echo "==============================================================="
@@ -90,12 +91,45 @@ for i in $(seq 1 $MAX_ITERATIONS); do
   # Run the selected tool with the ralph prompt
   if [[ "$TOOL" == "amp" ]]; then
     OUTPUT=$(cat "$SCRIPT_DIR/prompt.md" | amp --dangerously-allow-all 2>&1 | tee /dev/stderr) || true
-  else
+  #else
     # Claude Code: use --dangerously-skip-permissions for autonomous operation, --print for output
     # Pass prompt as argument (stdin redirection doesn't work reliably)
     OUTPUT=$(claude --dangerously-skip-permissions --print "$(cat "$SCRIPT_DIR/CLAUDE.md")" 2>&1 | tee /dev/stderr) || true
+  #fi
+  else
+    now="$(date '+%Y-%m-%d %H:%M:%S')"
+    echo "[ralph] about to call claude (iter=$i) at $now" >&2
+
+    start_ts=$(date +%s)
+
+    # Start a heartbeat in the background so you can see "alive" while blocked
+    (
+      while true; do
+        echo "[ralph] waiting for claude... (iter=$i) $(date '+%H:%M:%S')" >&2
+        sleep 60
+      done
+    ) &
+    HB_PID=$!
+
+    # Ensure heartbeat stops no matter how the command exits
+    cleanup_hb() { kill "$HB_PID" 2>/dev/null || true; }
+    trap cleanup_hb RETURN
+
+    OUTPUT=$(
+      claude --dangerously-skip-permissions --print "$(cat "$SCRIPT_DIR/CLAUDE.md")" \
+        2>&1 | tee /dev/stderr
+    ) || true
+
+    cleanup_hb
+    trap - RETURN
+
+    end_ts=$(date +%s)
+    echo "[ralph] claude returned (iter=$i) after $((end_ts - start_ts))s" >&2
   fi
-  
+
+
+
+
   # Check for completion signal
   if echo "$OUTPUT" | grep -q "<promise>COMPLETE</promise>"; then
     echo ""

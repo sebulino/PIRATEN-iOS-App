@@ -15,7 +15,7 @@
         "Key pair is generated once and reused for subsequent auth attempts",
         "Context7 consulted for iOS Security framework RSA key generation; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "M3C-002",
