@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		0FDDAB2B2F2E0E2200207967 /* AppAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A1B2C3D4E5F60002 /* AppAuth */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		0FE526E12F2BD108002C9449 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,11 +31,27 @@
 		0FE526D12F2BD101002C9449 /* PIRATEN.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PIRATEN.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FE526E02F2BD108002C9449 /* PIRATENTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PIRATENTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FE526EA2F2BD108002C9449 /* PIRATENUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PIRATENUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0FE527002F2BD200002C9449 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		0FE527012F2BD200002C9449 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		0FE527022F2BD200002C9449 /* Secrets.sample.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.sample.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		0FE527032F2E100000000001 /* Exceptions for "PIRATEN" folder in "PIRATEN" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 0FE526D02F2BD101002C9449 /* PIRATEN */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0FE526D32F2BD101002C9449 /* PIRATEN */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0FE527032F2E100000000001 /* Exceptions for "PIRATEN" folder in "PIRATEN" target */,
+			);
 			path = PIRATEN;
 			sourceTree = "<group>";
 		};
@@ -52,6 +72,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0FDDAB2B2F2E0E2200207967 /* AppAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -79,6 +100,7 @@
 				0FE526E32F2BD108002C9449 /* PIRATENTests */,
 				0FE526ED2F2BD108002C9449 /* PIRATENUITests */,
 				0FE526D22F2BD101002C9449 /* Products */,
+				0FE526FF2F2BD200002C9449 /* Config */,
 			);
 			sourceTree = "<group>";
 		};
@@ -91,6 +113,16 @@
 			);
 			name = Products;
 			sourceTree = "<group>";
+		};
+		0FE526FF2F2BD200002C9449 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				0FE527002F2BD200002C9449 /* Debug.xcconfig */,
+				0FE527012F2BD200002C9449 /* Release.xcconfig */,
+				0FE527022F2BD200002C9449 /* Secrets.sample.xcconfig */,
+			);
+			path = Config;
+			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */
 
@@ -112,6 +144,7 @@
 			);
 			name = PIRATEN;
 			packageProductDependencies = (
+				A1B2C3D4E5F60002 /* AppAuth */,
 			);
 			productName = PIRATEN;
 			productReference = 0FE526D12F2BD101002C9449 /* PIRATEN.app */;
@@ -195,6 +228,9 @@
 			);
 			mainGroup = 0FE526C82F2BD101002C9449;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A1B2C3D4E5F60001 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0FE526D22F2BD101002C9449 /* Products */;
 			projectDirPath = "";
@@ -271,6 +307,7 @@
 /* Begin XCBuildConfiguration section */
 		0FE526F22F2BD108002C9449 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0FE527002F2BD200002C9449 /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -335,6 +372,7 @@
 		};
 		0FE526F32F2BD108002C9449 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0FE527012F2BD200002C9449 /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -400,6 +438,7 @@
 				DEVELOPMENT_TEAM = AJ6EE3AM82;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PIRATEN/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -432,6 +471,7 @@
 				DEVELOPMENT_TEAM = AJ6EE3AM82;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PIRATEN/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -578,6 +618,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A1B2C3D4E5F60001 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/openid/AppAuth-iOS.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.7.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A1B2C3D4E5F60002 /* AppAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1B2C3D4E5F60001 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */;
+			productName = AppAuth;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 0FE526C92F2BD101002C9449 /* Project object */;
 }

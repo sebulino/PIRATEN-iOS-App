@@ -1,0 +1,170 @@
+## Codebase Patterns
+- Xcode project uses SwiftUI for UI
+- Project structure follows Clean Architecture with App/, Core/, Features/, Resources/, Config/, Tests/, Docs/
+- Use `xcodebuild -scheme PIRATEN -destination 'platform=iOS Simulator,name=iPhone 16'` for builds
+- Files are organized: App entry point in App/, domain entities in Core/, assets in Resources/
+- **Xcode 16 auto-discovery**: Project uses objectVersion 77 with PBXFileSystemSynchronizedRootGroup - files are automatically discovered from filesystem, no manual project.pbxproj editing needed
+- Auth state management: Use @StateObject in App struct, @ObservedObject in child views
+
+---
+
+## 2026-01-30 15:00 - M1-001
+- Verified folder structure matches spec: App/, Features/, Core/, Resources/, Config/, Tests/, Docs/
+- All existing files relocated to appropriate directories:
+  - PIRATENApp.swift, ContentView.swift → PIRATEN/App/
+  - Item.swift → PIRATEN/Core/
+  - Assets.xcassets → PIRATEN/Resources/
+- Files changed: 8 files (renames + new .gitignore, _CLAUDE.md)
+- Project builds successfully for iOS Simulator after reorganization
+- **Learnings for future iterations:**
+  - Folder structure was already partially in place from previous work
+  - Git correctly detects file moves when using `git add .`
+  - Build succeeds with: `xcodebuild -scheme PIRATEN -destination 'platform=iOS Simulator,name=iPhone 16' build`
+  - Test directories (PIRATENTests/, PIRATENUITests/) remain at root level as per Xcode convention
+---
+## 2026-01-30 15:15 - M1-002
+- Implemented AppState enum with auth states: loggedOut, loggingIn, loggedIn, error
+- Created AuthStateManager to handle auth state transitions
+- Created LoginView with fake login button and loading indicator
+- Created placeholder MainTabView for logged-in state
+- Created RootView to route between login and main views based on auth state
+- Updated PIRATENApp to use new auth state management (removed SwiftData boilerplate)
+- Files changed: 6 files
+  - New: PIRATEN/Core/Domain/Auth/AppState.swift
+  - New: PIRATEN/Core/Domain/Auth/AuthStateManager.swift
+  - New: PIRATEN/App/Views/Auth/LoginView.swift
+  - New: PIRATEN/App/Views/Main/MainTabView.swift
+  - New: PIRATEN/App/RootView.swift
+  - Modified: PIRATEN/App/PIRATENApp.swift
+- Project builds successfully
+- **Learnings for future iterations:**
+  - Xcode 16 uses objectVersion 77 with PBXFileSystemSynchronizedRootGroup feature
+  - This means files are automatically discovered from filesystem - no manual project.pbxproj editing needed!
+  - Just create Swift files in the correct folders and Xcode picks them up automatically
+  - Build still requires proper organization: App/ for views, Core/Domain/ for business logic
+  - @StateObject in App struct, @ObservedObject in views for state management
+  - Switch statement in SwiftUI for state-based routing works cleanly
+---
+## 2026-01-30 15:30 - M1-003
+- Implemented MainTabView with TabView containing 5 tabs
+- Created 5 placeholder views: ForumView, MessagesView, KnowledgeView, TodosView, ProfileView
+- Each placeholder view uses NavigationStack with a title and centered text
+- Tab bar icons selected: bubble (Forum), envelope (Messages), book (Knowledge), checklist (Todos), person.circle (Profile)
+- Files changed: 6 files
+  - New: PIRATEN/App/Views/Main/ForumView.swift
+  - New: PIRATEN/App/Views/Main/MessagesView.swift
+  - New: PIRATEN/App/Views/Main/KnowledgeView.swift
+  - New: PIRATEN/App/Views/Main/TodosView.swift
+  - New: PIRATEN/App/Views/Main/ProfileView.swift
+  - Modified: PIRATEN/App/Views/Main/MainTabView.swift
+- Build succeeded, all tests passed
+- **Learnings for future iterations:**
+  - TabView in SwiftUI wraps each view with .tabItem modifier
+  - Label in tabItem provides both text and SF Symbol icon
+  - NavigationStack wraps each tab's content for future navigation capability
+  - All 5 views follow identical structure for consistency
+  - Xcode 16 auto-discovery works perfectly - just create files in correct folders
+---
+## 2026-01-30 15:45 - M1-004
+- Implemented xcconfig configuration system with three files
+- Created Config/Debug.xcconfig with debug-specific settings (dev URLs, debug bundle ID)
+- Created Config/Release.xcconfig with production settings (production URLs, release bundle ID)
+- Created Config/Secrets.sample.xcconfig as a template for local secrets (SSO config, API keys)
+- Added Config/Secrets.xcconfig to .gitignore to prevent committing secrets
+- Modified PIRATEN.xcodeproj/project.pbxproj to:
+  - Add file references for xcconfig files
+  - Create Config group in project navigator
+  - Link Debug.xcconfig to Debug build configuration
+  - Link Release.xcconfig to Release build configuration
+- Verified no hardcoded secrets exist in source files
+- Files changed: 5 files
+  - New: Config/Debug.xcconfig
+  - New: Config/Release.xcconfig
+  - New: Config/Secrets.sample.xcconfig
+  - Modified: .gitignore
+  - Modified: PIRATEN.xcodeproj/project.pbxproj
+- Build and tests passed successfully
+- **Learnings for future iterations:**
+  - xcconfig files use #include to reference other xcconfig files
+  - Config/ directory is at project root (not inside PIRATEN/)
+  - Xcode project file references use SOURCE_ROOT for paths relative to project root
+  - baseConfigurationReference links xcconfig to build configurations in project.pbxproj
+  - Variable syntax in xcconfig: `VARIABLE_NAME = value` and reference with `$(VARIABLE_NAME)`
+  - To prevent variable expansion in URLs, use `https:/$()/` instead of `https://`
+  - Secrets.xcconfig should be git-ignored but a sample version should be committed
+  - All builds and tests must pass before committing configuration changes
+---
+## 2026-01-30 16:10 - M1-005
+- Implemented KeychainService wrapper at Core/Support/KeychainService.swift
+- Used native iOS Security framework (no third-party dependencies)
+- Created KeychainServiceProtocol for dependency injection and testing
+- Implemented set/get/delete/contains operations with proper error handling
+- KeychainError enum provides typed errors: itemNotFound, duplicateItem, unexpectedStatus, encodingFailed, decodingFailed
+- Security features: kSecAttrAccessibleWhenUnlockedThisDeviceOnly for secure storage
+- No logging of values, tokens, or PII in the implementation
+- Created comprehensive unit tests covering:
+  - Set and get value
+  - Get returns nil for nonexistent key
+  - Set overwrites existing value
+  - Delete removes value
+  - Delete nonexistent key does not throw
+  - Contains returns true/false appropriately
+  - Handles special characters in values (Unicode, symbols, etc.)
+- Files changed: 2 files
+  - New: PIRATEN/Core/Support/KeychainService.swift
+  - New: PIRATENTests/KeychainServiceTests.swift
+- Build succeeded, all 15 tests passed
+- **Learnings for future iterations:**
+  - Native Keychain API uses Security framework (import Security)
+  - SecItemAdd/SecItemCopyMatching/SecItemDelete are the core Keychain functions
+  - Query dictionaries use kSecClass, kSecAttrService, kSecAttrAccount keys
+  - kSecAttrAccessibleWhenUnlockedThisDeviceOnly provides good security for tokens
+  - Swift Testing framework uses @Test attribute and #expect for assertions
+  - Test isolation achieved by using unique service identifiers per test run
+  - Protocol-based design (KeychainServiceProtocol) enables future mocking in tests
+  - Always cleanup test data in each test to avoid state leakage
+---
+## 2026-01-30 16:20 - M1-006
+- Created comprehensive documentation as required by CLAUDE.md
+- README.md: Build/run instructions, architecture overview, getting started guide
+- Docs/PROJECT_STATUS.md: Milestone tracking with M1 listed as current
+- Docs/DECISIONS.md: Architectural Decision Records (ADRs) for key choices
+- Docs/OPEN_QUESTIONS.md: Questions blocking implementation (SSO, Discourse, meine-piraten.de)
+- Docs/THREAT_MODEL.md: Security threats, mitigations, privacy considerations
+- Renamed lowercase `docs/` to `Docs/` per spec requirements
+- Files changed: 6 files
+  - New: README.md
+  - New: Docs/PROJECT_STATUS.md
+  - New: Docs/DECISIONS.md
+  - New: Docs/OPEN_QUESTIONS.md
+  - New: Docs/THREAT_MODEL.md
+  - Modified: PIRATEN.xcodeproj/project.pbxproj (cosmetic reordering)
+- Build succeeded, all tests passed (15 tests)
+- **Learnings for future iterations:**
+  - Documentation files go in root-level Docs/ folder (capital D)
+  - README.md stays at project root
+  - PROJECT_STATUS.md should be updated each milestone completion
+  - OPEN_QUESTIONS.md blocks guessing - use it instead of inventing API details
+  - THREAT_MODEL.md evolves with features - update as new threats identified
+  - ADR format: Context → Decision → Rationale for each major choice
+---
+## 2026-01-30 16:30 - M1-007
+- Added smoke UI test to verify app launches and shows login screen
+- Added accessibility identifiers to LoginView for testability:
+  - loginLogo (flag icon)
+  - loginTitle ("PIRATEN" text)
+  - loginButton (fake login button)
+- Updated PIRATENUITests.swift with testAppLaunchesAndShowsLoginScreen test
+- Test uses waitForExistence(timeout: 5) for reliable element detection
+- Files changed: 2 files
+  - Modified: PIRATEN/App/Views/Auth/LoginView.swift
+  - Modified: PIRATENUITests/PIRATENUITests.swift
+- Build succeeded, all tests passed (including new UI test)
+- **Learnings for future iterations:**
+  - accessibilityIdentifier modifier enables UI test element lookup
+  - XCUIApplication().launch() starts the app in UI tests
+  - app.staticTexts["identifier"] finds static text elements by accessibilityIdentifier
+  - app.buttons["identifier"] finds buttons by accessibilityIdentifier
+  - waitForExistence(timeout:) is preferred over exists for async UI
+  - UITest target (PIRATENUITests) was already created by Xcode template
+---

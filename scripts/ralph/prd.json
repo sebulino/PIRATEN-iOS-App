@@ -1,0 +1,100 @@
+{
+  "project": "piraten-ios-m3b-discourse-clients",
+  "branchName": "ralph/m3b-discourse-clients",
+  "description": "Milestone 3b: Authenticated Discourse API clients (Forum + Messages) using the session from Milestone 3a. Implement read-only forum browsing and basic private messages listing/reading. No posting. Robust error handling.",
+  "userStories": [
+    {
+      "id": "M3B-001",
+      "category": "discourse-api",
+      "title": "Implement DiscourseAPI client scaffolding (authenticated)",
+      "description": "Create a DiscourseAPI client using AuthenticatedHTTPClient with base URL https://diskussion.piratenpartei.de. No UI changes yet.",
+      "acceptanceCriteria": [
+        "DiscourseAPI client exists with baseURL and request helpers",
+        "All requests use AuthenticatedHTTPClient and attach Authorization: Bearer <access_token> when authenticated (or chosen auth mechanism documented)",
+        "Networking is async/await and errors map to domain errors",
+        "Context7 consulted for Discourse API authentication patterns and endpoint conventions; summary added to progress.txt"
+      ],
+      "passes": true
+    },
+    {
+      "id": "M3B-002",
+      "category": "forum",
+      "title": "Fetch and display latest topics from /latest.json",
+      "description": "Replace FakeDiscourseRepository with RealDiscourseRepository that fetches latest topics via authenticated /latest.json and maps to domain models.",
+      "acceptanceCriteria": [
+        "RealDiscourseRepository implements DiscourseRepository and fetches /latest.json",
+        "Topic list maps API response into Domain Topic model (no leaking raw JSON models into UI)",
+        "Forum tab shows real latest topics with loading/empty/error states",
+        "Unauthenticated state shows a clear prompt to login",
+        "Context7 consulted for latest Discourse API response shape and mapping guidance; summary added to progress.txt"
+      ],
+      "passes": true
+    },
+    {
+      "id": "M3B-003",
+      "category": "forum-detail",
+      "title": "Topic detail: fetch posts for a selected topic",
+      "description": "Implement topic detail screen that loads posts for a topic (read-only).",
+      "acceptanceCriteria": [
+        "Selecting a topic navigates to a detail view",
+        "Detail view fetches posts for that topic via Discourse API (endpoint documented in code comments and/or Docs/DECISIONS.md)",
+        "Posts map into Domain Post model and render with author + content excerpt",
+        "Error states do not crash; provide retry",
+        "Context7 consulted for Discourse topic detail endpoint and response fields; summary added to progress.txt"
+      ],
+      "passes": true
+    },
+    {
+      "id": "M3B-004",
+      "category": "messages",
+      "title": "Messages: list private message topics (inbox)",
+      "description": "Implement repository methods and UI to list private messages (read-only).",
+      "acceptanceCriteria": [
+        "Messages tab displays a list of PM threads (subject, last activity)",
+        "PM list is fetched via Discourse API using authenticated requests (endpoint documented)",
+        "Domain model for MessageThread exists or reuse Topic with a clear discriminator",
+        "Loading/empty/error states are implemented",
+        "Context7 consulted for Discourse private messages endpoints and required params; summary added to progress.txt"
+      ],
+      "passes": true
+    },
+    {
+      "id": "M3B-005",
+      "category": "messages-detail",
+      "title": "Messages: read a private message thread",
+      "description": "Implement a message thread detail screen (read-only).",
+      "acceptanceCriteria": [
+        "Selecting a message thread navigates to detail",
+        "Detail fetches posts in the PM thread and renders them",
+        "Sensitive content is not logged; debug logs scrub identifiers",
+        "Context7 consulted for Discourse PM thread reading endpoint and safe handling guidance; summary added to progress.txt"
+      ],
+      "passes": true
+    },
+    {
+      "id": "M3B-006",
+      "category": "resilience",
+      "title": "Auth error handling across API clients",
+      "description": "Ensure 401/403 results consistently trigger re-auth flow without loops and present clear UI.",
+      "acceptanceCriteria": [
+        "401/403 from Discourse calls triggers a single re-auth transition and stops further retries",
+        "UI shows a clear 'session expired, please log in again' message",
+        "No infinite refresh loops; backoff or single-attempt rule documented",
+        "Context7 consulted for recommended patterns around token refresh + API retry; summary added to progress.txt"
+      ],
+      "passes": true
+    },
+    {
+      "id": "M3B-007",
+      "category": "docs",
+      "title": "Document Discourse integration decisions and remaining gaps",
+      "description": "Record endpoints used, auth mechanism chosen, and what is not yet implemented (posting, notifications, attachments).",
+      "acceptanceCriteria": [
+        "Docs/DECISIONS.md lists Discourse base URL, endpoints used, and auth mechanism",
+        "Docs/OPEN_QUESTIONS.md updated with: sending messages/posting, rate limiting, pagination strategy, search strategy",
+        "Context7 consulted for any version-specific Discourse API notes relevant to endpoints used; summary added to progress.txt"
+      ],
+      "passes": true
+    }
+  ]
+}
