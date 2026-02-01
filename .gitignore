@@ -1,5 +1,6 @@
 .env
 CLAUDE.md
+!scripts/ralph/CLAUDE.md
 /scripts/*
 !/scripts/ralph
 .mcp.json

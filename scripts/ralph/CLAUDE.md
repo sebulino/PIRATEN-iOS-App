@@ -1,0 +1,192 @@
+# Ralph Agent Instructions (Claude Code)
+
+You are an autonomous coding agent running inside a Ralph loop.
+This file is the ONLY prompt source. Do not assume the existence of prompt.md.
+
+You MUST follow all instructions exactly.
+
+---
+
+## Task Selection (MANDATORY)
+
+1. Open `prd.json` (located in the same directory as this file).
+2. Select the FIRST `userStory` where `"passes": false`.
+3. Work on EXACTLY that single story.
+4. If NO stories remain with `"passes": false`:
+   - Do NOT modify code.
+   - Print exactly:
+     DONE: ALL PASS (no work)
+   - Then print exactly:
+     <promise>COMPLETE</promise>
+   - print current day AND time
+   - Exit immediately.
+
+---
+
+## Execution Rules (MANDATORY)
+
+- Make file edits directly without asking for confirmation.
+- Do NOT ask questions.
+- Do NOT wait for approval.
+- Do NOT refactor unrelated code.
+- Do NOT perform more than one story per iteration.
+- NEVER exit silently.
+
+## Freshness Rule (MANDATORY)
+
+Before implementing or changing code that depends on ANY third-party API or tool (e.g., Discourse API, OAuth/OIDC libs, Keychain APIs, xcodebuild flags, SwiftUI APIs, package setup), you MUST consult Context7 and base your approach on the retrieved docs.
+
+How:
+- Include the instruction “use context7” when you need docs.
+- If the library/service is known, specify it explicitly using Context7’s library ID format if available (example: `use library /supabase/supabase for api and docs`).
+- Summarize the retrieved docs in 3–6 bullets in the final DONE output.
+
+---
+
+## Required Steps for the Selected Story
+
+1. Implement the selected user story.
+2. Run quality checks:
+   - At minimum:
+     xcodebuild -scheme PIRATEN -destination 'platform=iOS Simulator,id=F0291949-CCB9-4C91-B947-292F98247041' build
+   - If the story requires tests:
+     xcodebuild test -scheme PIRATEN -destination 'platform=iOS Simulator,id=F0291949-CCB9-4C91-B947-292F98247041'
+
+3. If checks FAIL:
+   - Do NOT set `passes: true`.
+   - Commit is optional (prefer no commit).
+   - Print a failure summary (see Output Contract).
+   - Exit.
+
+4. If checks PASS:
+   - Commit ALL changes with message:
+     feat: [Story ID] - [Story Title]
+   - Update `prd.json` to set `"passes": true` for that story.
+   - Append a progress entry to `progress.txt` (see format below).
+
+---
+
+## Git & Milestone Workflow (MANDATORY)
+
+These rules define how the Claude agent MUST use Git when running inside the Ralph loop.
+They are STRICT and take precedence over any implicit assumptions.
+
+### Branch Discipline
+
+- You MUST work on exactly ONE branch per milestone.
+- The branch name MUST match the milestone prefix.
+  - Example:
+    - Milestone `M3A` → branch `ralph/m3a-*`
+    - Milestone `M3B` → branch `ralph/m3b-*`
+- You MUST NOT implement a user story whose Story ID prefix does NOT match the current branch milestone.
+- If the current branch name does not match the selected story’s milestone:
+  - STOP.
+  - Fix the situation (create or switch to the correct branch) before continuing.
+
+
+### Commit Rules
+
+- You MUST create exactly ONE commit per user story.
+- Commit ONLY after all acceptance criteria are met and quality checks PASS.
+- Commit message format is MANDATORY:
+
+```
+feat: [Story ID] - [Story Title]
+```
+
+- You MUST NEVER create two commits with the same Story ID.
+- If changes are required before pushing:
+  - Amend the existing commit instead of creating a new one.
+
+
+### Milestone Completion (MANDATORY – NO EXCEPTIONS)
+
+
+---
+
+## Progress Report Format (MANDATORY)
+
+APPEND to `progress.txt` (never replace):
+
+```
+## [YYYY-MM-DD HH:MM] - [Story ID]
+- What was implemented
+- Files changed
+- **Learnings for future iterations:**
+  - Reusable patterns
+  - Gotchas
+  - Important architectural notes
+---
+```
+
+### Codebase Patterns
+
+If you discover a GENERAL, REUSABLE pattern:
+- Add it to the TOP of `progress.txt` under:
+
+```
+## Codebase Patterns
+```
+
+Only add patterns that are broadly useful.
+Do NOT add story-specific details.
+
+---
+
+## Updating CLAUDE.md Files in Subdirectories
+
+Before committing, check whether your work uncovered reusable knowledge that should be preserved:
+
+1. Identify directories you modified.
+2. Look for existing CLAUDE.md files in those directories or parents.
+3. Add reusable guidance ONLY if it will help future iterations.
+
+Do NOT add:
+- Story-specific logic
+- Temporary notes
+- Information already in progress.txt
+
+---
+
+## Output Contract (CRITICAL – READ CAREFULLY)
+
+At the END of EVERY iteration, you MUST print at least ONE normal text line to stdout.
+
+Use EXACTLY one of the following formats:
+
+### If the story was completed successfully:
+```
+DONE: <STORY_ID> PASS commit=<COMMIT_HASH>
+```
+
+### If the story was attempted but failed:
+```
+DONE: <STORY_ID> FAIL commit=<COMMIT_HASH-or-none>
+```
+
+### If all stories are complete:
+```
+DONE: ALL PASS (no work)
+<promise>COMPLETE</promise>
+```
+
+You MUST print the DONE line even if no code changes were needed.
+You MUST NOT exit silently.
+You MUST NOT output only code blocks.
+
+---
+
+## Stop Condition
+
+- If all stories are complete, output `<promise>COMPLETE</promise>` exactly once.
+- Otherwise, end normally after printing the DONE line.
+- Another iteration will start automatically.
+
+---
+
+## Quality Requirements
+
+- All commits must pass build/tests.
+- Do NOT commit broken code.
+- Keep changes minimal and focused.
+- Respect existing architecture and patterns.
