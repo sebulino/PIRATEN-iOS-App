@@ -19,6 +19,35 @@ Started: Sa. 31 Jan. 2026 17:35:42 CET
 
 ---
 
+## [2026-02-01 02:45] - M3B-007
+- What was implemented:
+  - Verified Docs/DECISIONS.md D-012 contains complete Discourse integration documentation:
+    - Base URL: https://diskussion.piratenpartei.de
+    - Endpoints: /latest.json, /t/{topic_id}.json, /topics/private-messages/{username}.json
+    - Auth mechanism: Bearer Token Passthrough (assumed)
+  - Verified Docs/OPEN_QUESTIONS.md contains all required future gaps:
+    - Q-011: Posting and Reply Functionality (sending messages/posting)
+    - Q-006: Rate Limiting and Retry Strategy (updated with Discourse defaults)
+    - Q-012: Pagination Strategy
+    - Q-013: Search Functionality
+  - Context7 consulted for Discourse API version-specific notes
+- Files changed:
+  - scripts/ralph/progress.txt (this entry)
+  - scripts/ralph/prd.json (marked M3B-007 passes: true)
+- **Context7 / Web Research Summary:**
+  - Discourse API uses RESTful JSON endpoints without explicit API versioning
+  - Endpoints are stable: `/latest.json`, `/t/{id}.json`, `/posts.json`, `/search.json`
+  - Response structure documented: `post_stream.posts[]` for topic detail, `topic_list.topics[]` for lists
+  - Post fields: `id`, `username`, `cooked` (HTML), `post_number`, `created_at` (ISO 8601)
+  - Auth methods: `Api-Key` + `Api-Username` headers for admin keys, `Authorization: Bearer` for OAuth
+  - No deprecation warnings found for endpoints used in M3B
+  - Sources: /discourse/discourse_api_docs, /discourse/discourse-developer-docs
+- **Learnings for future iterations:**
+  - Discourse API is stable without formal versioning - endpoints don't include version numbers
+  - Documentation milestone mainly requires verifying existing docs are complete
+  - Context7 provides current API reference but not historical changelog/deprecation info
+---
+
 ## [2026-02-01 02:15] - M3B-006
 - What was implemented:
   - Added `AuthState.sessionExpired` case for distinct session expiry handling
