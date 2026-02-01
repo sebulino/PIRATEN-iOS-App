@@ -15,5 +15,15 @@
             </array>
         </dict>
     </array>
+    <key>DISCOURSE_BASE_URL</key>
+    <string>$(DISCOURSE_BASE_URL)</string>
+    <key>DISCOURSE_CLIENT_ID</key>
+    <string>$(DISCOURSE_CLIENT_ID)</string>
+    <key>DISCOURSE_AUTH_REDIRECT_SCHEME</key>
+    <string>$(DISCOURSE_AUTH_REDIRECT_SCHEME)</string>
+    <key>DISCOURSE_AUTH_REDIRECT_HOST</key>
+    <string>$(DISCOURSE_AUTH_REDIRECT_HOST)</string>
+    <key>DISCOURSE_APP_NAME</key>
+    <string>$(DISCOURSE_APP_NAME)</string>
 </dict>
 </plist>

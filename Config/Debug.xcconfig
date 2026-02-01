@@ -11,3 +11,9 @@ MEINE_PIRATEN_BASE_URL = https:/$()/meine.dev.piratenpartei.de
 
 // App Configuration
 PRODUCT_BUNDLE_IDENTIFIER = de.piratenpartei.app.debug
+
+// Discourse User API Key Configuration
+DISCOURSE_CLIENT_ID = de.meine-piraten.ios-app
+DISCOURSE_AUTH_REDIRECT_SCHEME = de.meine-piraten
+DISCOURSE_AUTH_REDIRECT_HOST = discourse-auth
+DISCOURSE_APP_NAME = PIRATEN iOS App
