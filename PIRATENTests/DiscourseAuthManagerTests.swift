@@ -252,6 +252,90 @@ final class DiscourseAuthManagerTests: XCTestCase {
         // Then: Nonce should be nil
         XCTAssertNil(sut.currentNonce)
     }
+
+    // MARK: - Callback URL Parsing Tests
+
+    func testParseCallbackURL_WithPayloadQueryParameter_ExtractsPayload() throws {
+        // Given: A callback URL with payload as query parameter
+        sut = try DiscourseAuthManager(rsaKeyManager: rsaKeyManager)
+        let callbackURL = URL(string: "de.meine-piraten://discourse-auth?payload=encryptedBase64Data123")!
+
+        // When: Parsing the callback URL
+        let result = try sut.parseCallbackURL(callbackURL)
+
+        // Then: Should extract the payload
+        XCTAssertEqual(result.encryptedPayload, "encryptedBase64Data123")
+    }
+
+    func testParseCallbackURL_WithPayloadInFragment_ExtractsPayload() throws {
+        // Given: A callback URL with payload in fragment
+        sut = try DiscourseAuthManager(rsaKeyManager: rsaKeyManager)
+        let callbackURL = URL(string: "de.meine-piraten://discourse-auth#payload=encryptedBase64Data456")!
+
+        // When: Parsing the callback URL
+        let result = try sut.parseCallbackURL(callbackURL)
+
+        // Then: Should extract the payload from fragment
+        XCTAssertEqual(result.encryptedPayload, "encryptedBase64Data456")
+    }
+
+    func testParseCallbackURL_WithRawFragmentPayload_ExtractsPayload() throws {
+        // Given: A callback URL with raw payload in fragment (no key=value)
+        sut = try DiscourseAuthManager(rsaKeyManager: rsaKeyManager)
+        let callbackURL = URL(string: "de.meine-piraten://discourse-auth#rawEncryptedPayload789")!
+
+        // When: Parsing the callback URL
+        let result = try sut.parseCallbackURL(callbackURL)
+
+        // Then: Should extract the raw fragment as payload
+        XCTAssertEqual(result.encryptedPayload, "rawEncryptedPayload789")
+    }
+
+    func testParseCallbackURL_WithURLEncodedPayload_DecodesPayload() throws {
+        // Given: A callback URL with URL-encoded payload
+        sut = try DiscourseAuthManager(rsaKeyManager: rsaKeyManager)
+        let callbackURL = URL(string: "de.meine-piraten://discourse-auth?payload=hello%20world%2B%3D")!
+
+        // When: Parsing the callback URL
+        let result = try sut.parseCallbackURL(callbackURL)
+
+        // Then: Should URL-decode the payload
+        // Note: URLComponents automatically handles percent decoding for query items
+        XCTAssertEqual(result.encryptedPayload, "hello world+=")
+    }
+
+    func testParseCallbackURL_WithMissingPayload_ThrowsError() throws {
+        // Given: A callback URL without payload
+        sut = try DiscourseAuthManager(rsaKeyManager: rsaKeyManager)
+        let callbackURL = URL(string: "de.meine-piraten://discourse-auth?other=value")!
+
+        // When/Then: Parsing should throw callbackMissingPayload
+        XCTAssertThrowsError(try sut.parseCallbackURL(callbackURL)) { error in
+            XCTAssertEqual(error as? DiscourseAuthError, .callbackMissingPayload)
+        }
+    }
+
+    func testParseCallbackURL_WithEmptyFragment_ThrowsError() throws {
+        // Given: A callback URL with empty fragment
+        sut = try DiscourseAuthManager(rsaKeyManager: rsaKeyManager)
+        let callbackURL = URL(string: "de.meine-piraten://discourse-auth#")!
+
+        // When/Then: Parsing should throw callbackMissingPayload
+        XCTAssertThrowsError(try sut.parseCallbackURL(callbackURL)) { error in
+            XCTAssertEqual(error as? DiscourseAuthError, .callbackMissingPayload)
+        }
+    }
+
+    func testParseCallbackURL_WithNoQueryOrFragment_ThrowsError() throws {
+        // Given: A callback URL with no query or fragment
+        sut = try DiscourseAuthManager(rsaKeyManager: rsaKeyManager)
+        let callbackURL = URL(string: "de.meine-piraten://discourse-auth")!
+
+        // When/Then: Parsing should throw callbackMissingPayload
+        XCTAssertThrowsError(try sut.parseCallbackURL(callbackURL)) { error in
+            XCTAssertEqual(error as? DiscourseAuthError, .callbackMissingPayload)
+        }
+    }
 }
 
 // MARK: - Character Extension

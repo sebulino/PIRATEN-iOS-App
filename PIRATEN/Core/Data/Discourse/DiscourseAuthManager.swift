@@ -5,6 +5,7 @@
 //  Created by Claude Code on 01.02.26.
 //
 
+import AuthenticationServices
 import Foundation
 
 /// Errors that can occur during Discourse authentication
@@ -13,6 +14,16 @@ enum DiscourseAuthError: Error, Equatable {
     case invalidURL
     case nonceGenerationFailed
     case invalidPublicKey
+    case authSessionCancelled
+    case authSessionFailed(String)
+    case callbackMissingPayload
+    case invalidCallbackURL
+}
+
+/// Result of a successful Discourse auth callback containing the encrypted payload
+struct DiscourseAuthCallbackResult {
+    /// The encrypted payload (base64 encoded) containing the User API Key
+    let encryptedPayload: String
 }
 
 /// Manages the Discourse User API Key authentication flow.
@@ -148,6 +159,112 @@ final class DiscourseAuthManager {
     /// Clears the current nonce after successful auth or on error
     func clearNonce() {
         currentNonce = nil
+    }
+
+    /// Starts the Discourse User API Key authentication flow using ASWebAuthenticationSession.
+    /// Opens a web browser where the user completes SSO login, then receives the encrypted
+    /// API key payload via the custom URL scheme callback.
+    ///
+    /// - Parameter presentationContextProvider: Provides the window anchor for presenting the auth session
+    /// - Returns: The encrypted payload from Discourse containing the User API Key
+    /// - Throws: DiscourseAuthError if authentication fails
+    @MainActor
+    func authenticate(
+        presentationContextProvider: ASWebAuthenticationPresentationContextProviding
+    ) async throws -> DiscourseAuthCallbackResult {
+        // Build the auth URL (also generates and stores the nonce)
+        let authURL = try buildAuthURL()
+
+        // The callback URL scheme to intercept
+        let callbackURLScheme = redirectScheme
+
+        // Start the auth session
+        return try await withCheckedThrowingContinuation { continuation in
+            let session = ASWebAuthenticationSession(
+                url: authURL,
+                callbackURLScheme: callbackURLScheme
+            ) { [weak self] callbackURL, error in
+                if let error = error {
+                    // Handle user cancellation
+                    if let authError = error as? ASWebAuthenticationSessionError,
+                       authError.code == .canceledLogin {
+                        continuation.resume(throwing: DiscourseAuthError.authSessionCancelled)
+                    } else {
+                        continuation.resume(
+                            throwing: DiscourseAuthError.authSessionFailed(error.localizedDescription)
+                        )
+                    }
+                    return
+                }
+
+                guard let callbackURL = callbackURL else {
+                    continuation.resume(throwing: DiscourseAuthError.invalidCallbackURL)
+                    return
+                }
+
+                // Parse the callback URL to extract the encrypted payload
+                do {
+                    let result = try self?.parseCallbackURL(callbackURL)
+                    if let result = result {
+                        continuation.resume(returning: result)
+                    } else {
+                        continuation.resume(throwing: DiscourseAuthError.invalidCallbackURL)
+                    }
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+
+            session.presentationContextProvider = presentationContextProvider
+            session.prefersEphemeralWebBrowserSession = false // Allow SSO session sharing
+
+            session.start()
+        }
+    }
+
+    /// Parses the callback URL from ASWebAuthenticationSession and extracts the encrypted payload.
+    /// Discourse returns the encrypted User API Key as a URL fragment or query parameter.
+    ///
+    /// - Parameter url: The callback URL received from ASWebAuthenticationSession
+    /// - Returns: The parsed callback result containing the encrypted payload
+    /// - Throws: DiscourseAuthError if the URL cannot be parsed or is missing required data
+    func parseCallbackURL(_ url: URL) throws -> DiscourseAuthCallbackResult {
+        // Discourse sends the payload as a query parameter or fragment
+        // The URL format is: {scheme}://{host}?payload={encrypted_payload}
+        // Or it may be in the fragment: {scheme}://{host}#{payload}
+
+        // First, try query parameters
+        if let components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+            // Check query items for the payload
+            if let queryItems = components.queryItems {
+                // Discourse may use 'payload' or send the encrypted key directly
+                if let payload = queryItems.first(where: { $0.name == "payload" })?.value {
+                    return DiscourseAuthCallbackResult(encryptedPayload: payload)
+                }
+            }
+
+            // Check the fragment (Discourse sometimes puts data here)
+            if let fragment = components.fragment, !fragment.isEmpty {
+                // The fragment might contain the payload directly or as key=value
+                if fragment.contains("=") {
+                    // Parse fragment as query string
+                    let fragmentComponents = fragment.components(separatedBy: "&")
+                    for component in fragmentComponents {
+                        let parts = component.components(separatedBy: "=")
+                        if parts.count == 2, parts[0] == "payload" {
+                            let payload = parts[1].removingPercentEncoding ?? parts[1]
+                            return DiscourseAuthCallbackResult(encryptedPayload: payload)
+                        }
+                    }
+                } else {
+                    // Fragment is the payload itself
+                    let payload = fragment.removingPercentEncoding ?? fragment
+                    return DiscourseAuthCallbackResult(encryptedPayload: payload)
+                }
+            }
+        }
+
+        throw DiscourseAuthError.callbackMissingPayload
     }
 
     // MARK: - Private Helpers
