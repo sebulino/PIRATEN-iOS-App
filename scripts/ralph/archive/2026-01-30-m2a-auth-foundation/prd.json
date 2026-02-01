@@ -1,0 +1,76 @@
+{
+  "project": "piraten-ios-m2b-integrations-stubs",
+  "branchName": "ralph/m2b-integrations-stubs",
+  "description": "Milestone 2b: Discourse and Todos boundaries with fake repositories, believable stub UI, and docs hardening. No real network calls. Enforce Context7 usage for API/library correctness.",
+  "userStories": [
+    {
+      "id": "M2B-001",
+      "category": "discourse-domain",
+      "title": "Discourse domain models",
+      "description": "Define domain models for forum content without calling Discourse APIs.",
+      "acceptanceCriteria": [
+        "Domain models exist for Topic, Post, and UserSummary",
+        "Models are independent of API JSON shape",
+        "No networking code added",
+        "Models live in Domain/Discourse",
+        "Context7 consulted for Discourse API concepts and typical entities; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M2B-002",
+      "category": "discourse-repository",
+      "title": "Discourse repository protocol and fake implementation",
+      "description": "Provide a repository abstraction for forum data with a fake implementation and wire it into the Forum tab ViewModel.",
+      "acceptanceCriteria": [
+        "DiscourseRepository protocol exists",
+        "FakeDiscourseRepository returns static in-memory data",
+        "Forum tab displays fake topics via a ViewModel (no hard-coded UI placeholders)",
+        "No HTTP or WebSocket calls are made",
+        "Context7 consulted for Swift concurrency patterns (async/await) in repository APIs; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M2B-003",
+      "category": "todos-domain",
+      "title": "Todos domain and repository stub",
+      "description": "Create a clean boundary for meine-piraten.de tasks using a fake repository.",
+      "acceptanceCriteria": [
+        "Todo domain entity exists",
+        "TodoRepository protocol exists",
+        "FakeTodoRepository returns sample todos",
+        "Todos tab displays fake tasks via a ViewModel",
+        "Context7 consulted for best practices in modeling task lists in SwiftUI (identifiable, list rendering); summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M2B-004",
+      "category": "ui",
+      "title": "Believable stub data across Forum, Todos, Profile",
+      "description": "Replace empty placeholders with believable stub content so the app looks usable while integrations are pending.",
+      "acceptanceCriteria": [
+        "Forum tab shows topic titles and authors",
+        "Todos tab shows task title and owning group",
+        "Profile tab shows stub user information (from AuthRepository / domain model)",
+        "Placeholder nature is clear in code comments",
+        "Context7 consulted for current SwiftUI List and NavigationStack patterns; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M2B-005",
+      "category": "docs-security",
+      "title": "Documentation: open questions and threat model update for integrations",
+      "description": "Document unknowns and security considerations before real integrations.",
+      "acceptanceCriteria": [
+        "Docs/OPEN_QUESTIONS.md updated with: Piratenlogin protocol details, Discourse auth strategy, Todos API schema, rate limiting/permissions",
+        "Docs/THREAT_MODEL.md updated for tokens, local storage, member data exposure and trust boundaries",
+        "No secrets or endpoints are introduced",
+        "Context7 consulted for current mobile auth security guidance (token storage, session handling); summary added to progress.txt"
+      ],
+      "passes": false
+    }
+  ]
+}

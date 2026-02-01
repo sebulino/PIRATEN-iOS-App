@@ -10,6 +10,45 @@ Started: Sa. 31 Jan. 2026 17:35:42 CET
 - Error handling: `DiscourseError` provides German localized messages for UI display
 - Auth: Bearer token injected via `AuthenticatedHTTPClient`; no explicit token handling in API client
 
+### Auth Error Handling (M3B-006)
+- Single-attempt rule: `AuthStateManager.isHandlingAuthError` flag prevents concurrent 401/403 handling
+- First auth error triggers logout + `.sessionExpired` state; subsequent errors ignored
+- Flag reset on: successful re-authentication OR explicit logout
+- No automatic retry of token refresh - user must explicitly re-authenticate
+- `SessionExpiredView` provides clear "Sitzung abgelaufen" message with login button
+
+---
+
+## [2026-02-01 02:15] - M3B-006
+- What was implemented:
+  - Added `AuthState.sessionExpired` case for distinct session expiry handling
+  - Added `isHandlingAuthError` guard flag to `AuthStateManager` to prevent concurrent auth error handling
+  - Updated `handleAuthenticationError()` to check guard flag and transition to `.sessionExpired` state
+  - Flag reset on successful authentication (`authenticate()`) or explicit logout (`logout()`)
+  - Created `SessionExpiredView` in RootView.swift with clear German "Sitzung abgelaufen" message
+  - Updated `RootView` to handle new `.sessionExpired` state with dedicated view
+  - Documented single-attempt rule in `Docs/DECISIONS.md` (D-011)
+  - Documented Discourse integration endpoints in `Docs/DECISIONS.md` (D-012)
+  - Updated `Docs/OPEN_QUESTIONS.md` with Q-011 (posting), Q-012 (pagination), Q-013 (search)
+  - Updated Q-006 (rate limiting) with known defaults and recommended approach
+- Files changed:
+  - PIRATEN/Core/Domain/Auth/AuthState.swift (added `.sessionExpired` case)
+  - PIRATEN/Core/Domain/Auth/AuthStateManager.swift (added guard flag, updated methods)
+  - PIRATEN/App/RootView.swift (added `SessionExpiredView`, handled new state)
+  - Docs/DECISIONS.md (added D-011, D-012)
+  - Docs/OPEN_QUESTIONS.md (added Q-011, Q-012, Q-013, updated Q-006)
+  - scripts/ralph/prd.json (marked M3B-006 passes: true)
+- **Context7 / Web Research Summary:**
+  - Token refresh patterns from angular-oauth2-oidc: emit events for session changes, attempt single refresh, logout on failure
+  - Retry policies from retry-ts: `limitRetries(n)` prevents infinite loops; exponential backoff with cap recommended
+  - Session change handling: Angular OAuth uses debounce + shouldRunSilentRefresh flag pattern
+  - Best practice: single-attempt re-auth transition prevents cascading failures when multiple API calls fail
+  - Sources: https://github.com/manfredsteyer/angular-oauth2-oidc, https://github.com/gcanti/retry-ts
+- **Learnings for future iterations:**
+  - Guard flag pattern (`isHandlingAuthError`) is simple and effective for preventing concurrent state transitions
+  - New auth state case requires handling in RootView and any other observers of `authStateManager.currentState`
+  - `.sessionExpired` is distinct from `.failed` - provides cleaner UX messaging
+  - Context7 patterns translate well to Swift async/await even from RxJS-based libraries
 ---
 
 ## [2026-02-01 01:00] - M3B-005

@@ -106,24 +106,35 @@ Todos view is a placeholder. No API calls implemented.
 
 ---
 
-### Q-006: Rate Limiting and Permissions
+### Q-006: Rate Limiting and Retry Strategy
 
 **Status:** Open
-**Blocking:** All external integrations
+**Blocking:** Production reliability
 **Asked:** 2026-01-30
+**Updated:** 2026-02-01
 
 **Question:**
-What rate limits and permission models apply to external APIs?
+What rate limits apply and how should the app handle rate limit exhaustion?
 
-**What we need for each service (Discourse, meine-piraten.de):**
-- Rate limit thresholds (requests per minute/hour)
-- Rate limit response headers or error codes
-- Permission model (role-based? group-based?)
-- Required scopes or permissions for app access
-- Handling of rate limit exhaustion (retry strategies)
+**Known information (Discourse defaults):**
+- Authenticated users: 20 requests/minute, 2,880 requests/day
+- Rate limit response: HTTP 429 with `Retry-After` header
 
-**Current assumption:**
-No rate limiting implemented. Fake repositories have simulated delays only.
+**What we still need:**
+- Confirmation of actual Discourse rate limits (may differ from defaults)
+- Whether meine-piraten.de has rate limits
+- Preferred backoff strategy: exponential vs linear vs fixed
+- Whether to show user feedback during rate limit cooldown
+
+**Current implementation:**
+- DiscourseError.rateLimited case exists
+- isRetryable property returns true for rate limiting
+- **No automatic retry implemented** - errors are surfaced to UI
+
+**Recommended approach (pending confirmation):**
+- Exponential backoff with max 3 retries
+- Respect `Retry-After` header if present
+- Show "Zu viele Anfragen - bitte kurz warten" message
 
 ---
 
@@ -239,6 +250,76 @@ Where does user profile data come from?
 - API endpoint for profile data
 - Available profile fields
 - Update capability (read-only vs editable)
+
+---
+
+### Q-011: Posting and Reply Functionality
+
+**Status:** Open
+**Blocking:** Future milestone (write features)
+**Asked:** 2026-02-01
+
+**Question:**
+How should the app implement posting to forum topics and sending private messages?
+
+**What we need:**
+- Discourse endpoint for creating posts (`POST /posts`)
+- Required parameters (topic_id, raw, reply_to_post_number)
+- CSRF token requirements (if any)
+- Draft saving behavior
+- Rate limits for posting (separate from reading?)
+- Markdown preview API availability
+
+**Current implementation:**
+Not implemented. M3B scope is read-only.
+
+---
+
+### Q-012: Pagination Strategy
+
+**Status:** Open
+**Blocking:** Large topic/message lists
+**Asked:** 2026-02-01
+
+**Question:**
+How should the app handle pagination for long lists?
+
+**Known information:**
+- Discourse /latest.json returns first page (~30 topics by default)
+- Topic posts are returned in chunks (first ~20 posts)
+- Discourse uses `page` parameter or `before` cursor for pagination
+
+**What we need:**
+- Preferred pagination UX (infinite scroll vs explicit "load more")
+- Whether to implement offline caching for previously loaded pages
+- Memory management for very long lists
+
+**Current implementation:**
+First page only. No pagination support.
+
+---
+
+### Q-013: Search Functionality
+
+**Status:** Open
+**Blocking:** Future milestone (search feature)
+**Asked:** 2026-02-01
+
+**Question:**
+How should forum/message search be implemented?
+
+**Known information:**
+- Discourse search endpoint: `GET /search.json?q=...`
+- Returns topics, posts, users, categories
+
+**What we need:**
+- Whether to implement client-side filtering vs server search
+- Debounce/throttle requirements for search-as-you-type
+- Search result ranking preferences
+- Private message search support
+
+**Current implementation:**
+Not implemented.
 
 ---
 

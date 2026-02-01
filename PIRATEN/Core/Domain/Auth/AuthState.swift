@@ -21,6 +21,10 @@ enum AuthState: Equatable {
 
     /// Authentication failed with an error
     case failed(AuthError)
+
+    /// Session expired - server returned 401/403 (distinct from general failure)
+    /// This state triggers a clear "session expired, please log in again" message
+    case sessionExpired
 }
 
 /// Domain-level authentication errors

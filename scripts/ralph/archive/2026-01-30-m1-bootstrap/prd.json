@@ -1,0 +1,64 @@
+{
+  "project": "piraten-ios-m2a-auth-foundation",
+  "branchName": "ralph/m2a-auth-foundation",
+  "description": "Milestone 2a: Auth domain scaffolding + credential storage + DI wiring. No real network integrations. Enforce Context7 usage for API/library correctness.",
+  "userStories": [
+    {
+      "id": "M2A-001",
+      "category": "auth-domain",
+      "title": "Auth domain model and state machine refinement",
+      "description": "Introduce a clean authentication domain layer so real SSO can later replace fake auth without UI changes.",
+      "acceptanceCriteria": [
+        "AuthState lives in the Domain layer",
+        "Explicit states: unauthenticated, authenticating, authenticated, failed",
+        "AuthRepository protocol exists",
+        "FakeAuthRepository implements AuthRepository",
+        "UI depends only on the protocol",
+        "Context7 consulted for SwiftUI state management best practices; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M2A-002",
+      "category": "security",
+      "title": "CredentialStore abstraction backed by Keychain",
+      "description": "Prepare secure credential storage for future token-based authentication.",
+      "acceptanceCriteria": [
+        "CredentialStore protocol exists",
+        "KeychainCredentialStore implements it",
+        "Fake auth stores a dummy non-sensitive token",
+        "No tokens are logged",
+        "Unit test verifies set/get/delete",
+        "Context7 consulted for current Keychain/Security framework usage patterns in Swift; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M2A-003",
+      "category": "architecture",
+      "title": "Central AppContainer dependency wiring",
+      "description": "Wire all repositories and services in a single composition root and keep ViewModels injectable.",
+      "acceptanceCriteria": [
+        "AppContainer constructs AuthRepository",
+        "AppContainer constructs CredentialStore",
+        "ViewModels receive dependencies via initializers",
+        "No global singletons except system wrappers",
+        "Context7 consulted for DI patterns in SwiftUI apps; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M2A-004",
+      "category": "build-system",
+      "title": "Stabilize xcodebuild destination for automated runs",
+      "description": "Pin a simulator destination for repeatable builds/tests and prevent simulator clone explosions in automation.",
+      "acceptanceCriteria": [
+        "Document a single preferred simulator destination string in Docs/DECISIONS.md (or PROJECT_STATUS.md)",
+        "Update any automation/test command used by the agent to use the pinned destination",
+        "No new simulator clones are created in repeated runs (manual verification note acceptable)",
+        "Context7 consulted for current xcodebuild destination usage; summary added to progress.txt"
+      ],
+      "passes": false
+    }
+  ]
+}

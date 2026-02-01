@@ -14,7 +14,7 @@
         "Networking is async/await and errors map to domain errors",
         "Context7 consulted for Discourse API authentication patterns and endpoint conventions; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "M3B-002",
@@ -28,7 +28,7 @@
         "Unauthenticated state shows a clear prompt to login",
         "Context7 consulted for latest Discourse API response shape and mapping guidance; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "M3B-003",
@@ -42,7 +42,7 @@
         "Error states do not crash; provide retry",
         "Context7 consulted for Discourse topic detail endpoint and response fields; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "M3B-004",
@@ -56,7 +56,7 @@
         "Loading/empty/error states are implemented",
         "Context7 consulted for Discourse private messages endpoints and required params; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "M3B-005",
@@ -69,7 +69,7 @@
         "Sensitive content is not logged; debug logs scrub identifiers",
         "Context7 consulted for Discourse PM thread reading endpoint and safe handling guidance; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "M3B-006",
@@ -82,7 +82,7 @@
         "No infinite refresh loops; backoff or single-attempt rule documented",
         "Context7 consulted for recommended patterns around token refresh + API retry; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "M3B-007",

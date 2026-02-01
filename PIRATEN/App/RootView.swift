@@ -36,6 +36,8 @@ struct RootView: View {
                 )
             case .failed(let error):
                 ErrorView(error: error, authStateManager: authStateManager)
+            case .sessionExpired:
+                SessionExpiredView(authStateManager: authStateManager)
             }
         }
         .task {
@@ -68,6 +70,43 @@ struct ErrorView: View {
                 authStateManager.logout()
             }
             .buttonStyle(.bordered)
+        }
+        .padding()
+    }
+}
+
+/// View shown when the user's session has expired (401/403 from server).
+/// Provides a clear message and button to re-authenticate.
+/// This is part of M3B-006: Auth error handling across API clients.
+struct SessionExpiredView: View {
+    @ObservedObject var authStateManager: AuthStateManager
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Image(systemName: "clock.badge.exclamationmark")
+                .font(.system(size: 64))
+                .foregroundColor(.orange)
+
+            Text("Sitzung abgelaufen")
+                .font(.title)
+                .fontWeight(.bold)
+
+            Text("Deine Sitzung ist abgelaufen. Bitte melde dich erneut an, um fortzufahren.")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+
+            Button {
+                authStateManager.authenticate()
+            } label: {
+                HStack {
+                    Image(systemName: "arrow.right.circle.fill")
+                    Text("Erneut anmelden")
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
         }
         .padding()
     }

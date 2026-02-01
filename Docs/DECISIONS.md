@@ -287,8 +287,99 @@ The discovery document provides:
 
 ---
 
+## D-011: Single-Attempt Auth Error Handling (No Retry Loops)
+
+**Date:** 2026-02-01
+**Status:** Accepted
+
+### Context
+When an API call returns 401 (Unauthorized) or 403 (Forbidden), the app needs to handle this gracefully. However, multiple API calls may be in flight simultaneously (e.g., forum topics + private messages loading). If each failed call triggers a re-auth transition, this can cause:
+- Multiple logout calls
+- State machine confusion
+- UI flickering
+- Potential infinite loops if token refresh fails repeatedly
+
+### Decision
+Implement a **single-attempt rule** for auth error handling:
+
+1. **First 401/403 response**: Triggers logout and transitions to `.sessionExpired` state
+2. **Subsequent 401/403 responses** (while handling): Ignored via guard flag
+3. **Guard flag reset**: Occurs only on successful re-authentication or explicit logout
+
+### Implementation
+- `AuthStateManager.isHandlingAuthError` flag guards concurrent error handling
+- `AuthStateManager.handleAuthenticationError()` checks the flag before processing
+- New `AuthState.sessionExpired` case provides clear UI messaging
+- No automatic retry of token refresh - user must explicitly re-authenticate
+
+### Rationale
+1. **No infinite loops**: Single-attempt prevents cascading failures
+2. **Clear UX**: User sees one "session expired" message, not multiple error popups
+3. **Predictable behavior**: State transitions are deterministic
+4. **Follows Context7 best practices**: Similar to Angular OAuth2 OIDC patterns
+
+### UI Flow
+```
+401/403 received
+    → handleAuthenticationError() called (if not already handling)
+    → isHandlingAuthError = true
+    → logout() clears credentials
+    → state = .sessionExpired
+    → UI shows SessionExpiredView
+    → User taps "Erneut anmelden"
+    → authenticate() called
+    → On success: isHandlingAuthError = false, state = .authenticated
+```
+
+### References
+- Context7: angular-oauth2-oidc session change handling patterns
+- Context7: retry-ts limitRetries policy for preventing infinite loops
+
+---
+
+## D-012: Discourse API Integration (M3B)
+
+**Date:** 2026-02-01
+**Status:** Accepted
+
+### Context
+Document the Discourse API integration for forum and private messages.
+
+### Base URL
+```
+https://diskussion.piratenpartei.de
+```
+
+### Authentication Mechanism
+**Bearer Token Passthrough** (assumed): The SSO access token is passed directly via `Authorization: Bearer <token>` header. This assumes Discourse trusts the same Keycloak realm.
+
+If this doesn't work, fallback to User-API-Key authentication would be needed (see OPEN_QUESTIONS.md Q-002).
+
+### Endpoints Used
+
+| Feature | Endpoint | Method | Notes |
+|---------|----------|--------|-------|
+| Latest topics | `/latest.json` | GET | Returns topic list with users |
+| Topic detail | `/t/{topic_id}.json` | GET | Returns topic with posts |
+| Private messages | `/topics/private-messages/{username}.json` | GET | Returns PM inbox |
+| PM thread | `/t/{topic_id}.json` | GET | Same as topic detail; PMs are topics with archetype='private_message' |
+
+### Response Handling
+- All responses are JSON
+- Error responses follow Discourse format: `{ "errors": [...], "error_type": "..." }`
+- 429 responses indicate rate limiting (default: 20 req/min for authenticated users)
+
+### What Is NOT Implemented (M3B Scope)
+- Posting/replying to topics or messages
+- Real-time notifications
+- Search functionality
+- Pagination (currently fetches first page only)
+- Rate limit backoff/retry
+
+---
+
 ## Future Decisions
 
 Decisions pending external input:
-- Discourse authentication strategy (see OPEN_QUESTIONS.md)
+- Discourse authentication strategy verification (see OPEN_QUESTIONS.md)
 - meine-piraten.de API integration approach

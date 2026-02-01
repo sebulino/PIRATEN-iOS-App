@@ -1,0 +1,137 @@
+# Ralph Progress Log
+Started: Fr. 30 Jan. 2026 21:15:46 CET
+---
+
+## Codebase Patterns
+
+### Domain Model Pattern
+- Domain models live in `PIRATEN/Core/Domain/{Feature}/`
+- Use `Identifiable` and `Equatable` protocols for SwiftUI compatibility
+- Keep domain models independent of API JSON shape - DTOs handle mapping in the data layer
+- Use descriptive comments referencing API concepts without coupling to them
+
+### Repository + ViewModel Pattern
+- Repository protocols define async data access in `PIRATEN/Core/Domain/{Feature}/`
+- Fake implementations live in `PIRATEN/Core/Data/{Feature}/`
+- ViewModels live in `PIRATEN/App/ViewModels/`
+- All repository methods should be `async` to support both in-memory and future network implementations
+- Use `@Published` properties in ViewModels for SwiftUI state binding
+- Wire dependencies through AppContainer as the composition root
+- Pass ViewModels through view hierarchy via initializers (not environment objects)
+
+---
+
+## [2026-01-30 21:18] - M2B-001
+- **What was implemented:** Discourse domain models (Topic, Post, UserSummary)
+- **Files changed:**
+  - Created: `PIRATEN/Core/Domain/Discourse/Topic.swift`
+  - Created: `PIRATEN/Core/Domain/Discourse/Post.swift`
+  - Created: `PIRATEN/Core/Domain/Discourse/UserSummary.swift`
+- **Context7 Discourse API Learnings:**
+  - Topics have: id, title, posts_count, views, like_count, category_id, visible, closed, archived, created_by
+  - Posts have: id, username, cooked (HTML content), post_number, created_at, topic_id, reply_count
+  - UserSummary (created_by): id, username
+  - Discourse API uses `/t/{topic_id}.json` for full topic info, `/posts.json` for creating posts
+  - Search results grouped by posts and topics in `/search.json`
+- **Learnings for future iterations:**
+  - XcodeProject uses PBXFileSystemSynchronizedRootGroup - new files auto-sync without manual project edits
+  - Domain models should not contain Discourse-specific field names like "cooked" - translate to domain terms like "content"
+---
+
+## [2026-01-30 21:28] - M2B-002
+- **What was implemented:** Discourse repository protocol and fake implementation with Forum tab ViewModel
+- **Files changed:**
+  - Created: `PIRATEN/Core/Domain/Discourse/DiscourseRepository.swift`
+  - Created: `PIRATEN/Core/Data/Discourse/FakeDiscourseRepository.swift`
+  - Created: `PIRATEN/App/ViewModels/ForumViewModel.swift`
+  - Modified: `PIRATEN/App/Views/Main/ForumView.swift` - now uses ViewModel, displays topics
+  - Modified: `PIRATEN/App/Views/Main/MainTabView.swift` - accepts ForumViewModel
+  - Modified: `PIRATEN/App/RootView.swift` - passes ForumViewModel
+  - Modified: `PIRATEN/App/PIRATENApp.swift` - injects ForumViewModel from container
+  - Modified: `PIRATEN/Core/Support/AppContainer.swift` - added discourseRepository and forumViewModel
+- **Context7 Swift Concurrency Learnings:**
+  - Swift async/await enables clean async repository APIs
+  - Use `Task { }` to bridge async code from synchronous contexts (e.g., ViewModel methods)
+  - `try? await Task.sleep(nanoseconds:)` simulates network delays in fakes
+  - `@MainActor` annotation on protocols and classes ensures UI-safe execution
+  - `@Published` properties automatically notify SwiftUI of state changes
+  - Returning arrays (empty on error) is simpler than Result types for list fetches
+- **Learnings for future iterations:**
+  - Forum tab pattern: View -> ViewModel (ObservableObject) -> Repository protocol
+  - FakeRepository returns believable German content for Piratenpartei context
+  - `refreshable` modifier provides pull-to-refresh with async support
+  - Load data in `onAppear` with guard to prevent duplicate loads
+---
+
+## [2026-01-30 21:37] - M2B-003
+- **What was implemented:** Todos domain entity, repository protocol, fake implementation, and ViewModel integration
+- **Files changed:**
+  - Created: `PIRATEN/Core/Domain/Todos/Todo.swift`
+  - Created: `PIRATEN/Core/Domain/Todos/TodoRepository.swift`
+  - Created: `PIRATEN/Core/Data/Todos/FakeTodoRepository.swift`
+  - Created: `PIRATEN/App/ViewModels/TodosViewModel.swift`
+  - Modified: `PIRATEN/App/Views/Main/TodosView.swift` - now uses ViewModel with fake todos
+  - Modified: `PIRATEN/App/Views/Main/MainTabView.swift` - accepts TodosViewModel
+  - Modified: `PIRATEN/App/RootView.swift` - passes TodosViewModel
+  - Modified: `PIRATEN/App/PIRATENApp.swift` - injects TodosViewModel from container
+  - Modified: `PIRATEN/Core/Support/AppContainer.swift` - added todoRepository and todosViewModel
+- **Context7 SwiftUI List/Identifiable Learnings:**
+  - Structs conforming to `Identifiable` enable efficient List rendering
+  - `UUID` or unique Int IDs work well for `Identifiable` conformance
+  - `ForEach` within List allows sectioned content (pending vs completed)
+  - List combined with Section provides grouped display
+  - `strikethrough` modifier with conditional check for completed items
+  - Computed properties on ViewModel (`pendingTodos`, `completedTodos`) keep filtering logic out of Views
+- **Learnings for future iterations:**
+  - Todo model includes `priority` enum for future sorting/filtering
+  - `dueDate: Date?` allows optional due dates with visual indicators for overdue items
+  - Group name (`groupName`) represents organizational unit for task ownership
+  - Fake data uses German text and realistic Piratenpartei working group names
+---
+
+## [2026-01-30 22:15] - M2B-004
+- **What was implemented:** Believable stub data across Forum, Todos, Profile tabs
+- **Files changed:**
+  - Created: `PIRATEN/Core/Domain/Auth/User.swift` - User domain model
+  - Created: `PIRATEN/App/ViewModels/ProfileViewModel.swift` - Profile tab ViewModel
+  - Modified: `PIRATEN/Core/Domain/Auth/AuthRepository.swift` - Added getCurrentUser() method
+  - Modified: `PIRATEN/Core/Data/Auth/FakeAuthRepository.swift` - Added stub user data
+  - Modified: `PIRATEN/App/Views/Main/ProfileView.swift` - Full profile UI with ViewModel
+  - Modified: `PIRATEN/App/Views/Main/MainTabView.swift` - Accepts ProfileViewModel
+  - Modified: `PIRATEN/App/RootView.swift` - Passes ProfileViewModel
+  - Modified: `PIRATEN/App/PIRATENApp.swift` - Injects ProfileViewModel from container
+  - Modified: `PIRATEN/Core/Support/AppContainer.swift` - Added profileViewModel
+- **Context7 SwiftUI List and NavigationStack Learnings:**
+  - `List` with `Section` groups data naturally (contact, membership sections)
+  - `NavigationStack` is the modern replacement for `NavigationView`
+  - Custom row views keep List cells clean and reusable (ProfileRow pattern)
+  - `refreshable` modifier adds pull-to-refresh functionality
+  - Use `@ViewBuilder` for conditional content in computed properties
+  - Icon + label pattern with `Label` view for consistent row layouts
+- **Learnings for future iterations:**
+  - User model designed to accommodate SSO user claims (id, username, displayName, email)
+  - Member-specific data (memberSince, localGroupName, stateAssociationName) anticipated from party systems
+  - All placeholder comments explicitly state "PLACEHOLDER DATA" in code comments
+  - Profile shows info banner explaining this is test data until SSO integration
+  - Forum and Todos tabs already had believable stub data from M2B-002/003
+---
+
+## [2026-01-30 22:45] - M2B-005
+- **What was implemented:** Documentation update for open questions and threat model for integrations
+- **Files changed:**
+  - Modified: `Docs/OPEN_QUESTIONS.md` - Added Q-006 (Rate Limiting), Q-007 (Piratenlogin Protocol), Q-008 (Token Refresh Strategy)
+  - Modified: `Docs/THREAT_MODEL.md` - Added Trust Boundaries section (TB-001 through TB-004), Token Security detailed section, Local Storage Security section, Member Data Exposure section
+- **Context7 Mobile Auth Security Learnings (OWASP MASTG + Cheat Sheets):**
+  - Use `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` for Keychain items (prevents backup extraction)
+  - Consider `kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly` for items requiring device passcode
+  - Biometric protection via `SecAccessControlCreateFlags.biometryCurrentSet` invalidates on biometric changes
+  - Refresh tokens should use same Keychain protections as access tokens
+  - Token transmission: TLS 1.2+ required, tokens in Authorization header only (never in URLs)
+  - Token lifetime management: short-lived access tokens + secure refresh token rotation
+  - OIDC JWT validation: verify signature, iss, aud, exp, iat claims
+- **Learnings for future iterations:**
+  - Thin-client model: no persistent caching of sensitive content (forum posts, messages, tasks)
+  - Trust boundary documentation helps clarify security responsibilities
+  - Open questions should include detailed protocol requirements (grant types, PKCE, token rotation)
+  - Data classification (critical/high/medium/low sensitivity) guides storage decisions
+---
