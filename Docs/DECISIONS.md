@@ -251,7 +251,7 @@ Document the exact OAuth2/OIDC configuration used for Piratenlogin SSO authentic
 | Parameter | Value | Notes |
 |-----------|-------|-------|
 | **Issuer** | `https://sso.piratenpartei.de/realms/Piratenlogin` | Keycloak realm URL |
-| **Client ID** | `piraten-ios-app` | Public client (no secret) |
+| **Client ID** | `piraten_ios_app` | Public client (no secret) |
 | **Redirect URI** | `de.meine-piraten://oauth-callback` | Custom URL scheme |
 | **Scopes** | `openid profile offline_access` | Standard OIDC scopes |
 | **Grant Type** | Authorization Code + PKCE | RFC 8252 recommended |
@@ -375,6 +375,47 @@ If this doesn't work, fallback to User-API-Key authentication would be needed (s
 - Search functionality
 - Pagination (currently fetches first page only)
 - Rate limit backoff/retry
+
+---
+
+## D-013: Brand Asset Management (SVG + PDF Workflow)
+
+**Date:** 2026-02-01
+**Status:** Accepted
+
+### Context
+The app needs to include official Piratenpartei brand assets (logos, emblems). iOS has limited native SVG support in asset catalogs, requiring a conversion strategy.
+
+### Decision
+Store brand assets as SVG in `PIRATEN/Resources/Brand/` for version control and source-of-truth purposes. Convert to PDF for integration into `Assets.xcassets` when needed in the UI.
+
+### File Structure
+```
+PIRATEN/Resources/
+├── Brand/
+│   ├── README.md          # Usage documentation
+│   └── PiratenSignet.svg  # Official logo (source)
+└── Assets.xcassets/
+    └── (PDF versions for app use)
+```
+
+### Rationale
+1. **SVG for source control**: Vector format, text-diffable, easy to maintain
+2. **PDF for Xcode**: Native support in asset catalogs, "Preserve Vector Data" feature
+3. **Separation of concerns**: Source assets vs. compiled assets
+4. **No runtime dependencies**: Avoids need for SVG rendering libraries
+
+### Workflow
+When a logo is needed in the app:
+1. Convert SVG to PDF (using design tools or converters)
+2. Add PDF to `Assets.xcassets` with "Preserve Vector Data" enabled
+3. Reference via `Image("logo-name")` in SwiftUI
+
+### Alternative Considered
+Using SwiftSVG or similar libraries for runtime SVG rendering was rejected due to:
+- Added dependency overhead
+- Unnecessary complexity for static assets
+- No dynamic SVG requirements identified
 
 ---
 

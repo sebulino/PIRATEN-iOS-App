@@ -19,7 +19,7 @@ final class AppContainer {
     private static let issuerURL = URL(string: "https://sso.piratenpartei.de/realms/Piratenlogin")!
 
     /// OAuth2 client ID for the iOS app (public client)
-    private static let clientID = "piraten-ios-app"
+    private static let clientID = "piraten_ios_app"
 
     /// Redirect URI for OAuth callback
     private static let redirectURI = URL(string: "de.meine-piraten://oauth-callback")!
@@ -121,14 +121,16 @@ final class AppContainer {
         self.authStateManager = AuthStateManager(authRepository: authRepository)
 
         // HTTP layer for Discourse API
+        // NOTE: We intentionally do NOT pass onAuthError here.
+        // Discourse does not accept SSO Bearer tokens (see Q-002 in OPEN_QUESTIONS.md).
+        // Until proper Discourse auth is implemented, 401/403 from Discourse should NOT
+        // trigger session expiration - the SSO session is still valid.
         let baseHTTPClient = URLSessionHTTPClient()
         let tokenProvider = AuthStateTokenProvider(authStateManager: authStateManager)
         let authenticatedHTTPClient = AuthenticatedHTTPClient(
             baseClient: baseHTTPClient,
             tokenProvider: tokenProvider,
-            onAuthError: { [weak authStateManager] in
-                await authStateManager?.handleAuthenticationError()
-            }
+            onAuthError: nil  // Discourse 401s don't invalidate SSO session
         )
 
         // Discourse API client and repository

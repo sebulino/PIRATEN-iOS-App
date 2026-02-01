@@ -64,11 +64,30 @@ final class AuthStateManager: ObservableObject {
         }
     }
 
-    /// Checks for existing valid session on app launch
+    /// Checks for existing valid session on app launch.
+    /// Actually validates the session by attempting to get a valid token,
+    /// not just checking if tokens exist.
     func checkExistingSession() {
         Task {
-            if await authRepository.hasValidSession() {
-                currentState = .authenticated
+            // First check if we have any session at all
+            guard await authRepository.hasValidSession() else {
+                // No tokens - stay unauthenticated
+                return
+            }
+
+            // Try to get a valid token (this will refresh if needed)
+            do {
+                if let _ = try await authRepository.getValidAccessToken() {
+                    // Token is valid (or was successfully refreshed)
+                    currentState = .authenticated
+                }
+                // If nil, no tokens exist - stay unauthenticated
+            } catch {
+                // Token refresh failed - session is invalid
+                // Clear stale tokens and stay unauthenticated
+                await authRepository.logout()
+                // Don't set failed state here - just stay unauthenticated
+                // User will see login screen naturally
             }
         }
     }
@@ -81,41 +100,26 @@ final class AuthStateManager: ObservableObject {
             return try await authRepository.getValidAccessToken()
         } catch {
             // Token refresh failed - session is no longer valid
-            // Transition to unauthenticated with a clear error message
+            // Clear tokens and return to unauthenticated state
+            // User will see login screen and can try again
             await authRepository.logout()
-            currentState = .failed(
-                AuthError.refreshFailed("Sitzung abgelaufen - bitte erneut anmelden")
-            )
+            currentState = .unauthenticated
             return nil
         }
     }
 
     /// Handles authentication errors from API calls (401/403 responses).
-    /// Call this when an API returns 401/403 to trigger re-auth flow.
     ///
-    /// ## Single-Attempt Rule (M3B-006)
-    /// This method uses a guard flag to prevent infinite loops:
-    /// - First call: logs out user and transitions to `.sessionExpired`
-    /// - Subsequent calls (while flag is set): ignored silently
-    /// - Flag is reset when user successfully re-authenticates or logs out explicitly
+    /// NOTE: This method is currently disabled. With onAuthError: nil for the Discourse
+    /// HTTP client, there is no caller for this method. Discourse 401/403 errors are
+    /// handled locally in the views without triggering session expiration.
     ///
-    /// This prevents cascading failures when multiple concurrent API calls
-    /// all receive 401/403 and try to trigger re-auth simultaneously.
+    /// When proper Discourse auth is implemented (see Q-002), this can be re-enabled
+    /// for actual SSO session expiration scenarios.
     func handleAuthenticationError() {
-        Task {
-            // Single-attempt guard: ignore if already handling an auth error
-            guard !isHandlingAuthError else {
-                return
-            }
-
-            // Set the guard to prevent concurrent handling
-            isHandlingAuthError = true
-
-            // Log out and clear credentials
-            await authRepository.logout()
-
-            // Transition to session expired state with clear user message
-            currentState = .sessionExpired
-        }
+        // DISABLED: No-op to prevent accidental session expiration
+        // If this is being called, there's a bug - we should debug rather than
+        // silently expire the session
+        print("WARNING: handleAuthenticationError() called but is disabled")
     }
 }

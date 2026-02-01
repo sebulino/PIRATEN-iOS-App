@@ -34,10 +34,10 @@ Assuming OAuth2/OIDC. Auth UI is stubbed with a fake login toggle.
 
 ### Q-002: Discourse Auth Strategy
 
-**Status:** Open
+**Status:** Open (Partially Answered)
 **Blocking:** Forum/Messages features
 **Asked:** 2026-01-30
-**Updated:** 2026-01-31
+**Updated:** 2026-02-01
 
 **Question:**
 How does the app authenticate to Discourse?
@@ -52,15 +52,19 @@ How does the app authenticate to Discourse?
 - Required headers/tokens for API requests
 - API base URL
 
-**Technical Context:**
-The app now has working OAuth2/OIDC with Piratenlogin. Access tokens include:
-- `sub` claim (user identifier)
-- `profile` scope claims (name, preferred_username)
+**CONFIRMED (2026-02-01):**
+- ❌ **Option A (Bearer passthrough) does NOT work** - Discourse returns 401 when presented with the Keycloak SSO access token
+- This means Discourse is NOT configured to trust the same Keycloak realm
+- Need to investigate Options B, C, or D
 
-If Discourse trusts the same Keycloak realm, Option A (bearer passthrough) would be simplest.
+**Current workaround:**
+- Discourse API 401/403 errors do NOT trigger SSO session expiration
+- Forum/Messages views show "not authenticated" error but user remains logged in to SSO
+- See `AppContainer.swift` comment: `onAuthError: nil` for Discourse HTTP client
 
-**Current assumption:**
-Forum features are UI stubs only. AuthenticatedHTTPClient is ready to inject Bearer tokens once Discourse integration is confirmed.
+**Next steps:**
+- Contact Discourse admin to determine which auth method is available
+- Most likely Option D (User API Key) will be needed
 
 ---
 

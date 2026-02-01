@@ -121,16 +121,16 @@ struct ForumView: View {
             Image(systemName: "exclamationmark.lock")
                 .font(.system(size: 48))
                 .foregroundColor(.orange)
-            Text("Sitzung abgelaufen")
+            Text("Forum nicht verfügbar")
                 .font(.headline)
-            Text(message)
+            Text("Die Verbindung zum Forum konnte nicht hergestellt werden. Die Forum-Authentifizierung wird noch konfiguriert.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
-            Button("Erneut anmelden") {
-                onLoginTapped?()
+            Button("Erneut versuchen") {
+                viewModel.loadTopics()
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.bordered)
         }
         .padding()
     }

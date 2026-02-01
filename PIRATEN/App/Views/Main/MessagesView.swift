@@ -123,16 +123,16 @@ struct MessagesView: View {
             Image(systemName: "exclamationmark.lock")
                 .font(.system(size: 48))
                 .foregroundColor(.orange)
-            Text("Sitzung abgelaufen")
+            Text("Nachrichten nicht verfügbar")
                 .font(.headline)
-            Text(message)
+            Text("Die Verbindung zu den Nachrichten konnte nicht hergestellt werden. Die Nachrichten-Authentifizierung wird noch konfiguriert.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
-            Button("Erneut anmelden") {
-                onLoginTapped?()
+            Button("Erneut versuchen") {
+                viewModel.loadMessages()
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.bordered)
         }
         .padding()
     }
