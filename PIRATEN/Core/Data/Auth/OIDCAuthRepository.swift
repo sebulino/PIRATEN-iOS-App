@@ -159,23 +159,37 @@ final class OIDCAuthRepository: AuthRepository {
     }
 
     func getCurrentUser() async -> User? {
-        // Return placeholder user if authenticated
-        // Real user info will come from userinfo endpoint or ID token claims in future milestone
+        // Check if we have a valid session
         guard await hasValidSession() else {
             return nil
         }
 
-        // Placeholder user - will be replaced with real user info from ID token/userinfo
-        return User(
-            id: "oidc-user",
-            username: "authenticated-user",
-            displayName: "Authentifizierter Benutzer",
-            email: "user@piratenpartei.de", // Placeholder until ID token parsing
-            avatarUrl: nil,
-            memberSince: nil,
-            localGroupName: nil,
-            stateAssociationName: nil
-        )
+        // Try to get user info from ID token
+        guard let idToken = try? credentialStore.get(forKey: Self.idTokenKey) else {
+            return nil
+        }
+
+        do {
+            let claims = try IDTokenParser.parse(idToken)
+
+            // Use preferred_username for Discourse (falls back to sub if not available)
+            let username = claims.preferredUsername ?? claims.sub
+            let displayName = claims.name ?? username
+            let email = claims.email ?? ""
+
+            return User(
+                id: claims.sub,
+                username: username,
+                displayName: displayName,
+                email: email,
+                avatarUrl: nil,
+                memberSince: nil,
+                localGroupName: nil,
+                stateAssociationName: nil
+            )
+        } catch {
+            return nil
+        }
     }
 
     // MARK: - Private Helpers
