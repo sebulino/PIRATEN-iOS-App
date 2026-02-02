@@ -1,74 +1,137 @@
 # Ralph Progress Log
-Started: So.  1 Feb. 2026 19:14:18 CET
+Started: Mo.  2 Feb. 2026 12:30:35 CET
 ---
 
-## [2026-02-01 19:30] - M3C-001
-- Implemented RSAKeyManager for Discourse User API Key authentication
-- Created RSAKeyManager.swift with full RSA key pair generation and management
-- Created comprehensive test suite (RSAKeyManagerTests.swift) with 12 passing tests
-- Files changed:
-  - PIRATEN/Core/Support/RSAKeyManager.swift (new)
-  - PIRATENTests/RSAKeyManagerTests.swift (new)
+## Codebase Patterns
+
+### Message Safety Service Pattern (M4-003)
+- Use a dedicated `MessageSafetyService` for rate limiting and validation
+- Constants in `MessageSafetyConstants` enum for easy auditing
+- Validation returns typed enum (`MessageValidationResult`) with error messages
+- Rate limiting: track `isSendInProgress` and `lastSendTime` for cooldown
+- Never log message content, user identifiers, or any PII in safety code
+- Service is `@MainActor` isolated for UI integration
+- Character count display: show when content exceeds 50% of max length
+
+### Reply Composer UI Pattern (M4-001)
+- Use `@FocusState` for managing text field focus programmatically
+- Place composer at bottom of VStack with main content using `.frame(maxWidth: .infinity, maxHeight: .infinity)`
+- Use `ReplyComposerState` enum to track idle/sending/sent/failed states
+- Disable controls during sending state, show progress indicator on send button
+- Use `TextField` with `axis: .vertical` and `lineLimit(1...6)` for expandable text input
+- Keep error/success banners above the input area with dismiss actions
+
+## [2026-02-02 16:15] - M4-001
+- **What was implemented:**
+  - Reply composer UI for PM thread detail view
+  - Reply button in toolbar and inline "Antworten..." prompt at list bottom
+  - ReplyComposerView with plain text input, send/cancel buttons
+  - Proper handling of unauthenticated state (hides composer)
+  - Send button disabled during sending, shows ProgressView
+  - Success/error banners with dismiss functionality
+  - FocusState integration for keyboard handling
+- **Files changed:**
+  - PIRATEN/App/ViewModels/MessageThreadDetailViewModel.swift - Added ReplyComposerState enum and composer-related properties/methods
+  - PIRATEN/App/Views/Main/MessageThreadDetailView.swift - Added ReplyComposerView and integrated with thread detail
+- **Context7 Docs Summary:**
+  - TextField with `axis: .vertical` enables multiline expandable input
+  - `@FocusState` binding with `.focused()` modifier for programmatic focus control
+  - `onSubmit` modifier triggers action on Return key press
+  - `disabled()` modifier prevents input during sending state
+  - Text binding should be directly bound to ViewModel's `@Published` property
+  - lineLimit with range (1...6) allows dynamic height growth
 - **Learnings for future iterations:**
-  - iOS Security framework provides SecKeyCreateRandomKey for generating RSA keys
-  - Private keys are stored in Keychain using kSecClassKey (not kSecClassGenericPassword)
-  - Use kSecAttrApplicationTag to uniquely identify keys in Keychain
-  - SecKeyCopyPublicKey derives public key from private key
-  - SecKeyCopyExternalRepresentation exports key data as DER format
-  - PEM format is DER data base64-encoded with header/footer
-  - Use kSecAttrAccessibleWhenUnlockedThisDeviceOnly for maximum security
-  - SecKeyCreateDecryptedData handles RSA decryption with proper algorithm selection
-  - Context7 consulted for iOS Security framework best practices (though results focused on legacy FEE, native Security framework documentation was more relevant)
----
-## [2026-02-01 20:45] - M3C-002
-- Implemented DiscourseAuthManager for building User API Key auth URLs
-- Created DiscourseAuthManager.swift following Discourse User API Keys specification
-- Created comprehensive test suite (DiscourseAuthManagerTests.swift) with 14 passing tests
-- Files changed:
-  - PIRATEN/Core/Data/Discourse/DiscourseAuthManager.swift (new)
-  - PIRATENTests/DiscourseAuthManagerTests.swift (new)
-  - Config/Debug.xcconfig (added Discourse config)
-  - Config/Secrets.sample.xcconfig (documented config vars)
-  - PIRATEN/Info.plist (added config key placeholders)
-- **Learnings for future iterations:**
-  - Discourse User API Key auth follows spec at https://meta.discourse.org/t/user-api-keys-specification/48536
-  - Required parameters: client_id, nonce, auth_redirect, application_name, public_key, scopes
-  - Nonce must be 32 bytes cryptographically random (SecRandomCopyBytes), hex-encoded to 64 chars
-  - Scopes: start with minimal read-only (notifications, session_info)
-  - auth_redirect uses custom URL scheme configured in Info.plist (de.meine-piraten://discourse-auth)
-  - .xcconfig values must be referenced in Info.plist using $(VARIABLE_NAME) to be accessible via Bundle.main.infoDictionary
-  - Context7 consulted for Discourse User API Key endpoint - official specification found via WebSearch provided complete parameter documentation
----
-## [2026-02-02 12:10] - M3C-003, M3C-004, M3C-005, M3C-006, M3C-007
-- Completed full Discourse User API Key authentication flow
-- Fixed multiple issues discovered during real-world testing:
-  1. RSA public key format: iOS exports PKCS#1, Discourse expects SPKI - added ASN.1 header conversion
-  2. Base64 newlines: Discourse returns payload with %0A newlines - use .ignoreUnknownCharacters option
-  3. URL encoding: PEM base64 chars (+/=) need strict RFC 3986 encoding
-  4. PEM format: Ensure trailing newline before -----END PUBLIC KEY-----
-  5. Redirect URL: Updated to piratenapp://discourse_auth (configured in Discourse admin)
-  6. Scopes: Changed to read,session_info (notifications requires push_url)
-- Files changed:
-  - PIRATEN/Core/Support/RSAKeyManager.swift (PKCS#1→SPKI conversion)
-  - PIRATEN/Core/Data/Discourse/DiscourseAuthManager.swift (logging, base64 fix, URL encoding)
-  - PIRATEN/Core/Data/Discourse/DiscourseAuthCoordinator.swift (new - UI flow orchestration)
-  - PIRATEN/Core/Data/HTTP/DiscourseHTTPClient.swift (new - User-Api-Key header injection)
-  - PIRATEN/Core/Domain/Discourse/DiscourseCredential.swift (new)
-  - PIRATEN/Core/Domain/Discourse/DiscourseAuthResponse.swift (new)
-  - PIRATEN/Core/Domain/Discourse/DiscourseAPIKeyProvider.swift (new - protocol)
-  - PIRATEN/Core/Data/Discourse/KeychainDiscourseAPIKeyProvider.swift (new)
-  - PIRATEN/Core/Support/WindowEnvironment.swift (new - ASWebAuthenticationSession anchor)
-  - Config/Debug.xcconfig, Config/Release.xcconfig (redirect URL config)
-  - PIRATEN/Info.plist (piratenapp URL scheme)
-  - Docs/DECISIONS.md (D-014, D-015, D-016)
-  - Docs/OPEN_QUESTIONS.md (Q-002 resolved)
-- **Learnings for future iterations:**
-  - iOS SecKeyCopyExternalRepresentation returns PKCS#1, not SPKI - conversion required for most servers
-  - SPKI = SEQUENCE { AlgorithmIdentifier, BIT STRING { PKCS#1 } } - 15-byte header + BIT STRING wrapper
-  - Data(base64Encoded:) fails on whitespace by default - always use .ignoreUnknownCharacters
-  - URL query encoding: use custom CharacterSet with only alphanumerics + -._~ for base64 content
-  - ASWebAuthenticationSession needs a window anchor - pass via environment or use UIApplication.shared
-  - Discourse scopes: notifications/push require push_url parameter; use read,session_info for basic access
-  - Debug logging is essential for auth flows - use os.log with subsystem/category filtering
+  - SwiftUI's TextField now supports multiline via `axis: .vertical` - no need for TextEditor
+  - FocusState binding passed to child views works for programmatic focus
+  - Composer state machine (idle/sending/sent/failed) provides clean UI feedback
+  - Keep send as stub for M4-001, actual API call deferred to M4-002
 ---
 
+## [2026-02-02 16:25] - M4-002
+- **What was implemented:**
+  - Discourse API call for replying to PM threads via POST /posts.json
+  - DiscourseAPIClient.replyToMessageThread(topicId:content:) method
+  - DiscourseRepository.replyToThread(topicId:content:) protocol and implementations
+  - Real API integration in MessageThreadDetailViewModel.sendReply()
+  - Proper error mapping to domain errors (unauthorized, forbidden, rateLimited, etc.)
+  - Thread reload after successful reply
+- **Files changed:**
+  - PIRATEN/Core/Data/Discourse/DiscourseAPIClient.swift - Added replyToMessageThread method and CreatePostRequest DTO
+  - PIRATEN/Core/Domain/Discourse/DiscourseRepository.swift - Added replyToThread protocol method
+  - PIRATEN/Core/Data/Discourse/RealDiscourseRepository.swift - Implemented replyToThread
+  - PIRATEN/Core/Data/Discourse/FakeDiscourseRepository.swift - Implemented stub replyToThread
+  - PIRATEN/App/ViewModels/MessageThreadDetailViewModel.swift - Replaced stub with real API call
+  - PIRATENTests/DiscourseReplyTests.swift - Added unit tests for reply functionality
+- **Context7 Docs Summary (Discourse API):**
+  - POST /posts.json endpoint for creating posts/replies
+  - Request body: `topic_id` (required for reply) and `raw` (markdown content)
+  - No category needed for PM replies (only for new topics)
+  - Returns created post with id, topic_id, post_number, cooked (HTML), raw (markdown)
+  - Auth via User-Api-Key header or Bearer token (our implementation uses AuthenticatedHTTPClient)
+  - Error response format: `{"errors": ["message"], "error_type": "..."}`
+- **Learnings for future iterations:**
+  - Discourse PM replies use the same /posts.json endpoint as regular topic replies
+  - Only topic_id and raw are required - no need for archetype or other params
+  - Error parsing extracts messages from Discourse's {"errors": [...]} format
+  - AuthenticatedHTTPClient handles token injection automatically
+  - Test MainActor-isolated classes with @MainActor on test struct
+---
+
+## [2026-02-02 17:00] - M4-003
+- **What was implemented:**
+  - MessageSafetyService for rate limiting and input validation
+  - Basic rate limiting: one send at a time + 3 second cooldown after success
+  - Input length constraints: max 10,000 characters with validation messages
+  - Character count display in composer UI when approaching limit
+  - Validation error banner in composer
+  - No logging of message content anywhere in safety/composer code
+  - Updated THREAT_MODEL.md with T-009 through T-013 for messaging write actions
+- **Files changed:**
+  - PIRATEN/Core/Support/MessageSafetyService.swift - NEW: Safety service with rate limiting and validation
+  - PIRATEN/App/ViewModels/MessageThreadDetailViewModel.swift - Integrated safety service
+  - PIRATEN/App/Views/Main/MessageThreadDetailView.swift - Added character count and validation UI
+  - Docs/THREAT_MODEL.md - Added messaging write action threats (T-009 to T-013)
+- **Context7 Docs Summary (OWASP MASTG - Mobile Logging/Privacy):**
+  - Never log sensitive data (PII, tokens, message content)
+  - Use typed errors without exposing content in messages
+  - Autocorrection should be disabled for sensitive fields (we use plain TextField)
+  - Client-side rate limiting reduces abuse surface
+  - Validation happens client-side but server is authoritative
+  - Error messages should be generic, not reveal internal state
+- **Learnings for future iterations:**
+  - Default parameter with MainActor init causes compile error - use optional with nil coalescing instead
+  - Character count should use trimmed content length for accurate validation
+  - Keep cooldown short (3s) for good UX while still preventing rapid spam
+  - THREAT_MODEL.md should be updated for each new write action type
+  - Privacy comments in code document the no-logging policy
+---
+
+## [2026-02-02 21:05] - M4-004
+- **What was implemented:**
+  - Enhanced MessagePostRow with conversational chat-like layout
+  - Avatar circles with user initials and color-coded backgrounds
+  - Improved timestamp formatting: relative for recent (<7 days), date for older
+  - Better visual hierarchy with avatar | content layout
+  - Additional HTML entity decoding (&#39; for apostrophe)
+  - Verified loading/empty/error states consistency with other tabs
+  - Manual refresh already working via .refreshable modifier
+- **Files changed:**
+  - PIRATEN/App/Views/Main/MessageThreadDetailView.swift - Enhanced MessagePostRow styling
+  - PIRATEN/Core/Data/Discourse/DiscourseAuthManager.swift - Added write scope for M4, testable initializer
+  - PIRATENTests/DiscourseAuthManagerTests.swift - Fixed tests for new config, added test helpers
+  - PIRATENUITests/PIRATENUITests.swift - Added -UITestMode flag for clean test state
+  - PIRATEN/App/PIRATENApp.swift - Added UI test mode keychain reset
+- **Context7 Docs Summary (SwiftUI List/Chat Patterns):**
+  - MessageRow pattern: HStack with ZStack (Circle + initials) and content
+  - listRowSpacing(_:) for custom vertical spacing between rows
+  - listRowBackground(_:) for custom row backgrounds
+  - Text.DateStyle: .relative for recent times, .date/.time for absolute
+  - RelativeDateTimeFormatter for localized relative time strings
+  - fixedSize(horizontal: false, vertical: true) for proper text wrapping
+- **Learnings for future iterations:**
+  - Avatar color from username hash provides consistent per-user colors
+  - RelativeDateTimeFormatter with .abbreviated style gives compact output
+  - Hybrid timestamp (relative vs date) improves readability across time ranges
+  - Test fixes: use testable initializers to inject config in unit tests
+  - UI tests need launch arguments to reset app state for clean testing
+---

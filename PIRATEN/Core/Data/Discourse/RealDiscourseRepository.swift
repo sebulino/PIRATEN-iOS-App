@@ -115,6 +115,20 @@ final class RealDiscourseRepository: DiscourseRepository {
         }
     }
 
+    func replyToThread(topicId: Int, content: String) async throws {
+        do {
+            // The API returns the created post, but we don't need to parse it
+            // The caller will refresh the thread to get the updated posts list
+            _ = try await apiClient.replyToMessageThread(topicId: topicId, content: content)
+        } catch let error as DiscourseError {
+            throw mapToRepositoryError(error)
+        } catch {
+            throw DiscourseRepositoryError.loadFailed(
+                message: "Nachricht konnte nicht gesendet werden"
+            )
+        }
+    }
+
     // MARK: - Private Helpers
 
     /// Decodes the /latest.json response.

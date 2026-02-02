@@ -1,106 +1,60 @@
 {
-  "project": "piraten-ios-m3c-discourse-auth",
-  "branchName": "ralph/m3c-discourse-auth",
-  "description": "Milestone 3C: Discourse User API Key Authentication. Implement the same authentication flow used by the official Discourse mobile app - generate RSA key pair, request User API Key via web auth, store encrypted key in Keychain, and use User-Api-Key header for all Discourse API calls.",
+  "project": "piraten-ios-m4-messaging-mvp",
+  "branchName": "ralph/m4-messaging-mvp",
+  "description": "Milestone 4: Discourse private messaging MVP (reply). Enable replying to PM threads with strict safeguards, conservative UX, and robust error handling. Read-only browsing from M3b remains; this milestone adds minimal write action (reply).",
   "userStories": [
     {
-      "id": "M3C-001",
-      "category": "auth-crypto",
-      "title": "Generate and store RSA key pair for Discourse auth",
-      "description": "Create RSA key pair for encrypting the User API Key exchange. Store keys securely in Keychain.",
+      "id": "M4-001",
+      "category": "messages-compose",
+      "title": "Compose UI for replying to an existing PM thread",
+      "description": "Add a reply composer to PM thread detail (no new-thread creation yet).",
       "acceptanceCriteria": [
-        "RSAKeyManager class generates 2048-bit RSA key pair using Security framework",
-        "Public key is exportable in PEM format for sending to Discourse",
-        "Private key is stored in Keychain with appropriate access control",
-        "Key pair is generated once and reused for subsequent auth attempts",
-        "Context7 consulted for iOS Security framework RSA key generation; summary added to progress.txt"
+        "Message thread detail includes a Reply button that opens a composer",
+        "Composer supports plain text only (no attachments, no rich formatting beyond basic markdown passthrough if needed)",
+        "Send is disabled while request in flight; clear success/failure states",
+        "Unauthenticated users see a login prompt instead of composer",
+        "Context7 consulted for current SwiftUI compose patterns + safe text input handling; summary added to progress.txt"
       ],
       "passes": true
     },
     {
-      "id": "M3C-002",
-      "category": "auth-flow",
-      "title": "Build Discourse User API Key auth URL",
-      "description": "Construct the authentication URL for /user-api-key/new endpoint with all required parameters.",
+      "id": "M4-002",
+      "category": "messages-api",
+      "title": "Discourse API call for replying to a PM thread",
+      "description": "Implement the minimal Discourse API request to post a reply into an existing PM thread.",
       "acceptanceCriteria": [
-        "DiscourseAuthManager builds URL with parameters: client_id, nonce, auth_redirect, application_name, public_key, scopes, discourse_app",
-        "Scopes limited to minimum needed: notifications, session_info (no write scopes initially)",
-        "Nonce is cryptographically random and stored for verification",
-        "auth_redirect uses custom URL scheme (piraten://discourse-auth)",
-        "Context7 consulted for Discourse User API Key endpoint parameters; summary added to progress.txt"
+        "DiscourseAPI client exposes a 'replyToMessageThread' method",
+        "Request uses AuthenticatedHTTPClient and applies token refresh rules from M3a",
+        "Reply is posted to the correct PM thread and reflected in UI after success (reload thread)",
+        "Errors map to domain errors; no crashes; retry available",
+        "Context7 consulted for Discourse PM reply endpoint/params; summary added to progress.txt"
       ],
       "passes": true
     },
     {
-      "id": "M3C-003",
-      "category": "auth-flow",
-      "title": "Implement web-based auth flow with ASWebAuthenticationSession",
-      "description": "Open Discourse auth page in system browser, handle SSO login, receive callback with encrypted payload.",
+      "id": "M4-003",
+      "category": "safety",
+      "title": "Add write-action safety rails for messaging",
+      "description": "Add conservative safeguards for write actions in an official tool.",
       "acceptanceCriteria": [
-        "ASWebAuthenticationSession opens /user-api-key/new URL",
-        "User completes SSO login via Piratenlogin in the web view",
-        "Callback URL (piraten://discourse-auth) is intercepted and parsed",
-        "Encrypted payload extracted from callback URL parameters",
-        "Info.plist configured with custom URL scheme piraten://",
-        "Context7 consulted for ASWebAuthenticationSession callback handling; summary added to progress.txt"
+        "Basic rate limiting: prevent rapid repeated sends (e.g., one send at a time + short cooldown)",
+        "Input length constraints and clear validation messages",
+        "No logging of message content; logs scrub identifiers",
+        "Docs/THREAT_MODEL.md updated for messaging write actions",
+        "Context7 consulted for recommended mobile app logging/privacy practices; summary added to progress.txt"
       ],
       "passes": true
     },
     {
-      "id": "M3C-004",
-      "category": "auth-crypto",
-      "title": "Decrypt and store User API Key",
-      "description": "Use RSA private key to decrypt the payload and extract the User API Key. Store securely.",
+      "id": "M4-004",
+      "category": "ux",
+      "title": "Improve PM thread rendering for conversational feel",
+      "description": "Refine the PM detail UI for readability and trust.",
       "acceptanceCriteria": [
-        "Payload decrypted using RSA private key from Keychain",
-        "User API Key extracted from decrypted JSON response",
-        "Nonce verified to match the one sent in auth request",
-        "User API Key stored in Keychain via existing CredentialStore protocol",
-        "DiscourseCredential model created for storing key + metadata",
-        "Context7 consulted for iOS Security framework RSA decryption; summary added to progress.txt"
-      ],
-      "passes": true
-    },
-    {
-      "id": "M3C-005",
-      "category": "api-client",
-      "title": "Modify HTTP client to use User-Api-Key header for Discourse",
-      "description": "Replace Bearer token with User-Api-Key header for all Discourse API requests.",
-      "acceptanceCriteria": [
-        "DiscourseHTTPClient uses 'User-Api-Key' header instead of 'Authorization: Bearer'",
-        "Token provider abstraction updated to support both SSO tokens and User API Keys",
-        "Existing DiscourseAPIClient works without modification (header change is transparent)",
-        "ForumView and MessagesView display content after successful auth",
-        "Context7 consulted for HTTP header best practices; summary added to progress.txt"
-      ],
-      "passes": true
-    },
-    {
-      "id": "M3C-006",
-      "category": "auth-state",
-      "title": "Integrate Discourse auth with app auth state",
-      "description": "Coordinate Discourse auth flow with existing Keycloak SSO auth state management.",
-      "acceptanceCriteria": [
-        "After Keycloak login succeeds, Discourse auth is triggered if no User API Key exists",
-        "Auth state reflects both SSO state and Discourse connection state",
-        "User sees clear progress indicators during two-step auth",
-        "If Discourse auth fails, user can retry without re-doing SSO login",
-        "Logout clears both Keycloak tokens and Discourse User API Key",
-        "Context7 consulted for multi-service auth state patterns; summary added to progress.txt"
-      ],
-      "passes": true
-    },
-    {
-      "id": "M3C-007",
-      "category": "docs",
-      "title": "Document Discourse auth architecture",
-      "description": "Update documentation with the new auth flow and security considerations.",
-      "acceptanceCriteria": [
-        "DECISIONS.md updated with D-011 explaining User API Key choice over Bearer passthrough",
-        "THREAT_MODEL.md updated with RSA key storage and API key security considerations",
-        "OPEN_QUESTIONS.md Q-002 marked as resolved",
-        "README.md updated with auth flow overview",
-        "Context7 consulted for security documentation best practices; summary added to progress.txt"
+        "Messages show sender name + timestamp (as available) and body excerpt/rendering",
+        "Loading/empty/error states are polished and consistent with other tabs",
+        "Manual refresh supported",
+        "Context7 consulted for SwiftUI list/chat-like layout patterns; summary added to progress.txt"
       ],
       "passes": true
     }

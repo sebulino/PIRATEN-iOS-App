@@ -173,12 +173,12 @@ struct DiscourseTopicDetailResponse: Decodable {
     let id: Int
     let title: String
     let postsCount: Int
-    let views: Int
-    let likeCount: Int
-    let categoryId: Int
-    let visible: Bool
-    let closed: Bool
-    let archived: Bool
+    let views: Int?
+    let likeCount: Int?
+    let categoryId: Int?  // Optional: PMs don't have categories
+    let visible: Bool?
+    let closed: Bool?
+    let archived: Bool?
     let createdAt: String
 
     /// Contains posts and the full stream of post IDs
@@ -222,12 +222,12 @@ struct DiscourseTopicDetailResponse: Decodable {
             createdBy: firstPostAuthor,
             createdAt: date,
             postsCount: postsCount,
-            viewCount: views,
-            likeCount: likeCount,
-            categoryId: categoryId,
-            isVisible: visible,
-            isClosed: closed,
-            isArchived: archived
+            viewCount: views ?? 0,
+            likeCount: likeCount ?? 0,
+            categoryId: categoryId ?? 0,  // PMs don't have categories
+            isVisible: visible ?? true,
+            isClosed: closed ?? false,
+            isArchived: archived ?? false
         )
     }
 }

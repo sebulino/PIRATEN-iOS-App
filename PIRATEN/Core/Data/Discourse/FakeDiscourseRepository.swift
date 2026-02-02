@@ -297,4 +297,11 @@ final class FakeDiscourseRepository: DiscourseRepository {
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
         return fakeMessageThreads
     }
+
+    func replyToThread(topicId: Int, content: String) async throws {
+        // Simulate network delay (placeholder behavior)
+        try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
+        // For fake implementation, we don't actually persist the reply
+        // A real integration test would verify behavior differently
+    }
 }
