@@ -29,6 +29,21 @@ enum MessageThreadDetailLoadState: Equatable {
     case error(message: String)
 }
 
+/// Represents the state of the reply composer.
+enum ReplyComposerState: Equatable {
+    /// Composer is ready for input
+    case idle
+
+    /// Reply is being sent
+    case sending
+
+    /// Reply was sent successfully
+    case sent
+
+    /// Sending failed with an error message
+    case failed(message: String)
+}
+
 /// ViewModel for the message thread detail screen.
 /// Coordinates between the MessageThreadDetailView and the DiscourseRepository.
 ///
@@ -50,6 +65,31 @@ final class MessageThreadDetailViewModel: ObservableObject {
 
     /// The current load state
     @Published private(set) var loadState: MessageThreadDetailLoadState = .idle
+
+    /// Whether the reply composer is currently shown
+    @Published var isComposerVisible: Bool = false
+
+    /// The text content of the reply being composed
+    @Published var replyText: String = ""
+
+    /// The current state of the reply composer
+    @Published private(set) var composerState: ReplyComposerState = .idle
+
+    /// Whether the user is authenticated (determined from load state)
+    var isAuthenticated: Bool {
+        switch loadState {
+        case .notAuthenticated, .authenticationFailed:
+            return false
+        default:
+            return true
+        }
+    }
+
+    /// Whether the send button should be enabled
+    var canSendReply: Bool {
+        !replyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && composerState != .sending
+    }
 
     // MARK: - Dependencies
 
@@ -92,6 +132,55 @@ final class MessageThreadDetailViewModel: ObservableObject {
     /// Retries loading posts after an error.
     func retry() {
         loadPosts()
+    }
+
+    // MARK: - Reply Composer Methods
+
+    /// Shows the reply composer.
+    func showComposer() {
+        isComposerVisible = true
+        composerState = .idle
+    }
+
+    /// Hides the reply composer and clears the text.
+    func hideComposer() {
+        isComposerVisible = false
+        replyText = ""
+        composerState = .idle
+    }
+
+    /// Sends the reply. This is a UI-only stub for M4-001.
+    /// The actual API call will be implemented in M4-002.
+    func sendReply() {
+        guard canSendReply else { return }
+
+        composerState = .sending
+
+        // M4-001: Stub implementation - actual API call in M4-002
+        // For now, we simulate a successful send for UI testing
+        Task {
+            // Simulate network delay (to be replaced with actual API call)
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+
+            // Mark as sent and clear the composer
+            composerState = .sent
+            replyText = ""
+
+            // After a brief moment, hide composer and reload posts
+            try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
+            isComposerVisible = false
+            composerState = .idle
+
+            // Reload posts to show the new message (will be real data once M4-002 is done)
+            loadPosts()
+        }
+    }
+
+    /// Dismisses any error state in the composer.
+    func dismissComposerError() {
+        if case .failed = composerState {
+            composerState = .idle
+        }
     }
 
     // MARK: - Private Helpers

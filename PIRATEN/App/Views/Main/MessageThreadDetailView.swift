@@ -14,39 +14,69 @@ import SwiftUI
 /// All sensitive data handling follows the project's privacy-first principles.
 struct MessageThreadDetailView: View {
     @ObservedObject var viewModel: MessageThreadDetailViewModel
+    @FocusState private var isComposerFocused: Bool
 
     /// Optional callback for when user taps login button in unauthenticated state
     var onLoginTapped: (() -> Void)?
 
     var body: some View {
-        Group {
-            switch viewModel.loadState {
-            case .idle, .loading:
-                if viewModel.posts.isEmpty {
-                    ProgressView("Lade Nachrichten...")
-                } else {
-                    messagesList
+        VStack(spacing: 0) {
+            // Main content area
+            Group {
+                switch viewModel.loadState {
+                case .idle, .loading:
+                    if viewModel.posts.isEmpty {
+                        ProgressView("Lade Nachrichten...")
+                    } else {
+                        messagesListWithReply
+                    }
+
+                case .loaded:
+                    if viewModel.posts.isEmpty {
+                        emptyState
+                    } else {
+                        messagesListWithReply
+                    }
+
+                case .notAuthenticated:
+                    notAuthenticatedState
+
+                case .authenticationFailed(let message):
+                    authenticationFailedState(message: message)
+
+                case .error(let message):
+                    errorState(message: message)
                 }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            case .loaded:
-                if viewModel.posts.isEmpty {
-                    emptyState
-                } else {
-                    messagesList
-                }
-
-            case .notAuthenticated:
-                notAuthenticatedState
-
-            case .authenticationFailed(let message):
-                authenticationFailedState(message: message)
-
-            case .error(let message):
-                errorState(message: message)
+            // Reply composer at bottom (only shown when authenticated and composer is visible)
+            if viewModel.isAuthenticated && viewModel.isComposerVisible {
+                ReplyComposerView(
+                    replyText: $viewModel.replyText,
+                    composerState: viewModel.composerState,
+                    canSend: viewModel.canSendReply,
+                    isFocused: $isComposerFocused,
+                    onSend: { viewModel.sendReply() },
+                    onCancel: { viewModel.hideComposer() },
+                    onDismissError: { viewModel.dismissComposerError() }
+                )
             }
         }
         .navigationTitle(viewModel.thread.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if viewModel.isAuthenticated && !viewModel.isComposerVisible {
+                    Button {
+                        viewModel.showComposer()
+                        isComposerFocused = true
+                    } label: {
+                        Label("Antworten", systemImage: "square.and.pencil")
+                    }
+                }
+            }
+        }
         .onAppear {
             if viewModel.loadState == .idle {
                 viewModel.loadPosts()
@@ -57,10 +87,38 @@ struct MessageThreadDetailView: View {
     // MARK: - State Views
 
     @ViewBuilder
-    private var messagesList: some View {
-        List(viewModel.posts) { post in
-            MessagePostRow(post: post)
+    private var messagesListWithReply: some View {
+        List {
+            ForEach(viewModel.posts) { post in
+                MessagePostRow(post: post)
+            }
+
+            // Show inline reply prompt at the bottom of the list when composer is not visible
+            if viewModel.isAuthenticated && !viewModel.isComposerVisible {
+                replyPromptRow
+            }
         }
+        .refreshable {
+            viewModel.retry()
+        }
+    }
+
+    @ViewBuilder
+    private var replyPromptRow: some View {
+        Button {
+            viewModel.showComposer()
+            isComposerFocused = true
+        } label: {
+            HStack {
+                Image(systemName: "text.bubble")
+                    .foregroundColor(.accentColor)
+                Text("Antworten...")
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+            .padding(.vertical, 8)
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder
@@ -141,6 +199,118 @@ struct MessageThreadDetailView: View {
             .buttonStyle(.bordered)
         }
         .padding()
+    }
+}
+
+// MARK: - Reply Composer View
+
+/// A composer view for writing and sending a reply to a PM thread.
+/// Supports plain text only with clear send/cancel actions.
+///
+/// Privacy note: Message content is never logged.
+private struct ReplyComposerView: View {
+    @Binding var replyText: String
+    let composerState: ReplyComposerState
+    let canSend: Bool
+    var isFocused: FocusState<Bool>.Binding
+    let onSend: () -> Void
+    let onCancel: () -> Void
+    let onDismissError: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Divider()
+
+            // Error banner (shown when sending failed)
+            if case .failed(let message) = composerState {
+                errorBanner(message: message)
+            }
+
+            // Success banner (shown briefly after successful send)
+            if composerState == .sent {
+                successBanner
+            }
+
+            // Composer input area
+            HStack(alignment: .bottom, spacing: 12) {
+                // Cancel button
+                Button {
+                    onCancel()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                }
+                .disabled(composerState == .sending)
+
+                // Text input
+                TextField("Nachricht schreiben...", text: $replyText, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .lineLimit(1...6)
+                    .focused(isFocused)
+                    .disabled(composerState == .sending)
+                    .onSubmit {
+                        if canSend {
+                            onSend()
+                        }
+                    }
+
+                // Send button
+                Button {
+                    onSend()
+                } label: {
+                    Group {
+                        if composerState == .sending {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle())
+                        } else {
+                            Image(systemName: "paperplane.fill")
+                        }
+                    }
+                    .font(.title2)
+                }
+                .disabled(!canSend)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color(.systemBackground))
+        }
+    }
+
+    @ViewBuilder
+    private func errorBanner(message: String) -> some View {
+        HStack {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundColor(.white)
+            Text(message)
+                .font(.caption)
+                .foregroundColor(.white)
+            Spacer()
+            Button {
+                onDismissError()
+            } label: {
+                Image(systemName: "xmark")
+                    .foregroundColor(.white)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Color.red)
+    }
+
+    @ViewBuilder
+    private var successBanner: some View {
+        HStack {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundColor(.white)
+            Text("Nachricht gesendet")
+                .font(.caption)
+                .foregroundColor(.white)
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Color.green)
     }
 }
 
