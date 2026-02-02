@@ -75,6 +75,9 @@ final class MessageThreadDetailViewModel: ObservableObject {
     /// The current state of the reply composer
     @Published private(set) var composerState: ReplyComposerState = .idle
 
+    /// Validation error message for the composer (nil if valid)
+    @Published private(set) var validationErrorMessage: String?
+
     /// Whether the user is authenticated (determined from load state)
     var isAuthenticated: Bool {
         switch loadState {
@@ -86,14 +89,28 @@ final class MessageThreadDetailViewModel: ObservableObject {
     }
 
     /// Whether the send button should be enabled
+    /// Checks message validity, rate limits, and sending state
     var canSendReply: Bool {
-        !replyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let validation = safetyService.validate(content: replyText)
+        return validation.isValid
             && composerState != .sending
+            && safetyService.canSend()
+    }
+
+    /// Current character count info for display
+    var characterCountInfo: (current: Int, max: Int, isOverLimit: Bool) {
+        safetyService.characterCount(for: replyText)
+    }
+
+    /// Whether currently in cooldown after sending
+    var isInCooldown: Bool {
+        safetyService.isInCooldown
     }
 
     // MARK: - Dependencies
 
     private let discourseRepository: DiscourseRepository
+    private let safetyService: MessageSafetyService
 
     // MARK: - Initialization
 
@@ -101,9 +118,15 @@ final class MessageThreadDetailViewModel: ObservableObject {
     /// - Parameters:
     ///   - thread: The message thread to display details for
     ///   - discourseRepository: The repository to fetch post data from
-    init(thread: MessageThread, discourseRepository: DiscourseRepository) {
+    ///   - safetyService: The safety service for rate limiting and validation (optional, creates new instance if nil)
+    init(
+        thread: MessageThread,
+        discourseRepository: DiscourseRepository,
+        safetyService: MessageSafetyService? = nil
+    ) {
         self.thread = thread
         self.discourseRepository = discourseRepository
+        self.safetyService = safetyService ?? MessageSafetyService()
     }
 
     // MARK: - Public Methods
@@ -147,15 +170,36 @@ final class MessageThreadDetailViewModel: ObservableObject {
         isComposerVisible = false
         replyText = ""
         composerState = .idle
+        validationErrorMessage = nil
+    }
+
+    /// Validates the current reply text and updates the validation error message.
+    /// Call this when the user changes the text to provide real-time feedback.
+    func validateReplyText() {
+        let validation = safetyService.validate(content: replyText)
+        validationErrorMessage = validation.errorMessage
     }
 
     /// Sends the reply via the Discourse API.
     /// Uses DiscourseRepository.replyToThread to POST the message.
+    /// Respects rate limiting via MessageSafetyService.
     func sendReply() {
-        guard canSendReply else { return }
+        // Validate before sending
+        let validation = safetyService.validate(content: replyText)
+        guard validation.isValid else {
+            validationErrorMessage = validation.errorMessage
+            return
+        }
+
+        // Check rate limit
+        guard safetyService.canSend() else {
+            composerState = .failed(message: "Bitte warte einen Moment vor dem nächsten Senden.")
+            return
+        }
 
         let contentToSend = replyText.trimmingCharacters(in: .whitespacesAndNewlines)
         composerState = .sending
+        safetyService.willStartSend()
 
         Task {
             do {
@@ -165,9 +209,11 @@ final class MessageThreadDetailViewModel: ObservableObject {
                     content: contentToSend
                 )
 
-                // Mark as sent and clear the composer
+                // Mark as sent successfully
+                safetyService.didCompleteSend(success: true)
                 composerState = .sent
                 replyText = ""
+                validationErrorMessage = nil
 
                 // After a brief moment, hide composer and reload posts
                 try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
@@ -177,8 +223,10 @@ final class MessageThreadDetailViewModel: ObservableObject {
                 // Reload posts to show the new message
                 loadPosts()
             } catch let error as DiscourseRepositoryError {
+                safetyService.didCompleteSend(success: false)
                 handleComposerError(error)
             } catch {
+                safetyService.didCompleteSend(success: false)
                 composerState = .failed(message: "Nachricht konnte nicht gesendet werden")
             }
         }

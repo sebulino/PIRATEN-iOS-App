@@ -56,10 +56,13 @@ struct MessageThreadDetailView: View {
                     replyText: $viewModel.replyText,
                     composerState: viewModel.composerState,
                     canSend: viewModel.canSendReply,
+                    characterCount: viewModel.characterCountInfo,
+                    validationError: viewModel.validationErrorMessage,
                     isFocused: $isComposerFocused,
                     onSend: { viewModel.sendReply() },
                     onCancel: { viewModel.hideComposer() },
-                    onDismissError: { viewModel.dismissComposerError() }
+                    onDismissError: { viewModel.dismissComposerError() },
+                    onTextChanged: { viewModel.validateReplyText() }
                 )
             }
         }
@@ -206,16 +209,20 @@ struct MessageThreadDetailView: View {
 
 /// A composer view for writing and sending a reply to a PM thread.
 /// Supports plain text only with clear send/cancel actions.
+/// Includes character count display and input validation.
 ///
 /// Privacy note: Message content is never logged.
 private struct ReplyComposerView: View {
     @Binding var replyText: String
     let composerState: ReplyComposerState
     let canSend: Bool
+    let characterCount: (current: Int, max: Int, isOverLimit: Bool)
+    let validationError: String?
     var isFocused: FocusState<Bool>.Binding
     let onSend: () -> Void
     let onCancel: () -> Void
     let onDismissError: () -> Void
+    let onTextChanged: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -226,9 +233,19 @@ private struct ReplyComposerView: View {
                 errorBanner(message: message)
             }
 
+            // Validation error (shown when input is invalid)
+            if let validationError = validationError, composerState != .sending {
+                validationBanner(message: validationError)
+            }
+
             // Success banner (shown briefly after successful send)
             if composerState == .sent {
                 successBanner
+            }
+
+            // Character count row (shown when approaching limit)
+            if characterCount.current > characterCount.max / 2 || characterCount.isOverLimit {
+                characterCountRow
             }
 
             // Composer input area
@@ -249,6 +266,9 @@ private struct ReplyComposerView: View {
                     .lineLimit(1...6)
                     .focused(isFocused)
                     .disabled(composerState == .sending)
+                    .onChange(of: replyText) { _, _ in
+                        onTextChanged()
+                    }
                     .onSubmit {
                         if canSend {
                             onSend()
@@ -278,6 +298,18 @@ private struct ReplyComposerView: View {
     }
 
     @ViewBuilder
+    private var characterCountRow: some View {
+        HStack {
+            Spacer()
+            Text("\(characterCount.current)/\(characterCount.max)")
+                .font(.caption2)
+                .foregroundColor(characterCount.isOverLimit ? .red : .secondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 4)
+    }
+
+    @ViewBuilder
     private func errorBanner(message: String) -> some View {
         HStack {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -296,6 +328,21 @@ private struct ReplyComposerView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .background(Color.red)
+    }
+
+    @ViewBuilder
+    private func validationBanner(message: String) -> some View {
+        HStack {
+            Image(systemName: "info.circle.fill")
+                .foregroundColor(.orange)
+            Text(message)
+                .font(.caption)
+                .foregroundColor(.primary)
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
+        .background(Color(.systemGray6))
     }
 
     @ViewBuilder

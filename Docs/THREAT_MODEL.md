@@ -2,8 +2,8 @@
 
 This document identifies security threats and mitigations for the PIRATEN iOS app.
 
-Last updated: 2026-01-30
-Current milestone: M2b (Integration Stubs)
+Last updated: 2026-02-02
+Current milestone: M4 (Messaging MVP)
 
 ---
 
@@ -346,6 +346,80 @@ The app follows a thin-client model to minimize local data exposure:
 2. **No screenshots:** Consider preventing screenshots of sensitive screens (future)
 3. **No clipboard:** Sensitive data not auto-copied
 4. **Redaction:** Logs must redact PII automatically
+
+---
+
+## Messaging Write Actions (M4)
+
+This section documents security considerations for messaging write operations introduced in M4.
+
+### T-009: Message Flooding / Abuse
+
+**Threat:** Attacker or compromised account sends rapid messages to abuse the system or harass users.
+
+**Mitigations:**
+- Client-side rate limiting: one send at a time + 3 second cooldown
+- Input length constraints: max 10,000 characters
+- Server-side rate limits via Discourse (20 req/min, 2,880 req/day)
+- No support for attachments (reduces abuse surface)
+
+**Residual risk:** Low - multiple layers of rate limiting
+
+---
+
+### T-010: Message Content Leakage via Logs
+
+**Threat:** Message content logged and exposed via crash reports, device logs, or debugging.
+
+**Mitigations:**
+- `MessageSafetyService` and `MessageThreadDetailViewModel` explicitly avoid logging content
+- Validation methods process content without logging the actual text
+- Error messages contain no user content or identifiers
+- All code has privacy documentation comments enforcing this policy
+
+**Residual risk:** Low if policy followed
+
+---
+
+### T-011: Unauthorized Message Sending
+
+**Threat:** Attacker sends messages as another user via token theft or session hijacking.
+
+**Mitigations:**
+- Token stored in Keychain with `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`
+- AuthenticatedHTTPClient validates token before each request
+- Token refresh enforced per M3a rules
+- Unauthenticated users see login prompt instead of composer
+
+**Residual risk:** Medium - depends on token security (see T-001, T-007)
+
+---
+
+### T-012: Input Validation Bypass
+
+**Threat:** Malformed or malicious content bypasses client validation and reaches server.
+
+**Mitigations:**
+- Client-side validation via `MessageSafetyService.validate()`
+- Server-side validation by Discourse (authoritative)
+- Only plain text supported; no rich formatting or HTML allowed in composer
+- Content trimmed and length-checked before submission
+
+**Residual risk:** Low - server is authoritative
+
+---
+
+### T-013: Replay Attacks on Message Send
+
+**Threat:** Attacker replays a captured message POST request.
+
+**Mitigations:**
+- TLS 1.2+ required for all API calls
+- Bearer token in Authorization header (not URL)
+- Discourse enforces topic_id validity and user permissions
+- Duplicate detection handled server-side
+
+**Residual risk:** Low
 
 ---
 

@@ -4,6 +4,15 @@ Started: Mo.  2 Feb. 2026 12:30:35 CET
 
 ## Codebase Patterns
 
+### Message Safety Service Pattern (M4-003)
+- Use a dedicated `MessageSafetyService` for rate limiting and validation
+- Constants in `MessageSafetyConstants` enum for easy auditing
+- Validation returns typed enum (`MessageValidationResult`) with error messages
+- Rate limiting: track `isSendInProgress` and `lastSendTime` for cooldown
+- Never log message content, user identifiers, or any PII in safety code
+- Service is `@MainActor` isolated for UI integration
+- Character count display: show when content exceeds 50% of max length
+
 ### Reply Composer UI Pattern (M4-001)
 - Use `@FocusState` for managing text field focus programmatically
 - Place composer at bottom of VStack with main content using `.frame(maxWidth: .infinity, maxHeight: .infinity)`
@@ -66,4 +75,33 @@ Started: Mo.  2 Feb. 2026 12:30:35 CET
   - Error parsing extracts messages from Discourse's {"errors": [...]} format
   - AuthenticatedHTTPClient handles token injection automatically
   - Test MainActor-isolated classes with @MainActor on test struct
+---
+
+## [2026-02-02 17:00] - M4-003
+- **What was implemented:**
+  - MessageSafetyService for rate limiting and input validation
+  - Basic rate limiting: one send at a time + 3 second cooldown after success
+  - Input length constraints: max 10,000 characters with validation messages
+  - Character count display in composer UI when approaching limit
+  - Validation error banner in composer
+  - No logging of message content anywhere in safety/composer code
+  - Updated THREAT_MODEL.md with T-009 through T-013 for messaging write actions
+- **Files changed:**
+  - PIRATEN/Core/Support/MessageSafetyService.swift - NEW: Safety service with rate limiting and validation
+  - PIRATEN/App/ViewModels/MessageThreadDetailViewModel.swift - Integrated safety service
+  - PIRATEN/App/Views/Main/MessageThreadDetailView.swift - Added character count and validation UI
+  - Docs/THREAT_MODEL.md - Added messaging write action threats (T-009 to T-013)
+- **Context7 Docs Summary (OWASP MASTG - Mobile Logging/Privacy):**
+  - Never log sensitive data (PII, tokens, message content)
+  - Use typed errors without exposing content in messages
+  - Autocorrection should be disabled for sensitive fields (we use plain TextField)
+  - Client-side rate limiting reduces abuse surface
+  - Validation happens client-side but server is authoritative
+  - Error messages should be generic, not reveal internal state
+- **Learnings for future iterations:**
+  - Default parameter with MainActor init causes compile error - use optional with nil coalescing instead
+  - Character count should use trimmed content length for accurate validation
+  - Keep cooldown short (3s) for good UX while still preventing rapid spam
+  - THREAT_MODEL.md should be updated for each new write action type
+  - Privacy comments in code document the no-logging policy
 ---
