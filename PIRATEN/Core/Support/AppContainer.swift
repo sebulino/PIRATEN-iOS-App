@@ -113,6 +113,15 @@ final class AppContainer {
         MessageThreadDetailViewModel(thread: thread, discourseRepository: discourseRepository)
     }
 
+    /// Creates a RecipientPickerViewModel for composing new messages.
+    /// - Returns: A configured RecipientPickerViewModel
+    func makeRecipientPickerViewModel() -> RecipientPickerViewModel {
+        RecipientPickerViewModel(
+            discourseRepository: discourseRepository,
+            recentRecipientsStorage: recentRecipientsStore
+        )
+    }
+
     // MARK: - Initialization
 
     /// Creates the container with default production dependencies.
