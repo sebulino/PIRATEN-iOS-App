@@ -56,7 +56,7 @@
         "Manual refresh supported",
         "Context7 consulted for SwiftUI list/chat-like layout patterns; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

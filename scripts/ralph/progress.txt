@@ -105,3 +105,33 @@ Started: Mo.  2 Feb. 2026 12:30:35 CET
   - THREAT_MODEL.md should be updated for each new write action type
   - Privacy comments in code document the no-logging policy
 ---
+
+## [2026-02-02 21:05] - M4-004
+- **What was implemented:**
+  - Enhanced MessagePostRow with conversational chat-like layout
+  - Avatar circles with user initials and color-coded backgrounds
+  - Improved timestamp formatting: relative for recent (<7 days), date for older
+  - Better visual hierarchy with avatar | content layout
+  - Additional HTML entity decoding (&#39; for apostrophe)
+  - Verified loading/empty/error states consistency with other tabs
+  - Manual refresh already working via .refreshable modifier
+- **Files changed:**
+  - PIRATEN/App/Views/Main/MessageThreadDetailView.swift - Enhanced MessagePostRow styling
+  - PIRATEN/Core/Data/Discourse/DiscourseAuthManager.swift - Added write scope for M4, testable initializer
+  - PIRATENTests/DiscourseAuthManagerTests.swift - Fixed tests for new config, added test helpers
+  - PIRATENUITests/PIRATENUITests.swift - Added -UITestMode flag for clean test state
+  - PIRATEN/App/PIRATENApp.swift - Added UI test mode keychain reset
+- **Context7 Docs Summary (SwiftUI List/Chat Patterns):**
+  - MessageRow pattern: HStack with ZStack (Circle + initials) and content
+  - listRowSpacing(_:) for custom vertical spacing between rows
+  - listRowBackground(_:) for custom row backgrounds
+  - Text.DateStyle: .relative for recent times, .date/.time for absolute
+  - RelativeDateTimeFormatter for localized relative time strings
+  - fixedSize(horizontal: false, vertical: true) for proper text wrapping
+- **Learnings for future iterations:**
+  - Avatar color from username hash provides consistent per-user colors
+  - RelativeDateTimeFormatter with .abbreviated style gives compact output
+  - Hybrid timestamp (relative vs date) improves readability across time ranges
+  - Test fixes: use testable initializers to inject config in unit tests
+  - UI tests need launch arguments to reset app state for clean testing
+---

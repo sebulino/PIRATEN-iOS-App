@@ -362,41 +362,94 @@ private struct ReplyComposerView: View {
 }
 
 /// Row view for displaying a single message/post in the thread.
-/// Shows author, content excerpt, and timestamp.
-/// Designed for private message context with a more conversational appearance.
+/// Shows author avatar/initials, name, timestamp, and message content.
+/// Designed for private message context with a conversational appearance.
+///
+/// Layout: Avatar circle | Message content (name, timestamp, body)
 private struct MessagePostRow: View {
     let post: Post
 
+    /// Extracts initials from the display name or username
+    private var authorInitials: String {
+        let name = post.author.displayName ?? post.author.username
+        let words = name.split(separator: " ")
+        if words.count >= 2 {
+            // First letter of first two words
+            return String(words[0].prefix(1) + words[1].prefix(1)).uppercased()
+        } else if let first = name.first {
+            return String(first).uppercased()
+        }
+        return "?"
+    }
+
+    /// Color for the avatar circle based on username hash
+    private var avatarColor: Color {
+        let colors: [Color] = [.orange, .blue, .green, .purple, .pink, .teal]
+        let hash = post.author.username.hashValue
+        return colors[abs(hash) % colors.count]
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Author row
-            HStack {
-                Text(post.author.displayName ?? post.author.username)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-
-                Spacer()
-
-                // Timestamp
-                Text(post.createdAt, style: .relative)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+        HStack(alignment: .top, spacing: 12) {
+            // Avatar circle with initials
+            ZStack {
+                Circle()
+                    .fill(avatarColor.opacity(0.2))
+                    .frame(width: 40, height: 40)
+                Text(authorInitials)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(avatarColor)
             }
 
-            // Message content (HTML stripped for display)
-            Text(stripHTML(from: post.content))
-                .font(.body)
-                .lineLimit(10)
-                .foregroundColor(.primary)
+            // Message content
+            VStack(alignment: .leading, spacing: 4) {
+                // Author name and timestamp row
+                HStack(alignment: .firstTextBaseline) {
+                    Text(post.author.displayName ?? post.author.username)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    // Timestamp - use relative for recent, date for older
+                    Text(formatTimestamp(post.createdAt))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+
+                // Message body (HTML stripped)
+                Text(stripHTML(from: post.content))
+                    .font(.body)
+                    .foregroundColor(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
+    }
+
+    /// Formats timestamp: relative for recent messages, date for older ones
+    private func formatTimestamp(_ date: Date) -> String {
+        let now = Date()
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.day], from: date, to: now)
+
+        if let days = components.day, days < 7 {
+            // Within a week: use relative format
+            let formatter = RelativeDateTimeFormatter()
+            formatter.unitsStyle = .abbreviated
+            return formatter.localizedString(for: date, relativeTo: now)
+        } else {
+            // Older than a week: show date
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .none
+            return formatter.string(from: date)
+        }
     }
 
     /// Strips HTML tags from content for display.
-    /// Note: This is a simple implementation for message content display.
-    /// For full HTML rendering, consider using AttributedString or a WebView.
     private func stripHTML(from htmlString: String) -> String {
-        // Remove HTML tags using regex
         let stripped = htmlString
             .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
             .replacingOccurrences(of: "&nbsp;", with: " ")
@@ -404,6 +457,7 @@ private struct MessagePostRow: View {
             .replacingOccurrences(of: "&lt;", with: "<")
             .replacingOccurrences(of: "&gt;", with: ">")
             .replacingOccurrences(of: "&quot;", with: "\"")
+            .replacingOccurrences(of: "&#39;", with: "'")
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
         return stripped

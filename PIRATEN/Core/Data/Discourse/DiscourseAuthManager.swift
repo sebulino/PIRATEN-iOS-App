@@ -111,6 +111,30 @@ final class DiscourseAuthManager {
         self.rsaKeyManager = rsaKeyManager
     }
 
+    /// Internal initializer for testing - allows injecting configuration directly
+    /// - Parameters:
+    ///   - baseURL: Discourse forum base URL
+    ///   - clientID: OAuth client ID
+    ///   - redirectScheme: Custom URL scheme for auth callback
+    ///   - redirectHost: Host component for auth callback URL
+    ///   - applicationName: Name shown to user during auth
+    ///   - rsaKeyManager: Manager for RSA key operations
+    init(
+        baseURL: String,
+        clientID: String,
+        redirectScheme: String,
+        redirectHost: String,
+        applicationName: String,
+        rsaKeyManager: RSAKeyManager
+    ) {
+        self.baseURL = baseURL
+        self.clientID = clientID
+        self.redirectScheme = redirectScheme
+        self.redirectHost = redirectHost
+        self.applicationName = applicationName
+        self.rsaKeyManager = rsaKeyManager
+    }
+
     // MARK: - Public Interface
 
     /// Builds the Discourse User API Key authentication URL.
@@ -146,10 +170,10 @@ final class DiscourseAuthManager {
         // Build redirect URL
         let authRedirect = "\(redirectScheme)://\(redirectHost)"
 
-        // Scopes: Start with minimal read-only access
+        // Scopes: read + write for forum access and message replies (M4)
         // Note: 'notifications' and 'push' scopes require push_url parameter
-        // Using 'read' and 'session_info' for basic forum access
-        let scopes = "read,session_info"
+        // 'write' scope added in M4 to enable replying to PM threads
+        let scopes = "read,write,session_info"
         discourseAuthLog.info("Scopes: \(scopes)")
 
         // Build URL manually to ensure proper encoding of the public key

@@ -26,6 +26,9 @@ final class PIRATENUITests: XCTestCase {
     func testAppLaunchesAndShowsLoginScreen() throws {
         // UI tests must launch the application that they test.
         let app = XCUIApplication()
+
+        // Pass UI test mode flag to reset auth state for clean test environment
+        app.launchArguments = ["-UITestMode"]
         app.launch()
 
         // Verify the login screen is displayed
