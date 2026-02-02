@@ -81,6 +81,8 @@ final class DiscourseAPIClient {
             return response.data
         } catch let error as HTTPError {
             throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
         }
     }
 
@@ -99,6 +101,8 @@ final class DiscourseAPIClient {
             return response.data
         } catch let error as HTTPError {
             throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
         }
     }
 
@@ -118,6 +122,8 @@ final class DiscourseAPIClient {
             return response.data
         } catch let error as HTTPError {
             throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
         }
     }
 
@@ -152,6 +158,16 @@ final class DiscourseAPIClient {
             return .serverError(message: message)
         default:
             return .unknown(statusCode: statusCode, message: message)
+        }
+    }
+
+    /// Maps DiscourseAuthError to DiscourseError.
+    private func mapDiscourseAuthError(_ error: DiscourseAuthError) -> DiscourseError {
+        switch error {
+        case .notAuthenticated:
+            return .unauthorized
+        default:
+            return .unauthorized
         }
     }
 

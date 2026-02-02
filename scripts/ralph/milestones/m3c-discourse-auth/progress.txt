@@ -1,0 +1,45 @@
+# M3C Progress Log
+
+## Milestone: Discourse User API Key Authentication
+
+Branch: ralph/m3c-discourse-auth
+
+---
+
+## Overview
+
+This milestone implements the Discourse User API Key authentication flow,
+mirroring the approach used by the official Discourse mobile app.
+
+Background: Bearer token passthrough from Keycloak SSO does not work with
+Discourse. Discourse expects either a session cookie (web) or a User API Key
+(mobile apps). See OPEN_QUESTIONS.md Q-002 for details.
+
+Reference implementation: https://github.com/discourse/DiscourseMobile
+
+---
+
+## Stories Status
+
+- [ ] M3C-001: RSA key pair generation (not started)
+- [ ] M3C-002: Auth URL construction (not started)
+- [ ] M3C-003: ASWebAuthenticationSession flow (not started)
+- [ ] M3C-004: Decrypt and store User API Key (not started)
+- [ ] M3C-005: HTTP client header modification (not started)
+- [ ] M3C-006: Auth state integration (not started)
+- [ ] M3C-007: Documentation (not started)
+
+---
+
+## Context7 Research Log
+
+(Research summaries will be added here as each story is completed)
+
+---
+
+## Notes
+
+- The official Discourse app uses RSA 2048-bit keys
+- Scopes requested: notifications, session_info (minimal read-only initially)
+- Custom URL scheme: piraten://discourse-auth
+- User API Key header: User-Api-Key (not Authorization: Bearer)

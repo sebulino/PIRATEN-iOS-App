@@ -1,0 +1,46 @@
+{
+  "project": "piraten-ios-m7-knowledge-hub",
+  "branchName": "ralph/m7-knowledge-hub",
+  "description": "Milestone 7: Knowledge & Orientation Hub. Curated, role-based learning and 'what can I do now?' guidance to activate semi-active members, with privacy-preserving personalization.",
+  "userStories": [
+    {
+      "id": "M7-001",
+      "category": "knowledge-content",
+      "title": "Add Knowledge tab with static content architecture",
+      "description": "Create a maintainable structure for knowledge articles (bundled markdown/json) and render them in-app.",
+      "acceptanceCriteria": [
+        "Knowledge tab lists article categories and articles",
+        "Articles are stored locally in the app bundle (no network)",
+        "Renderer supports headings, lists, links (basic markdown subset is fine)",
+        "Context7 consulted for iOS markdown rendering approaches or lightweight alternatives; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M7-002",
+      "category": "orientation",
+      "title": "Add 'Start here' orientation flow",
+      "description": "Provide a gentle onboarding flow that suggests actions without pressure.",
+      "acceptanceCriteria": [
+        "A 'Start here' screen suggests 3\u20135 actions (read forum, reply to message, claim a todo, create a todo, update profile)",
+        "User can dismiss; no nagging; no dark patterns",
+        "Copy is neutral and privacy-respecting",
+        "Context7 consulted for onboarding UX best practices in SwiftUI; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M7-003",
+      "category": "role-based",
+      "title": "Role-based article shortcuts (minimal, privacy-preserving)",
+      "description": "Allow users to optionally select interests/roles to show relevant knowledge shortcuts.",
+      "acceptanceCriteria": [
+        "Profile/Settings includes optional role selection (e.g., Kreisverband, Schatzmeister, Antr\u00e4ge, Kommunalpolitik)",
+        "Selection stored locally only (no server sync yet)",
+        "Knowledge tab shows shortcuts based on selection",
+        "Context7 consulted for local settings storage best practices; summary added to progress.txt"
+      ],
+      "passes": false
+    }
+  ]
+}

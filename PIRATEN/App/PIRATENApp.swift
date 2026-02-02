@@ -25,6 +25,7 @@ struct PIRATENApp: App {
                 messagesViewModel: container.messagesViewModel,
                 todosViewModel: container.todosViewModel,
                 profileViewModel: container.profileViewModel,
+                discourseAuthCoordinator: container.discourseAuthCoordinator,
                 topicDetailViewModelFactory: { [container] topic in
                     container.makeTopicDetailViewModel(for: topic)
                 },
@@ -33,9 +34,10 @@ struct PIRATENApp: App {
                 }
             )
             .onOpenURL { url in
-                // Handle OAuth redirect callback
-                // The URL will be de.meine-piraten://oauth-callback with auth code
-                _ = container.authService.resumeAuthorizationFlow(with: url)
+                // Piratenlogin OAuth callback only
+                if url.host == "oauth-callback" {
+                    _ = container.authService.resumeAuthorizationFlow(with: url)
+                }
             }
         }
     }

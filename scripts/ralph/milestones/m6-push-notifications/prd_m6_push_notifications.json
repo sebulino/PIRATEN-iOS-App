@@ -1,0 +1,59 @@
+{
+  "project": "piraten-ios-m6-push-notifications",
+  "branchName": "ralph/m6-push-notifications",
+  "description": "Milestone 6: Opt-in push notifications for Messages and Todos only, with transparent controls and privacy-first defaults. Implement device token registration, notification settings, and deep links to relevant screens.",
+  "userStories": [
+    {
+      "id": "M6-001",
+      "category": "push-permissions",
+      "title": "Notification permission flow and settings UI",
+      "description": "Add opt-in notification permissions with transparent settings.",
+      "acceptanceCriteria": [
+        "Profile/Settings includes notification toggles: Messages, Todos (default off)",
+        "Request permission only after user explicitly enables a toggle",
+        "Clear copy explains what will be sent and what will not be tracked",
+        "Context7 consulted for UNUserNotificationCenter best practices and permission UX; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M6-002",
+      "category": "push-registration",
+      "title": "APNs device token registration and secure storage",
+      "description": "Register for remote notifications and store device token securely for backend registration.",
+      "acceptanceCriteria": [
+        "App registers for remote notifications when permission granted",
+        "Device token is captured and stored (non-sensitive) and can be sent to backend when available",
+        "No device token is logged in full (mask or avoid logging)",
+        "Context7 consulted for APNs registration flow and iOS lifecycle concerns; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M6-003",
+      "category": "push-deeplinks",
+      "title": "Deep links from notifications to Messages/Todos",
+      "description": "Route notifications into the correct tab and detail screen.",
+      "acceptanceCriteria": [
+        "Notification payload routing supports opening a specific PM thread or Todo detail",
+        "If app is locked/unauthenticated, route user to login then to destination",
+        "Routing logic is covered by unit tests where feasible",
+        "Context7 consulted for deep link routing patterns in SwiftUI apps; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M6-004",
+      "category": "push-backend-contract",
+      "title": "Document push backend contract and privacy constraints",
+      "description": "Define what server endpoints/payload fields are required for push, without building server-side yet.",
+      "acceptanceCriteria": [
+        "Docs/OPEN_QUESTIONS.md updated with backend requirements for push registration & delivery",
+        "Docs/THREAT_MODEL.md updated for push metadata and minimization",
+        "No tracking/analytics added",
+        "Context7 consulted for minimal payload and privacy guidance; summary added to progress.txt"
+      ],
+      "passes": false
+    }
+  ]
+}

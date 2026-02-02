@@ -74,12 +74,12 @@ protocol HTTPClient: Sendable {
     ///   - type: The type to decode the response into
     /// - Returns: The decoded response
     /// - Throws: HTTPError if the request fails or decoding fails
-    func execute<T: Decodable>(_ request: HTTPRequest, decoding type: T.Type) async throws -> T
+    func execute<T: Decodable & Sendable>(_ request: HTTPRequest, decoding type: T.Type) async throws -> T
 }
 
 /// Default implementation of JSON decoding for any HTTPClient
 extension HTTPClient {
-    func execute<T: Decodable>(_ request: HTTPRequest, decoding type: T.Type) async throws -> T {
+    func execute<T: Decodable & Sendable>(_ request: HTTPRequest, decoding type: T.Type) async throws -> T {
         let response = try await execute(request)
 
         guard response.isSuccess else {

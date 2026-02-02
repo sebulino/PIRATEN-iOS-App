@@ -13,6 +13,7 @@ struct RootView: View {
     @ObservedObject var messagesViewModel: MessagesViewModel
     @ObservedObject var todosViewModel: TodosViewModel
     @ObservedObject var profileViewModel: ProfileViewModel
+    @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
 
     /// Factory for creating TopicDetailViewModels
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
@@ -31,9 +32,11 @@ struct RootView: View {
                     messagesViewModel: messagesViewModel,
                     todosViewModel: todosViewModel,
                     profileViewModel: profileViewModel,
+                    discourseAuthCoordinator: discourseAuthCoordinator,
                     topicDetailViewModelFactory: topicDetailViewModelFactory,
                     messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory
                 )
+                .provideWindow()
             case .failed(let error):
                 ErrorView(error: error, authStateManager: authStateManager)
             case .sessionExpired:
@@ -116,6 +119,7 @@ struct SessionExpiredView: View {
     let credentialStore = InMemoryCredentialStore()
     let authRepository = FakeAuthRepository(credentialStore: credentialStore)
     let fakeDiscourseRepo = FakeDiscourseRepository()
+    let discourseAPIKeyProvider = KeychainDiscourseAPIKeyProvider(credentialStore: credentialStore)
 
     return RootView(
         authStateManager: AuthStateManager(authRepository: authRepository),
@@ -126,6 +130,11 @@ struct SessionExpiredView: View {
         ),
         todosViewModel: TodosViewModel(todoRepository: FakeTodoRepository()),
         profileViewModel: ProfileViewModel(authRepository: authRepository),
+        discourseAuthCoordinator: DiscourseAuthCoordinator(
+            discourseAuthManager: nil,
+            discourseAPIKeyProvider: discourseAPIKeyProvider,
+            credentialStore: credentialStore
+        ),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
         },

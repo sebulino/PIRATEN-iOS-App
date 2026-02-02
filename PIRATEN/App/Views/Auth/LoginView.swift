@@ -14,7 +14,10 @@ struct LoginView: View {
         VStack(spacing: 20) {
             Spacer()
 
-            Image(systemName: "flag.fill")
+            Image("PiratenSignet")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 160, height: 160)
                 .font(.system(size: 80))
                 .foregroundColor(.orange)
                 .accessibilityIdentifier("loginLogo")

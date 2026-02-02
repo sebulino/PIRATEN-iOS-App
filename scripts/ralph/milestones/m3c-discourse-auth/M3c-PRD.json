@@ -15,7 +15,7 @@
         "Key pair is generated once and reused for subsequent auth attempts",
         "Context7 consulted for iOS Security framework RSA key generation; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "M3C-002",
@@ -29,7 +29,7 @@
         "auth_redirect uses custom URL scheme (piraten://discourse-auth)",
         "Context7 consulted for Discourse User API Key endpoint parameters; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "M3C-003",
@@ -44,7 +44,7 @@
         "Info.plist configured with custom URL scheme piraten://",
         "Context7 consulted for ASWebAuthenticationSession callback handling; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "M3C-004",
@@ -59,7 +59,7 @@
         "DiscourseCredential model created for storing key + metadata",
         "Context7 consulted for iOS Security framework RSA decryption; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "M3C-005",
@@ -73,7 +73,7 @@
         "ForumView and MessagesView display content after successful auth",
         "Context7 consulted for HTTP header best practices; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "M3C-006",
@@ -88,7 +88,7 @@
         "Logout clears both Keycloak tokens and Discourse User API Key",
         "Context7 consulted for multi-service auth state patterns; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": "M3C-007",
@@ -102,7 +102,7 @@
         "README.md updated with auth flow overview",
         "Context7 consulted for security documentation best practices; summary added to progress.txt"
       ],
-      "passes": true
+      "passes": false
     }
   ]
 }

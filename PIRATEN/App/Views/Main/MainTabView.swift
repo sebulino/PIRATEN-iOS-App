@@ -12,6 +12,7 @@ struct MainTabView: View {
     @ObservedObject var messagesViewModel: MessagesViewModel
     @ObservedObject var todosViewModel: TodosViewModel
     @ObservedObject var profileViewModel: ProfileViewModel
+    @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
 
     /// Factory for creating TopicDetailViewModels
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
@@ -23,6 +24,7 @@ struct MainTabView: View {
         TabView {
             ForumView(
                 viewModel: forumViewModel,
+                discourseAuthCoordinator: discourseAuthCoordinator,
                 topicDetailViewModelFactory: topicDetailViewModelFactory
             )
                 .tabItem {
@@ -58,9 +60,10 @@ struct MainTabView: View {
 #Preview {
     // Preview with fake data - all ViewModels use fake repositories
     // Note: Profile requires authenticated session for user data
-    let credentialStore = KeychainCredentialStore()
+    let credentialStore = InMemoryCredentialStore()
     let authRepository = FakeAuthRepository(credentialStore: credentialStore)
     let fakeDiscourseRepo = FakeDiscourseRepository()
+    let discourseAPIKeyProvider = KeychainDiscourseAPIKeyProvider(credentialStore: credentialStore)
 
     return MainTabView(
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
@@ -70,6 +73,11 @@ struct MainTabView: View {
         ),
         todosViewModel: TodosViewModel(todoRepository: FakeTodoRepository()),
         profileViewModel: ProfileViewModel(authRepository: authRepository),
+        discourseAuthCoordinator: DiscourseAuthCoordinator(
+            discourseAuthManager: nil,
+            discourseAPIKeyProvider: discourseAPIKeyProvider,
+            credentialStore: credentialStore
+        ),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
         },

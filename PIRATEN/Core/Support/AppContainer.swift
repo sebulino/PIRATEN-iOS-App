@@ -44,6 +44,20 @@ final class AppContainer {
     /// Token refresher for refreshing access tokens
     let tokenRefresher: TokenRefresher
 
+    // MARK: - Discourse Authentication
+
+    /// Discourse API key provider for retrieving stored credentials
+    let discourseAPIKeyProvider: DiscourseAPIKeyProvider
+
+    /// RSA key manager for Discourse auth encryption
+    let rsaKeyManager: RSAKeyManager
+
+    /// Discourse authentication manager for User API Key flow
+    let discourseAuthManager: DiscourseAuthManager?
+
+    /// Discourse authentication coordinator for managing the auth flow from UI
+    let discourseAuthCoordinator: DiscourseAuthCoordinator
+
     // MARK: - Data Layer (Repositories)
 
     /// Authentication repository implementation using real OIDC/OAuth2.
@@ -120,22 +134,39 @@ final class AppContainer {
         // Presentation layer - auth state manager first (needed for HTTP client)
         self.authStateManager = AuthStateManager(authRepository: authRepository)
 
+        // Discourse authentication layer
+        self.rsaKeyManager = RSAKeyManager()
+        self.discourseAPIKeyProvider = KeychainDiscourseAPIKeyProvider(credentialStore: credentialStore)
+
+        // Initialize Discourse auth manager (may fail if config is missing)
+        var authManager: DiscourseAuthManager?
+        do {
+            authManager = try DiscourseAuthManager(rsaKeyManager: rsaKeyManager)
+        } catch {
+            // Configuration not available - Discourse auth will not be available
+            // This is acceptable during development or if Discourse is not configured
+            authManager = nil
+        }
+        self.discourseAuthManager = authManager
+
+        // Discourse auth coordinator for managing auth flow from UI
+        self.discourseAuthCoordinator = DiscourseAuthCoordinator(
+            discourseAuthManager: authManager,
+            discourseAPIKeyProvider: discourseAPIKeyProvider,
+            credentialStore: credentialStore
+        )
+
         // HTTP layer for Discourse API
-        // NOTE: We intentionally do NOT pass onAuthError here.
-        // Discourse does not accept SSO Bearer tokens (see Q-002 in OPEN_QUESTIONS.md).
-        // Until proper Discourse auth is implemented, 401/403 from Discourse should NOT
-        // trigger session expiration - the SSO session is still valid.
+        // Use DiscourseHTTPClient which adds User-Api-Key headers for Discourse auth
         let baseHTTPClient = URLSessionHTTPClient()
-        let tokenProvider = AuthStateTokenProvider(authStateManager: authStateManager)
-        let authenticatedHTTPClient = AuthenticatedHTTPClient(
+        let discourseHTTPClient = DiscourseHTTPClient(
             baseClient: baseHTTPClient,
-            tokenProvider: tokenProvider,
-            onAuthError: nil  // Discourse 401s don't invalidate SSO session
+            apiKeyProvider: discourseAPIKeyProvider
         )
 
         // Discourse API client and repository
         let discourseAPIClient = DiscourseAPIClient(
-            httpClient: authenticatedHTTPClient,
+            httpClient: discourseHTTPClient,
             baseURL: Self.discourseBaseURL
         )
         self.discourseRepository = RealDiscourseRepository(apiClient: discourseAPIClient)
@@ -180,6 +211,16 @@ final class AppContainer {
         } else {
             self.authRepository = FakeAuthRepository(credentialStore: credentialStore)
         }
+
+        // Discourse authentication (for testing, use in-memory store)
+        self.rsaKeyManager = RSAKeyManager()
+        self.discourseAPIKeyProvider = KeychainDiscourseAPIKeyProvider(credentialStore: credentialStore)
+        self.discourseAuthManager = nil  // Not needed for testing with fake repositories
+        self.discourseAuthCoordinator = DiscourseAuthCoordinator(
+            discourseAuthManager: nil,
+            discourseAPIKeyProvider: discourseAPIKeyProvider,
+            credentialStore: credentialStore
+        )
 
         self.discourseRepository = discourseRepository ?? FakeDiscourseRepository()
         self.todoRepository = todoRepository ?? FakeTodoRepository()
