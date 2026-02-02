@@ -37,3 +37,33 @@ Started: Mo.  2 Feb. 2026 12:30:35 CET
   - Composer state machine (idle/sending/sent/failed) provides clean UI feedback
   - Keep send as stub for M4-001, actual API call deferred to M4-002
 ---
+
+## [2026-02-02 16:25] - M4-002
+- **What was implemented:**
+  - Discourse API call for replying to PM threads via POST /posts.json
+  - DiscourseAPIClient.replyToMessageThread(topicId:content:) method
+  - DiscourseRepository.replyToThread(topicId:content:) protocol and implementations
+  - Real API integration in MessageThreadDetailViewModel.sendReply()
+  - Proper error mapping to domain errors (unauthorized, forbidden, rateLimited, etc.)
+  - Thread reload after successful reply
+- **Files changed:**
+  - PIRATEN/Core/Data/Discourse/DiscourseAPIClient.swift - Added replyToMessageThread method and CreatePostRequest DTO
+  - PIRATEN/Core/Domain/Discourse/DiscourseRepository.swift - Added replyToThread protocol method
+  - PIRATEN/Core/Data/Discourse/RealDiscourseRepository.swift - Implemented replyToThread
+  - PIRATEN/Core/Data/Discourse/FakeDiscourseRepository.swift - Implemented stub replyToThread
+  - PIRATEN/App/ViewModels/MessageThreadDetailViewModel.swift - Replaced stub with real API call
+  - PIRATENTests/DiscourseReplyTests.swift - Added unit tests for reply functionality
+- **Context7 Docs Summary (Discourse API):**
+  - POST /posts.json endpoint for creating posts/replies
+  - Request body: `topic_id` (required for reply) and `raw` (markdown content)
+  - No category needed for PM replies (only for new topics)
+  - Returns created post with id, topic_id, post_number, cooked (HTML), raw (markdown)
+  - Auth via User-Api-Key header or Bearer token (our implementation uses AuthenticatedHTTPClient)
+  - Error response format: `{"errors": ["message"], "error_type": "..."}`
+- **Learnings for future iterations:**
+  - Discourse PM replies use the same /posts.json endpoint as regular topic replies
+  - Only topic_id and raw are required - no need for archetype or other params
+  - Error parsing extracts messages from Discourse's {"errors": [...]} format
+  - AuthenticatedHTTPClient handles token injection automatically
+  - Test MainActor-isolated classes with @MainActor on test struct
+---

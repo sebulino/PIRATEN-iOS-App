@@ -149,30 +149,53 @@ final class MessageThreadDetailViewModel: ObservableObject {
         composerState = .idle
     }
 
-    /// Sends the reply. This is a UI-only stub for M4-001.
-    /// The actual API call will be implemented in M4-002.
+    /// Sends the reply via the Discourse API.
+    /// Uses DiscourseRepository.replyToThread to POST the message.
     func sendReply() {
         guard canSendReply else { return }
 
+        let contentToSend = replyText.trimmingCharacters(in: .whitespacesAndNewlines)
         composerState = .sending
 
-        // M4-001: Stub implementation - actual API call in M4-002
-        // For now, we simulate a successful send for UI testing
         Task {
-            // Simulate network delay (to be replaced with actual API call)
-            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+            do {
+                // Send the reply via API
+                try await discourseRepository.replyToThread(
+                    topicId: thread.id,
+                    content: contentToSend
+                )
 
-            // Mark as sent and clear the composer
-            composerState = .sent
-            replyText = ""
+                // Mark as sent and clear the composer
+                composerState = .sent
+                replyText = ""
 
-            // After a brief moment, hide composer and reload posts
-            try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
-            isComposerVisible = false
+                // After a brief moment, hide composer and reload posts
+                try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
+                isComposerVisible = false
+                composerState = .idle
+
+                // Reload posts to show the new message
+                loadPosts()
+            } catch let error as DiscourseRepositoryError {
+                handleComposerError(error)
+            } catch {
+                composerState = .failed(message: "Nachricht konnte nicht gesendet werden")
+            }
+        }
+    }
+
+    // MARK: - Private Helpers (Composer)
+
+    private func handleComposerError(_ error: DiscourseRepositoryError) {
+        switch error {
+        case .notAuthenticated:
+            loadState = .notAuthenticated
             composerState = .idle
-
-            // Reload posts to show the new message (will be real data once M4-002 is done)
-            loadPosts()
+        case .authenticationFailed(let message):
+            loadState = .authenticationFailed(message: message)
+            composerState = .idle
+        case .loadFailed(let message):
+            composerState = .failed(message: message)
         }
     }
 

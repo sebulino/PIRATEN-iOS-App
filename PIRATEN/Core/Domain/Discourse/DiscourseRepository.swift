@@ -51,4 +51,13 @@ protocol DiscourseRepository {
     ///
     /// API Endpoint: GET /topics/private-messages/{username}.json
     func fetchMessageThreads(for username: String) async throws -> [MessageThread]
+
+    /// Replies to an existing message thread (PM).
+    /// - Parameters:
+    ///   - topicId: The ID of the PM thread to reply to
+    ///   - content: The raw text content of the reply
+    /// - Throws: DiscourseRepositoryError if sending fails
+    ///
+    /// API Endpoint: POST /posts.json with topic_id and raw parameters
+    func replyToThread(topicId: Int, content: String) async throws
 }

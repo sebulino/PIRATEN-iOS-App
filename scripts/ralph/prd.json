@@ -29,7 +29,7 @@
         "Errors map to domain errors; no crashes; retry available",
         "Context7 consulted for Discourse PM reply endpoint/params; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M4-003",
