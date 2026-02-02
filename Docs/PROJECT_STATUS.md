@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-01-30
+Last updated: 2026-02-02 (Discourse auth working)
 
 ## Current Milestone
 
@@ -64,9 +64,10 @@ Goal: Establish project structure, architecture foundation, and documentation.
 - Session management
 
 ### Milestone 3: Forum Integration
-- Discourse API client
-- Topic listing
-- Post viewing
+- Discourse API client (Complete)
+- Topic listing (Complete)
+- Post viewing (Complete)
+- Discourse User API Key auth (Complete - M3C-001 through M3C-006)
 
 ## Blockers
 

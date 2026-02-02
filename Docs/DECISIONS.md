@@ -419,8 +419,126 @@ Using SwiftSVG or similar libraries for runtime SVG rendering was rejected due t
 
 ---
 
+## D-014: Discourse User API Key Authentication
+
+**Date:** 2026-02-02
+**Status:** Accepted
+
+### Context
+Discourse does not accept SSO Bearer tokens directly for API authentication (see Q-002 in OPEN_QUESTIONS.md). An alternative authentication mechanism is needed.
+
+### Decision
+Implement Discourse User API Key authentication flow following the official specification:
+
+**Flow:**
+1. Generate RSA key pair (2048-bit), store private key in Keychain
+2. Build auth URL with client_id, nonce, redirect scheme, scopes, and public key PEM
+3. Open URL via ASWebAuthenticationSession (user authenticates via browser)
+4. Receive callback with RSA-encrypted payload
+5. Decrypt payload using stored private key
+6. Verify nonce matches original request
+7. Store API key + client ID in Keychain
+8. Use `User-Api-Key` and `User-Api-Client-Id` headers for all Discourse requests
+
+**Key Files:**
+- `RSAKeyManager.swift` - RSA key pair generation/storage/decryption
+- `DiscourseAuthManager.swift` - Auth flow orchestration
+- `DiscourseCredential.swift` / `DiscourseAuthResponse.swift` - Domain models
+- `DiscourseAPIKeyProvider.swift` - Protocol for credential access
+- `DiscourseHTTPClient.swift` - HTTP client wrapper that injects auth headers
+
+### Rationale
+1. **Official API**: User API Keys are the recommended Discourse mobile auth method
+2. **Secure**: RSA encryption protects the key in transit; Keychain protects at rest
+3. **Independent of SSO**: Works regardless of how user authenticated to Discourse
+4. **Revocable**: Keys can be revoked server-side or on logout
+5. **Scoped**: Requested scopes limit key permissions (currently: notifications, session_info)
+
+### Configuration Required
+These Info.plist keys must be set (via xcconfig):
+- `DISCOURSE_BASE_URL` - Discourse instance URL (`https://diskussion.piratenpartei.de`)
+- `DISCOURSE_CLIENT_ID` - Unique client identifier (`de.meine-piraten.ios-app`)
+- `DISCOURSE_AUTH_REDIRECT_SCHEME` - URL scheme (`piratenapp`)
+- `DISCOURSE_AUTH_REDIRECT_HOST` - Callback host (`discourse_auth`)
+- `DISCOURSE_APP_NAME` - App name shown in Discourse
+
+### Redirect URL
+The app uses `piratenapp://discourse_auth` as the callback URL. This is configured as an allowed redirect in the Discourse admin panel.
+
+### Scopes
+Currently using: `read,session_info`
+- `read` - Read-only access to forum content
+- `session_info` - User session information
+
+Note: `notifications` and `push` scopes require a `push_url` parameter and are not currently used.
+
+### References
+- [Discourse User API Keys Specification](https://meta.discourse.org/t/user-api-keys-specification/48536)
+
+---
+
+## D-015: Official Discourse Instance URL
+
+**Date:** 2026-02-02
+**Status:** Accepted
+
+### Context
+During authentication testing, the app was redirecting to `forum.dev.piratenpartei.de` which does not exist.
+
+### Decision
+The correct and only Discourse instance URL is:
+```
+https://diskussion.piratenpartei.de
+```
+
+This URL is used for both development and production. There is no separate dev/staging Discourse instance.
+
+### Configuration Updated
+- `Config/Debug.xcconfig` - `DISCOURSE_BASE_URL` corrected
+- `Config/Release.xcconfig` - `DISCOURSE_BASE_URL` corrected
+
+### Rationale
+This is the actual production Discourse forum used by the Piratenpartei. Previous placeholder URLs (`forum.dev.piratenpartei.de`, `forum.piratenpartei.de`) were incorrect.
+
+---
+
+## D-016: RSA Public Key Format (PKCS#1 → SPKI Conversion)
+
+**Date:** 2026-02-02
+**Status:** Accepted
+
+### Context
+When implementing Discourse User API Key authentication, the RSA public key export failed server-side with HTTP 500. Investigation revealed:
+- iOS `SecKeyCopyExternalRepresentation` exports in **PKCS#1** format
+- Discourse expects **SPKI (X.509 SubjectPublicKeyInfo)** format
+
+### Decision
+Convert PKCS#1 to SPKI by prepending the ASN.1 AlgorithmIdentifier header in `RSAKeyManager.swift`.
+
+### Implementation
+SPKI wraps PKCS#1 with an AlgorithmIdentifier:
+```
+SEQUENCE {
+    AlgorithmIdentifier { OID rsaEncryption (1.2.840.113549.1.1.1), NULL }
+    BIT STRING { 0x00 (unused bits), PKCS#1 data }
+}
+```
+
+The conversion adds a 15-byte ASN.1 header followed by the BIT STRING wrapper around the original PKCS#1 data.
+
+### Additional Fix: Base64 Newlines
+Discourse returns the encrypted payload with newlines (URL-encoded as `%0A`). Swift's `Data(base64Encoded:)` fails on these by default. Fixed by using:
+```swift
+Data(base64Encoded: payload, options: .ignoreUnknownCharacters)
+```
+
+### References
+- [RFC 8017 - PKCS #1](https://www.rfc-editor.org/rfc/rfc8017)
+- [RFC 5280 - SubjectPublicKeyInfo](https://www.rfc-editor.org/rfc/rfc5280#section-4.1.2.7)
+
+---
+
 ## Future Decisions
 
 Decisions pending external input:
-- Discourse authentication strategy verification (see OPEN_QUESTIONS.md)
 - meine-piraten.de API integration approach

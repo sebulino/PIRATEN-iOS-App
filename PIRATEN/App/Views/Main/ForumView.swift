@@ -9,12 +9,16 @@ import SwiftUI
 
 struct ForumView: View {
     @ObservedObject var viewModel: ForumViewModel
+    @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
 
     /// Optional callback for when user taps login button in unauthenticated state
     var onLoginTapped: (() -> Void)?
 
     /// Factory for creating TopicDetailViewModels
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
+
+    /// The current window for presenting auth session
+    @Environment(\.window) private var window: UIWindow?
 
     var body: some View {
         NavigationStack {
@@ -98,21 +102,59 @@ struct ForumView: View {
     @ViewBuilder
     private var notAuthenticatedState: some View {
         VStack(spacing: 16) {
-            Image(systemName: "person.crop.circle.badge.questionmark")
-                .font(.system(size: 48))
-                .foregroundColor(.blue)
-            Text("Anmeldung erforderlich")
-                .font(.headline)
-            Text("Bitte melde dich an, um das Forum zu sehen.")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-            Button("Anmelden") {
-                onLoginTapped?()
+            switch discourseAuthCoordinator.authState {
+            case .idle, .failed:
+                Image(systemName: "bubble.left.and.bubble.right.fill")
+                    .font(.system(size: 48))
+                    .foregroundColor(.orange)
+                Text("Forum verbinden")
+                    .font(.headline)
+                Text("Um das Forum zu nutzen, muss die App mit dem Discourse-Forum verbunden werden.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+
+                if case .failed(let message) = discourseAuthCoordinator.authState {
+                    Text(message)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                }
+
+                Button {
+                    Task {
+                        await discourseAuthCoordinator.authenticate(from: window)
+                    }
+                } label: {
+                    Label("Mit Forum verbinden", systemImage: "link")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!discourseAuthCoordinator.isAuthAvailable)
+
+            case .authenticating:
+                ProgressView()
+                    .scaleEffect(1.5)
+                Text("Verbindung wird hergestellt...")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
+            case .authenticated:
+                // This state triggers a reload
+                ProgressView()
+                    .onAppear {
+                        viewModel.loadTopics()
+                    }
             }
-            .buttonStyle(.borderedProminent)
         }
         .padding()
+        .onChange(of: discourseAuthCoordinator.authState) { oldState, newState in
+            if newState == .authenticated {
+                // Reset coordinator and reload topics
+                discourseAuthCoordinator.reset()
+                viewModel.loadTopics()
+            }
+        }
     }
 
     @ViewBuilder
@@ -197,9 +239,17 @@ private struct TopicRow: View {
 
 #Preview {
     // Preview with fake data - uses FakeDiscourseRepository
+    let credentialStore = InMemoryCredentialStore()
     let fakeRepo = FakeDiscourseRepository()
+    let discourseAPIKeyProvider = KeychainDiscourseAPIKeyProvider(credentialStore: credentialStore)
+
     ForumView(
         viewModel: ForumViewModel(discourseRepository: fakeRepo),
+        discourseAuthCoordinator: DiscourseAuthCoordinator(
+            discourseAuthManager: nil,
+            discourseAPIKeyProvider: discourseAPIKeyProvider,
+            credentialStore: credentialStore
+        ),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeRepo)
         }

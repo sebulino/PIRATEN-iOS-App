@@ -34,10 +34,10 @@ Assuming OAuth2/OIDC. Auth UI is stubbed with a fake login toggle.
 
 ### Q-002: Discourse Auth Strategy
 
-**Status:** Open (Partially Answered)
+**Status:** Resolved ✅
 **Blocking:** Forum/Messages features
 **Asked:** 2026-01-30
-**Updated:** 2026-02-01
+**Resolved:** 2026-02-02
 
 **Question:**
 How does the app authenticate to Discourse?
@@ -55,16 +55,30 @@ How does the app authenticate to Discourse?
 **CONFIRMED (2026-02-01):**
 - ❌ **Option A (Bearer passthrough) does NOT work** - Discourse returns 401 when presented with the Keycloak SSO access token
 - This means Discourse is NOT configured to trust the same Keycloak realm
-- Need to investigate Options B, C, or D
 
-**Current workaround:**
-- Discourse API 401/403 errors do NOT trigger SSO session expiration
-- Forum/Messages views show "not authenticated" error but user remains logged in to SSO
-- See `AppContainer.swift` comment: `onAuthError: nil` for Discourse HTTP client
+**TESTED (2026-02-02):**
+- ❌ **Option D (User API Key) returned "Oops" error** - Cause: redirect URL not in allowed list
+- ✅ **Redirect URL fixed (2026-02-02)** - Changed to `piratenapp://discourse_auth`
+- Discourse has allowed redirect: `piratenapp://discourse_auth`
+- Discourse has these allowed scopes: read, write, message_bus, push, notifications, session_info, one_time_password
+- The Discourse instance uses Piratenlogin SSO (Keycloak) for browser-based login
 
-**Next steps:**
-- Contact Discourse admin to determine which auth method is available
-- Most likely Option D (User API Key) will be needed
+**Current implementation:**
+- App config updated: `DISCOURSE_AUTH_REDIRECT_SCHEME=piratenapp`, `DISCOURSE_AUTH_REDIRECT_HOST=discourse_auth`
+- `piratenapp` URL scheme registered in Info.plist
+- Full auth flow implemented via `DiscourseAuthCoordinator` → `DiscourseAuthManager` → `ASWebAuthenticationSession`
+- `DiscourseHTTPClient` uses `User-Api-Key` header for authenticated requests
+
+**Result (2026-02-02):**
+- ✅ Auth flow tested and working on simulator
+- ✅ Payload decryption verified (256 bytes → JSON with key, nonce, push, api)
+- ✅ Credential stored in Keychain
+- ✅ User API Key: `User-Api-Key` header used for authenticated requests
+
+**Implementation notes:**
+- PKCS#1 → SPKI conversion required for RSA public key (iOS exports PKCS#1, Discourse expects SPKI)
+- Base64 payload contains newlines from URL encoding - use `.ignoreUnknownCharacters` option
+- URL encoding must use strict RFC 3986 (encode `+`, `/`, `=` in base64)
 
 ---
 
@@ -224,15 +238,23 @@ Using Keycloak defaults. App handles rotation by preserving new refresh tokens w
 
 ### Q-004: Discourse Instance URL
 
-**Status:** Open
+**Status:** Resolved ✅
 **Blocking:** Forum/Messages features
 **Asked:** 2026-01-30
+**Resolved:** 2026-02-02
 
 **Question:**
 What is the Discourse instance URL for the forum?
 
-**Current assumption:**
-Using placeholder URL in xcconfig.
+**Answer:**
+The correct and only Discourse instance is:
+```
+https://diskussion.piratenpartei.de
+```
+
+There is no dev/staging Discourse instance. The previous placeholder URLs (`forum.dev.piratenpartei.de`, `forum.piratenpartei.de`) were incorrect.
+
+**Config updated:** `Debug.xcconfig` and `Release.xcconfig` now use the correct URL.
 
 ---
 
