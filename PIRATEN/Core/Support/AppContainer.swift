@@ -89,6 +89,12 @@ final class AppContainer {
     /// Note: Currently displays PLACEHOLDER DATA until SSO integration.
     let profileViewModel: ProfileViewModel
 
+    // MARK: - Storage Layer
+
+    /// Recent recipients storage for message composition.
+    /// Stores up to 10 recently messaged usernames.
+    let recentRecipientsStore: RecentRecipientsStore
+
     // MARK: - ViewModel Factories
 
     /// Creates a TopicDetailViewModel for the given topic.
@@ -131,8 +137,14 @@ final class AppContainer {
             credentialStore: credentialStore
         )
 
+        // Storage layer
+        self.recentRecipientsStore = RecentRecipientsStore()
+
         // Presentation layer - auth state manager first (needed for HTTP client)
-        self.authStateManager = AuthStateManager(authRepository: authRepository)
+        self.authStateManager = AuthStateManager(
+            authRepository: authRepository,
+            recentRecipientsStorage: recentRecipientsStore
+        )
 
         // Discourse authentication layer
         self.rsaKeyManager = RSAKeyManager()
@@ -225,7 +237,13 @@ final class AppContainer {
         self.discourseRepository = discourseRepository ?? FakeDiscourseRepository()
         self.todoRepository = todoRepository ?? FakeTodoRepository()
 
-        self.authStateManager = AuthStateManager(authRepository: authRepository)
+        // Storage layer (use standard UserDefaults for testing)
+        self.recentRecipientsStore = RecentRecipientsStore()
+
+        self.authStateManager = AuthStateManager(
+            authRepository: authRepository,
+            recentRecipientsStorage: recentRecipientsStore
+        )
         self.forumViewModel = ForumViewModel(discourseRepository: self.discourseRepository)
         self.messagesViewModel = MessagesViewModel(
             discourseRepository: self.discourseRepository,
