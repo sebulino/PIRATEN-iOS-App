@@ -129,6 +129,31 @@ final class RealDiscourseRepository: DiscourseRepository {
         }
     }
 
+    func searchUsers(query: String) async throws -> [UserSearchResult] {
+        // Enforce minimum query length
+        guard query.count >= 2 else {
+            return []
+        }
+
+        do {
+            let data = try await apiClient.searchUsers(query: query)
+            let response = try decodeUserSearchResponse(from: data)
+
+            // Map DTOs to domain models
+            let users = response.users.map { dto in
+                dto.toDomainModel()
+            }
+
+            return users
+        } catch let error as DiscourseError {
+            throw mapToRepositoryError(error)
+        } catch {
+            throw DiscourseRepositoryError.loadFailed(
+                message: "Benutzersuche fehlgeschlagen"
+            )
+        }
+    }
+
     // MARK: - Private Helpers
 
     /// Decodes the /latest.json response.
@@ -159,6 +184,16 @@ final class RealDiscourseRepository: DiscourseRepository {
         // Note: CodingKeys handle snake_case mapping
         do {
             return try decoder.decode(DiscoursePrivateMessagesResponse.self, from: data)
+        } catch {
+            throw DiscourseError.decodingError(message: error.localizedDescription)
+        }
+    }
+
+    /// Decodes the /u/search/users.json response.
+    private func decodeUserSearchResponse(from data: Data) throws -> DiscourseUserSearchResponse {
+        let decoder = JSONDecoder()
+        do {
+            return try decoder.decode(DiscourseUserSearchResponse.self, from: data)
         } catch {
             throw DiscourseError.decodingError(message: error.localizedDescription)
         }

@@ -304,4 +304,30 @@ final class FakeDiscourseRepository: DiscourseRepository {
         // For fake implementation, we don't actually persist the reply
         // A real integration test would verify behavior differently
     }
+
+    func searchUsers(query: String) async throws -> [UserSearchResult] {
+        // Simulate network delay (placeholder behavior)
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+
+        // Enforce minimum query length
+        guard query.count >= 2 else {
+            return []
+        }
+
+        // Convert fake users to search results and filter by query
+        let allResults = fakeUsers.map { user in
+            UserSearchResult(
+                username: user.username,
+                displayName: user.displayName,
+                avatarUrl: user.avatarUrl
+            )
+        }
+
+        // Filter by query (case-insensitive match on username or display name)
+        let lowercasedQuery = query.lowercased()
+        return allResults.filter { result in
+            result.username.lowercased().contains(lowercasedQuery) ||
+            (result.displayName?.lowercased().contains(lowercasedQuery) ?? false)
+        }
+    }
 }

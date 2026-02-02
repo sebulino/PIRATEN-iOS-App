@@ -445,3 +445,63 @@ struct DiscoursePrivateMessageTopicDTO: Decodable {
         )
     }
 }
+
+// MARK: - /u/search/users.json Response DTOs
+
+/// Root response from Discourse /u/search/users.json endpoint.
+/// Returns users matching the search term.
+///
+/// API Reference: GET /u/search/users.json?term=<query>
+/// - Returns users that match the search term by username or name
+struct DiscourseUserSearchResponse: Decodable {
+    /// Array of users matching the search term
+    let users: [DiscourseUserSearchResultDTO]
+
+    /// Groups that can be messaged (optional, may not be present)
+    let groups: [DiscourseGroupDTO]?
+}
+
+/// A user result from the search API.
+/// Contains basic user info for display in recipient picker.
+struct DiscourseUserSearchResultDTO: Decodable {
+    let username: String
+    let name: String?
+    let avatarTemplate: String?
+
+    enum CodingKeys: String, CodingKey {
+        case username
+        case name
+        case avatarTemplate = "avatar_template"
+    }
+
+    /// Converts this DTO to a Domain UserSearchResult model.
+    func toDomainModel() -> UserSearchResult {
+        // Resolve avatar URL by replacing the size placeholder
+        var avatarUrl: URL? = nil
+        if let template = avatarTemplate {
+            let resolvedPath = template.replacingOccurrences(of: "{size}", with: "120")
+            if resolvedPath.hasPrefix("http") {
+                avatarUrl = URL(string: resolvedPath)
+            } else {
+                avatarUrl = URL(string: "https://diskussion.piratenpartei.de\(resolvedPath)")
+            }
+        }
+
+        return UserSearchResult(
+            username: username,
+            displayName: name,
+            avatarUrl: avatarUrl
+        )
+    }
+}
+
+/// A group from the search API (for messageable groups).
+struct DiscourseGroupDTO: Decodable {
+    let name: String
+    let fullName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case fullName = "full_name"
+    }
+}

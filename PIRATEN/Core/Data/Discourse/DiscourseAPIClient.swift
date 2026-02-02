@@ -138,6 +138,42 @@ final class DiscourseAPIClient {
         try await fetchTopic(id: topicId)
     }
 
+    /// Searches for users by username or name.
+    /// Endpoint: GET /u/search/users.json?term=<query>
+    /// - Parameter query: The search term (minimum 2 characters recommended)
+    /// - Returns: Raw response data for decoding by the caller
+    /// - Throws: DiscourseError if the request fails
+    ///
+    /// Response contains array of users with username, name, and avatar_template.
+    /// Used for finding recipients when composing new private messages.
+    func searchUsers(query: String) async throws -> Data {
+        // URL encode the query and build the path with query parameter
+        guard let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            throw DiscourseError.unknown(statusCode: nil, message: "Invalid search query")
+        }
+
+        // Build URL with query parameter
+        var components = URLComponents(url: baseURL.appendingPathComponent("/u/search/users.json"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "term", value: query)]
+
+        guard let requestUrl = components.url else {
+            throw DiscourseError.unknown(statusCode: nil, message: "Failed to build search URL")
+        }
+
+        let request = HTTPRequest.get(requestUrl, headers: commonHeaders())
+        do {
+            let response = try await httpClient.execute(request)
+            guard response.isSuccess else {
+                throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
+            }
+            return response.data
+        } catch let error as HTTPError {
+            throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
+        }
+    }
+
     /// Posts a reply to an existing message thread (PM).
     /// Endpoint: POST /posts.json
     /// - Parameters:

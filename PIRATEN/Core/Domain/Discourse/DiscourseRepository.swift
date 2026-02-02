@@ -60,4 +60,13 @@ protocol DiscourseRepository {
     ///
     /// API Endpoint: POST /posts.json with topic_id and raw parameters
     func replyToThread(topicId: Int, content: String) async throws
+
+    /// Searches for users by username or name.
+    /// - Parameter query: The search term (minimum 2 characters recommended)
+    /// - Returns: Array of matching users
+    /// - Throws: DiscourseRepositoryError if search fails
+    ///
+    /// API Endpoint: GET /u/search/users.json?term={query}
+    /// Used for finding recipients when composing new private messages.
+    func searchUsers(query: String) async throws -> [UserSearchResult]
 }
