@@ -60,4 +60,24 @@ protocol DiscourseRepository {
     ///
     /// API Endpoint: POST /posts.json with topic_id and raw parameters
     func replyToThread(topicId: Int, content: String) async throws
+
+    /// Searches for users by username or name.
+    /// - Parameter query: The search term (minimum 2 characters recommended)
+    /// - Returns: Array of matching users
+    /// - Throws: DiscourseRepositoryError if search fails
+    ///
+    /// API Endpoint: GET /u/search/users.json?term={query}
+    /// Used for finding recipients when composing new private messages.
+    func searchUsers(query: String) async throws -> [UserSearchResult]
+
+    /// Creates a new private message thread.
+    /// - Parameters:
+    ///   - recipient: Username of the recipient
+    ///   - title: Subject/title of the message
+    ///   - content: Body content of the message
+    /// - Returns: The topic ID of the newly created PM thread (for navigation)
+    /// - Throws: DiscourseRepositoryError if creation fails
+    ///
+    /// API Endpoint: POST /posts.json with archetype=private_message
+    func createPrivateMessage(recipient: String, title: String, content: String) async throws -> Int
 }

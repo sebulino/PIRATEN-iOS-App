@@ -106,13 +106,37 @@ final class DiscourseAPIClient {
         }
     }
 
-    /// Fetches private messages for the current user.
+    /// Fetches private messages inbox for the current user.
     /// Endpoint: GET /topics/private-messages/{username}.json
     /// - Parameter username: The username whose private messages to fetch
     /// - Returns: Raw response data for decoding by the caller
     /// - Throws: DiscourseError if the request fails
     func fetchPrivateMessages(for username: String) async throws -> Data {
         let path = "/topics/private-messages/\(username).json"
+        let request = HTTPRequest.get(url(for: path), headers: commonHeaders())
+        do {
+            let response = try await httpClient.execute(request)
+            guard response.isSuccess else {
+                throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
+            }
+            return response.data
+        } catch let error as HTTPError {
+            throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
+        }
+    }
+
+    /// Fetches sent private messages for the current user.
+    /// Endpoint: GET /topics/private-messages-sent/{username}.json
+    /// - Parameter username: The username whose sent messages to fetch
+    /// - Returns: Raw response data for decoding by the caller
+    /// - Throws: DiscourseError if the request fails
+    ///
+    /// This endpoint returns messages the user has sent that may not yet have replies,
+    /// and therefore wouldn't appear in the regular inbox.
+    func fetchSentPrivateMessages(for username: String) async throws -> Data {
+        let path = "/topics/private-messages-sent/\(username).json"
         let request = HTTPRequest.get(url(for: path), headers: commonHeaders())
         do {
             let response = try await httpClient.execute(request)
@@ -136,6 +160,81 @@ final class DiscourseAPIClient {
         // PMs in Discourse are just topics with archetype='private_message'
         // The same endpoint works for both
         try await fetchTopic(id: topicId)
+    }
+
+    /// Searches for users by username or name.
+    /// Endpoint: GET /u/search/users.json?term=<query>
+    /// - Parameter query: The search term (minimum 2 characters recommended)
+    /// - Returns: Raw response data for decoding by the caller
+    /// - Throws: DiscourseError if the request fails
+    ///
+    /// Response contains array of users with username, name, and avatar_template.
+    /// Used for finding recipients when composing new private messages.
+    func searchUsers(query: String) async throws -> Data {
+        // URL encode the query and build the path with query parameter
+        guard let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            throw DiscourseError.unknown(statusCode: nil, message: "Invalid search query")
+        }
+
+        // Build URL with query parameter
+        var components = URLComponents(url: baseURL.appendingPathComponent("/u/search/users.json"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "term", value: query)]
+
+        guard let requestUrl = components.url else {
+            throw DiscourseError.unknown(statusCode: nil, message: "Failed to build search URL")
+        }
+
+        let request = HTTPRequest.get(requestUrl, headers: commonHeaders())
+        do {
+            let response = try await httpClient.execute(request)
+            guard response.isSuccess else {
+                throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
+            }
+            return response.data
+        } catch let error as HTTPError {
+            throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
+        }
+    }
+
+    /// Creates a new private message thread.
+    /// Endpoint: POST /posts.json with archetype=private_message
+    /// - Parameters:
+    ///   - recipient: Username of the recipient
+    ///   - title: Subject/title of the message
+    ///   - content: The raw markdown content of the message
+    /// - Returns: Raw response data containing the created post/topic
+    /// - Throws: DiscourseError if the request fails
+    func createPrivateMessage(recipient: String, title: String, content: String) async throws -> Data {
+        let body = CreatePrivateMessageRequest(
+            targetRecipients: recipient,
+            title: title,
+            raw: content,
+            archetype: "private_message"
+        )
+        let bodyData: Data
+        do {
+            bodyData = try JSONEncoder().encode(body)
+        } catch {
+            throw DiscourseError.unknown(statusCode: nil, message: "Failed to encode request")
+        }
+
+        var headers = commonHeaders()
+        headers["Content-Type"] = "application/json"
+
+        let request = HTTPRequest.post(url(for: "/posts.json"), body: bodyData, headers: headers)
+        do {
+            let response = try await httpClient.execute(request)
+            guard response.isSuccess else {
+                throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
+            }
+            return response.data
+        } catch let error as HTTPError {
+            throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
+        }
     }
 
     /// Posts a reply to an existing message thread (PM).
@@ -260,5 +359,20 @@ private struct CreatePostRequest: Encodable {
     enum CodingKeys: String, CodingKey {
         case topicId = "topic_id"
         case raw
+    }
+}
+
+/// Request body for creating a new private message via POST /posts.json
+private struct CreatePrivateMessageRequest: Encodable {
+    let targetRecipients: String
+    let title: String
+    let raw: String
+    let archetype: String
+
+    enum CodingKeys: String, CodingKey {
+        case targetRecipients = "target_recipients"
+        case title
+        case raw
+        case archetype
     }
 }

@@ -51,6 +51,12 @@ struct PIRATENApp: App {
                 },
                 messageThreadDetailViewModelFactory: { [container] thread in
                     container.makeMessageThreadDetailViewModel(for: thread)
+                },
+                recipientPickerViewModelFactory: { [container] in
+                    container.makeRecipientPickerViewModel()
+                },
+                composeMessageViewModelFactory: { [container] in
+                    container.makeComposeMessageViewModel()
                 }
             )
             .onOpenURL { url in

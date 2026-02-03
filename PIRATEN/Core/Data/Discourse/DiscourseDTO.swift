@@ -445,3 +445,100 @@ struct DiscoursePrivateMessageTopicDTO: Decodable {
         )
     }
 }
+
+// MARK: - /u/search/users.json Response DTOs
+
+/// Root response from Discourse /u/search/users.json endpoint.
+/// Returns users matching the search term.
+///
+/// API Reference: GET /u/search/users.json?term=<query>
+/// - Returns users that match the search term by username or name
+struct DiscourseUserSearchResponse: Decodable {
+    /// Array of users matching the search term
+    let users: [DiscourseUserSearchResultDTO]
+
+    /// Groups that can be messaged (optional, may not be present)
+    let groups: [DiscourseGroupDTO]?
+}
+
+/// A user result from the search API.
+/// Contains basic user info for display in recipient picker.
+struct DiscourseUserSearchResultDTO: Decodable {
+    let username: String
+    let name: String?
+    let avatarTemplate: String?
+
+    enum CodingKeys: String, CodingKey {
+        case username
+        case name
+        case avatarTemplate = "avatar_template"
+    }
+
+    /// Converts this DTO to a Domain UserSearchResult model.
+    func toDomainModel() -> UserSearchResult {
+        // Resolve avatar URL by replacing the size placeholder
+        var avatarUrl: URL? = nil
+        if let template = avatarTemplate {
+            let resolvedPath = template.replacingOccurrences(of: "{size}", with: "120")
+            if resolvedPath.hasPrefix("http") {
+                avatarUrl = URL(string: resolvedPath)
+            } else {
+                avatarUrl = URL(string: "https://diskussion.piratenpartei.de\(resolvedPath)")
+            }
+        }
+
+        return UserSearchResult(
+            username: username,
+            displayName: name,
+            avatarUrl: avatarUrl
+        )
+    }
+}
+
+/// A group from the search API (for messageable groups).
+struct DiscourseGroupDTO: Decodable {
+    let name: String
+    let fullName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case fullName = "full_name"
+    }
+}
+
+// MARK: - POST /posts.json Response DTO
+
+/// Response from Discourse POST /posts.json endpoint when creating a new post/PM.
+/// Contains the created post info including the topic_id for navigation.
+///
+/// API Reference: POST /posts.json
+/// - Used for both creating new topics/PMs and replying to existing ones
+/// - topic_id is essential for navigating to the newly created thread
+struct DiscourseCreatePostResponse: Decodable {
+    /// The unique ID of the created post
+    let id: Int
+
+    /// The topic ID the post belongs to (needed for navigation)
+    let topicId: Int
+
+    /// The sequential post number within the topic
+    let postNumber: Int
+
+    /// Username of the post author
+    let username: String
+
+    /// Rendered HTML content of the post
+    let cooked: String
+
+    /// The URL-friendly slug for the topic (optional)
+    let topicSlug: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case topicId = "topic_id"
+        case postNumber = "post_number"
+        case username
+        case cooked
+        case topicSlug = "topic_slug"
+    }
+}

@@ -142,9 +142,32 @@ struct TopicDetailView: View {
 }
 
 /// Row view for displaying a single post in the topic.
-/// Shows author, content excerpt, and metadata.
+/// Shows author, content excerpt, and metadata with expand/collapse support.
+/// Links in the content are clickable.
 private struct PostRow: View {
     let post: Post
+
+    /// Whether the post content is expanded to show full text
+    @State private var isExpanded = false
+
+    /// Line limit when collapsed (nil when expanded for full content)
+    private let collapsedLineLimit = 6
+
+    /// Parsed content with clickable links
+    private var parsedContent: AttributedString {
+        HTMLContentParser.parseToAttributedString(post.content)
+    }
+
+    /// Plain text content for length checking
+    private var plainTextContent: String {
+        HTMLContentParser.stripHTML(from: post.content)
+    }
+
+    /// Whether the content needs truncation (rough heuristic based on character count)
+    private var needsTruncation: Bool {
+        // Approximate: if content is longer than ~300 chars, it likely exceeds 6 lines
+        plainTextContent.count > 300
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -161,11 +184,29 @@ private struct PostRow: View {
                     .foregroundColor(.secondary)
             }
 
-            // Post content (HTML stripped for excerpt display)
-            Text(stripHTML(from: post.content))
+            // Post content with clickable links
+            Text(parsedContent)
                 .font(.body)
-                .lineLimit(6)
+                .lineLimit(isExpanded ? nil : collapsedLineLimit)
                 .foregroundColor(.primary)
+                .tint(.blue)
+
+            // Expand/collapse button (only shown if content is long enough)
+            if needsTruncation {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isExpanded.toggle()
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(isExpanded ? "Weniger anzeigen" : "Mehr anzeigen")
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    }
+                    .font(.caption)
+                    .foregroundColor(.blue)
+                }
+                .buttonStyle(.plain)
+            }
 
             // Metadata row
             HStack {
@@ -192,23 +233,6 @@ private struct PostRow: View {
             }
         }
         .padding(.vertical, 4)
-    }
-
-    /// Strips HTML tags from content for display.
-    /// Note: This is a simple implementation for excerpts.
-    /// For full HTML rendering, consider using AttributedString or a WebView.
-    private func stripHTML(from htmlString: String) -> String {
-        // Remove HTML tags using regex
-        let stripped = htmlString
-            .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-            .replacingOccurrences(of: "&nbsp;", with: " ")
-            .replacingOccurrences(of: "&amp;", with: "&")
-            .replacingOccurrences(of: "&lt;", with: "<")
-            .replacingOccurrences(of: "&gt;", with: ">")
-            .replacingOccurrences(of: "&quot;", with: "\"")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        return stripped
     }
 }
 

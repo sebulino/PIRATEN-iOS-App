@@ -25,14 +25,16 @@ final class AuthStateManager: ObservableObject {
     @Published private(set) var currentState: AuthState = .unauthenticated
 
     private let authRepository: AuthRepository
+    private let recentRecipientsStorage: RecentRecipientsStorage?
 
     /// Guards against concurrent auth error handling.
     /// When true, subsequent auth error callbacks are ignored.
     /// Reset when user successfully re-authenticates or logs out explicitly.
     private var isHandlingAuthError: Bool = false
 
-    init(authRepository: AuthRepository) {
+    init(authRepository: AuthRepository, recentRecipientsStorage: RecentRecipientsStorage? = nil) {
         self.authRepository = authRepository
+        self.recentRecipientsStorage = recentRecipientsStorage
     }
 
     /// Initiates the authentication flow.
@@ -55,9 +57,12 @@ final class AuthStateManager: ObservableObject {
 
     /// Performs logout.
     /// Resets the auth error guard to allow fresh authentication.
+    /// Clears user-specific local data (recent recipients).
     func logout() {
         Task {
             await authRepository.logout()
+            // Clear user-specific local data
+            recentRecipientsStorage?.clearAll()
             // Reset the auth error guard on explicit logout
             isHandlingAuthError = false
             currentState = .unauthenticated

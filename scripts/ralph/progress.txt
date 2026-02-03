@@ -135,3 +135,169 @@ Started: Mo.  2 Feb. 2026 12:30:35 CET
   - Test fixes: use testable initializers to inject config in unit tests
   - UI tests need launch arguments to reset app state for clean testing
 ---
+
+## [2026-02-02 22:30] - M4b-001
+- **What was implemented:**
+  - User search API integration for finding message recipients
+  - DiscourseAPIClient.searchUsers(query:) using GET /u/search/users.json
+  - DiscourseUserSearchResponse and DiscourseUserSearchResultDTO for decoding
+  - UserSearchResult domain model with username, displayName, avatarUrl
+  - RealDiscourseRepository.searchUsers with 2-character minimum enforcement
+  - FakeDiscourseRepository.searchUsers for testing/preview
+- **Files changed:**
+  - PIRATEN/Core/Data/Discourse/DiscourseAPIClient.swift - Added searchUsers method
+  - PIRATEN/Core/Data/Discourse/DiscourseDTO.swift - Added user search response DTOs
+  - PIRATEN/Core/Domain/Discourse/UserSearchResult.swift - New domain model
+  - PIRATEN/Core/Domain/Discourse/DiscourseRepository.swift - Added protocol method
+  - PIRATEN/Core/Data/Discourse/RealDiscourseRepository.swift - Implemented search
+  - PIRATEN/Core/Data/Discourse/FakeDiscourseRepository.swift - Fake implementation
+- **Context7 Docs Summary:**
+  - Discourse user search: GET /u/search/users.json?term={query}
+  - Returns users array with username, name, avatar_template fields
+  - avatar_template contains {size} placeholder for resolution
+  - groups array for messageable groups (optional)
+- **Learnings for future iterations:**
+  - URL encoding: use URLComponents with queryItems for proper encoding
+  - Minimum query length (2 chars) enforced at repository level returns empty array
+  - UserSearchResult uses username as id since it's unique in Discourse
+  - avatar_template resolution: replace {size} with "120" for standard size
+---
+
+## [2026-02-02 22:45] - M4b-002
+- **What was implemented:**
+  - RecentRecipientsStore with UserDefaults backing
+  - RecentRecipientsStorage protocol for testability
+  - Store up to 10 recent recipients, most recent first
+  - Integration with AuthStateManager.logout() to clear on logout
+  - Wired into AppContainer for dependency injection
+- **Files changed:**
+  - PIRATEN/Core/Data/Storage/RecentRecipientsStore.swift - New storage implementation
+  - PIRATEN/Core/Domain/Auth/AuthStateManager.swift - Added storage dependency, clear on logout
+  - PIRATEN/Core/Support/AppContainer.swift - Added storage instantiation and wiring
+- **Learnings for future iterations:**
+  - Optional dependency injection: use `RecentRecipientsStorage?` to avoid breaking existing tests
+  - UserDefaults is thread-safe, no additional synchronization needed
+  - Store only usernames (public identifiers), never PII
+  - addRecipient() moves existing username to front (no duplicates)
+---
+
+## [2026-02-02 23:00] - M4b-003
+- **What was implemented:**
+  - RecipientPickerViewModel with debounced user search (300ms)
+  - RecipientPickerView with searchable modifier and sections
+  - Recent recipients section showing up to 5 entries
+  - Search results section with loading/error/empty states
+  - RecipientRow with avatar initials and consistent color from username hash
+  - Factory method in AppContainer for ViewModel creation
+- **Files changed:**
+  - PIRATEN/App/ViewModels/RecipientPickerViewModel.swift - New ViewModel
+  - PIRATEN/App/Views/Main/RecipientPickerView.swift - New View
+  - PIRATEN/Core/Support/AppContainer.swift - Added factory method
+- **Context7 Docs Summary (SwiftUI searchable):**
+  - .searchable(text:placement:prompt:) adds search field to NavigationStack
+  - .navigationBarDrawer(displayMode: .always) keeps search always visible
+  - Binding<String> for two-way sync with search text state
+  - .onChange(of:) modifier to trigger search on text changes
+  - Section headers with string literals for grouped lists
+- **Learnings for future iterations:**
+  - Debounce via Task.sleep + cancellation for clean async search
+  - Task cancellation check both before and after async work
+  - Avatar color from username.hashValue provides consistent per-user colors
+  - contentShape(Rectangle()) makes entire row tappable, not just text
+---
+
+## [2026-02-02 23:30] - M4b-004
+- **What was implemented:**
+  - ComposeMessageViewModel with recipient, subject, body state
+  - ComposeMessageView with three sections: recipient, subject, body
+  - Reuses MessageSafetyService for body validation and character counting
+  - Cancel confirmation alert when content exists
+  - Character count shown when over 50% of max limit
+  - Recipient section with avatar and tap-to-change action
+  - createPrivateMessage stub added to repository (API in M4b-005)
+- **Files changed:**
+  - PIRATEN/App/ViewModels/ComposeMessageViewModel.swift - New ViewModel
+  - PIRATEN/App/Views/Main/ComposeMessageView.swift - New View
+  - PIRATEN/Core/Domain/Discourse/DiscourseRepository.swift - Added protocol method
+  - PIRATEN/Core/Data/Discourse/RealDiscourseRepository.swift - Added stub
+  - PIRATEN/Core/Data/Discourse/FakeDiscourseRepository.swift - Added stub
+  - PIRATEN/Core/Data/Discourse/DiscourseAPIClient.swift - Added API method + DTO
+  - PIRATEN/Core/Support/AppContainer.swift - Added factory method
+- **Learnings for future iterations:**
+  - FocusState with enum allows keyboard navigation between fields
+  - submitLabel(.next) and onSubmit for field-to-field navigation
+  - TextField with axis: .vertical and lineLimit(5...15) for multiline
+  - Confirmation alert pattern: @State bool + Button role: .destructive
+  - Combine import required for @Published in ObservableObject
+---
+
+## [2026-02-03 00:15] - M4b-005
+- **What was implemented:**
+  - Full createPrivateMessage API integration with topic ID return for navigation
+  - DiscourseCreatePostResponse DTO to parse the API response
+  - Updated repository protocol to return Int (topic_id) instead of void
+  - ComposeMessageState.sent now includes topicId for navigation to new thread
+  - ComposeMessageView callback passes topic ID to parent for navigation
+- **Files changed:**
+  - PIRATEN/Core/Data/Discourse/DiscourseDTO.swift - Added DiscourseCreatePostResponse DTO
+  - PIRATEN/Core/Domain/Discourse/DiscourseRepository.swift - Updated return type to Int
+  - PIRATEN/Core/Data/Discourse/RealDiscourseRepository.swift - Parse response, return topicId
+  - PIRATEN/Core/Data/Discourse/FakeDiscourseRepository.swift - Return mock topic ID
+  - PIRATEN/App/ViewModels/ComposeMessageViewModel.swift - State includes topicId
+  - PIRATEN/App/Views/Main/ComposeMessageView.swift - Pass topicId in callback
+- **Context7 Docs Summary (Discourse POST /posts.json):**
+  - POST /posts.json creates new topics/posts, same endpoint for PMs
+  - archetype parameter: 'regular' (default) or 'private_message' for PMs
+  - For PMs: target_recipients (username), title, raw (content) are required
+  - Response includes: id (post), topic_id (thread), post_number, username, cooked
+  - topic_id from response is essential for navigating to the newly created thread
+- **Learnings for future iterations:**
+  - createPrivateMessage must return topic_id for navigation, not void
+  - State enum can carry associated values (sent(topicId:)) for passing data
+  - Callbacks can be parameterized to pass navigation data from child to parent
+  - Discourse uses same /posts.json endpoint for both topics and PMs, differing by archetype
+---
+
+## [2026-02-03 00:45] - M4b-006
+- **What was implemented:**
+  - MessageDraft model with recipient, subject, body, timestamp
+  - MessageDraftStorage protocol for testable storage abstraction
+  - MessageDraftStore with UserDefaults backing (single draft storage)
+  - ComposeMessageViewModel integration: checkForDraft, saveDraft, restoreFromDraft, discardDraft
+  - Draft auto-save on view disappear (unless sent)
+  - Draft restore prompt on view appear when pending draft exists
+  - Draft cleared after successful send
+- **Files changed:**
+  - PIRATEN/Core/Data/Storage/MessageDraftStore.swift - NEW: Draft model and storage
+  - PIRATEN/App/ViewModels/ComposeMessageViewModel.swift - Added draft management methods
+  - PIRATEN/App/Views/Main/ComposeMessageView.swift - Added restore prompt, onAppear/onDisappear hooks
+  - PIRATEN/Core/Support/AppContainer.swift - Added messageDraftStore dependency
+- **Learnings for future iterations:**
+  - Use Codable for UserDefaults storage of complex types (encode/decode as Data)
+  - onAppear/onDisappear in SwiftUI for lifecycle-based save/restore
+  - Alert with if-let in message block for conditional draft info display
+  - Protocol abstraction (MessageDraftStorage) enables easy testing
+  - Single draft storage is simpler than multi-draft - clear on restore or discard
+---
+
+## [2026-02-03 01:30] - M4b-007
+- **What was implemented:**
+  - Floating Action Button (FAB) on Messages tab for creating new messages
+  - FAB uses orange tint matching app theme with square.and.pencil icon
+  - FAB only visible when authenticated (loaded, loading, error states)
+  - FAB positioned bottom-right with safe area handling
+  - Complete compose flow: FAB -> Recipient Picker -> Compose View
+  - Sheet presentations for both picker and compose screens
+  - Message list refresh after successful send
+- **Files changed:**
+  - PIRATEN/App/Views/Main/MessagesView.swift - Added FAB with ZStack overlay
+  - PIRATEN/App/Views/Main/MainTabView.swift - Added compose flow state and sheets
+  - PIRATEN/App/RootView.swift - Added compose factory parameters
+  - PIRATEN/App/PIRATENApp.swift - Wired compose factories from AppContainer
+- **Learnings for future iterations:**
+  - ZStack with alignment: .bottomTrailing for FAB positioning
+  - Conditional rendering based on auth state for authenticated-only UI
+  - Chain multiple sheets: dismiss first, then present second via state
+  - Factory closures capture container reference with [container] for DI
+  - accessibilityLabel for FAB buttons improves VoiceOver support
+---

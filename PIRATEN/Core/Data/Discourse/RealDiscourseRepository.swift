@@ -97,15 +97,48 @@ final class RealDiscourseRepository: DiscourseRepository {
 
     func fetchMessageThreads(for username: String) async throws -> [MessageThread] {
         do {
-            let data = try await apiClient.fetchPrivateMessages(for: username)
-            let response = try decodePrivateMessagesResponse(from: data)
+            // Fetch both inbox and sent messages in parallel
+            async let inboxDataTask = apiClient.fetchPrivateMessages(for: username)
+            async let sentDataTask = apiClient.fetchSentPrivateMessages(for: username)
 
-            // Map DTOs to domain models
-            let threads = response.topicList.topics.compactMap { dto in
-                dto.toDomainModel(users: response.users)
+            let inboxData = try await inboxDataTask
+            let sentData = try await sentDataTask
+
+            let inboxResponse = try decodePrivateMessagesResponse(from: inboxData)
+            let sentResponse = try decodePrivateMessagesResponse(from: sentData)
+
+            // Map inbox DTOs to domain models
+            let inboxThreads = inboxResponse.topicList.topics.compactMap { dto in
+                dto.toDomainModel(users: inboxResponse.users)
             }
 
-            return threads
+            // Map sent DTOs to domain models
+            let sentThreads = sentResponse.topicList.topics.compactMap { dto in
+                dto.toDomainModel(users: sentResponse.users)
+            }
+
+            // Merge and deduplicate by ID (inbox takes precedence for duplicates)
+            var seenIds = Set<Int>()
+            var mergedThreads: [MessageThread] = []
+
+            for thread in inboxThreads {
+                if !seenIds.contains(thread.id) {
+                    seenIds.insert(thread.id)
+                    mergedThreads.append(thread)
+                }
+            }
+
+            for thread in sentThreads {
+                if !seenIds.contains(thread.id) {
+                    seenIds.insert(thread.id)
+                    mergedThreads.append(thread)
+                }
+            }
+
+            // Sort by last activity (most recent first)
+            mergedThreads.sort { $0.lastActivityAt > $1.lastActivityAt }
+
+            return mergedThreads
         } catch let error as DiscourseError {
             throw mapToRepositoryError(error)
         } catch {
@@ -125,6 +158,51 @@ final class RealDiscourseRepository: DiscourseRepository {
         } catch {
             throw DiscourseRepositoryError.loadFailed(
                 message: "Nachricht konnte nicht gesendet werden"
+            )
+        }
+    }
+
+    func searchUsers(query: String) async throws -> [UserSearchResult] {
+        // Enforce minimum query length
+        guard query.count >= 2 else {
+            return []
+        }
+
+        do {
+            let data = try await apiClient.searchUsers(query: query)
+            let response = try decodeUserSearchResponse(from: data)
+
+            // Map DTOs to domain models
+            let users = response.users.map { dto in
+                dto.toDomainModel()
+            }
+
+            return users
+        } catch let error as DiscourseError {
+            throw mapToRepositoryError(error)
+        } catch {
+            throw DiscourseRepositoryError.loadFailed(
+                message: "Benutzersuche fehlgeschlagen"
+            )
+        }
+    }
+
+    func createPrivateMessage(recipient: String, title: String, content: String) async throws -> Int {
+        do {
+            let data = try await apiClient.createPrivateMessage(
+                recipient: recipient,
+                title: title,
+                content: content
+            )
+            let response = try decodeCreatePostResponse(from: data)
+            return response.topicId
+        } catch let error as DiscourseError {
+            throw mapToRepositoryError(error)
+        } catch let error as DiscourseRepositoryError {
+            throw error
+        } catch {
+            throw DiscourseRepositoryError.loadFailed(
+                message: "Nachricht konnte nicht erstellt werden"
             )
         }
     }
@@ -159,6 +237,26 @@ final class RealDiscourseRepository: DiscourseRepository {
         // Note: CodingKeys handle snake_case mapping
         do {
             return try decoder.decode(DiscoursePrivateMessagesResponse.self, from: data)
+        } catch {
+            throw DiscourseError.decodingError(message: error.localizedDescription)
+        }
+    }
+
+    /// Decodes the /u/search/users.json response.
+    private func decodeUserSearchResponse(from data: Data) throws -> DiscourseUserSearchResponse {
+        let decoder = JSONDecoder()
+        do {
+            return try decoder.decode(DiscourseUserSearchResponse.self, from: data)
+        } catch {
+            throw DiscourseError.decodingError(message: error.localizedDescription)
+        }
+    }
+
+    /// Decodes the POST /posts.json response (for creating posts/PMs).
+    private func decodeCreatePostResponse(from data: Data) throws -> DiscourseCreatePostResponse {
+        let decoder = JSONDecoder()
+        do {
+            return try decoder.decode(DiscourseCreatePostResponse.self, from: data)
         } catch {
             throw DiscourseError.decodingError(message: error.localizedDescription)
         }

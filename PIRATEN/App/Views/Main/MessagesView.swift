@@ -16,33 +16,44 @@ struct MessagesView: View {
     /// Factory for creating MessageThreadDetailViewModels
     var messageThreadDetailViewModelFactory: ((MessageThread) -> MessageThreadDetailViewModel)?
 
+    /// Callback for when user taps the compose FAB to create a new message
+    var onComposeTapped: (() -> Void)?
+
     var body: some View {
         NavigationStack {
-            Group {
-                switch viewModel.loadState {
-                case .idle, .loading:
-                    if viewModel.messageThreads.isEmpty {
-                        ProgressView("Lade Nachrichten...")
-                    } else {
-                        // Show existing threads while refreshing
-                        messageThreadsList
+            ZStack(alignment: .bottomTrailing) {
+                Group {
+                    switch viewModel.loadState {
+                    case .idle, .loading:
+                        if viewModel.messageThreads.isEmpty {
+                            ProgressView("Lade Nachrichten...")
+                        } else {
+                            // Show existing threads while refreshing
+                            messageThreadsList
+                        }
+
+                    case .loaded:
+                        if viewModel.messageThreads.isEmpty {
+                            emptyState
+                        } else {
+                            messageThreadsList
+                        }
+
+                    case .notAuthenticated:
+                        notAuthenticatedState
+
+                    case .authenticationFailed(let message):
+                        authenticationFailedState(message: message)
+
+                    case .error(let message):
+                        errorState(message: message)
                     }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                case .loaded:
-                    if viewModel.messageThreads.isEmpty {
-                        emptyState
-                    } else {
-                        messageThreadsList
-                    }
-
-                case .notAuthenticated:
-                    notAuthenticatedState
-
-                case .authenticationFailed(let message):
-                    authenticationFailedState(message: message)
-
-                case .error(let message):
-                    errorState(message: message)
+                // Floating Action Button - only visible when authenticated
+                if isAuthenticated {
+                    composeButton
                 }
             }
             .navigationTitle("Nachrichten")
@@ -52,6 +63,42 @@ struct MessagesView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Computed Properties
+
+    /// Whether the user is authenticated (FAB should be visible)
+    private var isAuthenticated: Bool {
+        switch viewModel.loadState {
+        case .loaded, .loading, .error:
+            // Show FAB when loaded, loading (refresh), or recoverable error
+            return true
+        case .idle:
+            // Show FAB if we have cached threads (implies prior auth)
+            return !viewModel.messageThreads.isEmpty
+        case .notAuthenticated, .authenticationFailed:
+            return false
+        }
+    }
+
+    // MARK: - Compose Button
+
+    @ViewBuilder
+    private var composeButton: some View {
+        Button {
+            onComposeTapped?()
+        } label: {
+            Image(systemName: "square.and.pencil")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 56, height: 56)
+                .background(Color.orange)
+                .clipShape(Circle())
+                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+        }
+        .padding(.trailing, 16)
+        .padding(.bottom, 16)
+        .accessibilityLabel("Neue Nachricht verfassen")
     }
 
     // MARK: - State Views
@@ -233,6 +280,7 @@ private struct MessageThreadRow: View {
         ),
         messageThreadDetailViewModelFactory: { thread in
             MessageThreadDetailViewModel(thread: thread, discourseRepository: fakeDiscourseRepo)
-        }
+        },
+        onComposeTapped: { }
     )
 }

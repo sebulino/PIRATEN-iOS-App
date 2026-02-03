@@ -89,6 +89,16 @@ final class AppContainer {
     /// Note: Currently displays PLACEHOLDER DATA until SSO integration.
     let profileViewModel: ProfileViewModel
 
+    // MARK: - Storage Layer
+
+    /// Recent recipients storage for message composition.
+    /// Stores up to 10 recently messaged usernames.
+    let recentRecipientsStore: RecentRecipientsStore
+
+    /// Message draft storage for auto-saving in-progress messages.
+    /// Stores a single draft that persists across app restarts.
+    let messageDraftStore: MessageDraftStore
+
     // MARK: - ViewModel Factories
 
     /// Creates a TopicDetailViewModel for the given topic.
@@ -105,6 +115,25 @@ final class AppContainer {
     /// - Returns: A configured MessageThreadDetailViewModel
     func makeMessageThreadDetailViewModel(for thread: MessageThread) -> MessageThreadDetailViewModel {
         MessageThreadDetailViewModel(thread: thread, discourseRepository: discourseRepository)
+    }
+
+    /// Creates a RecipientPickerViewModel for composing new messages.
+    /// - Returns: A configured RecipientPickerViewModel
+    func makeRecipientPickerViewModel() -> RecipientPickerViewModel {
+        RecipientPickerViewModel(
+            discourseRepository: discourseRepository,
+            recentRecipientsStorage: recentRecipientsStore
+        )
+    }
+
+    /// Creates a ComposeMessageViewModel for composing new messages.
+    /// - Returns: A configured ComposeMessageViewModel
+    func makeComposeMessageViewModel() -> ComposeMessageViewModel {
+        ComposeMessageViewModel(
+            discourseRepository: discourseRepository,
+            recentRecipientsStorage: recentRecipientsStore,
+            draftStorage: messageDraftStore
+        )
     }
 
     // MARK: - Initialization
@@ -131,8 +160,15 @@ final class AppContainer {
             credentialStore: credentialStore
         )
 
+        // Storage layer
+        self.recentRecipientsStore = RecentRecipientsStore()
+        self.messageDraftStore = MessageDraftStore()
+
         // Presentation layer - auth state manager first (needed for HTTP client)
-        self.authStateManager = AuthStateManager(authRepository: authRepository)
+        self.authStateManager = AuthStateManager(
+            authRepository: authRepository,
+            recentRecipientsStorage: recentRecipientsStore
+        )
 
         // Discourse authentication layer
         self.rsaKeyManager = RSAKeyManager()
@@ -225,7 +261,14 @@ final class AppContainer {
         self.discourseRepository = discourseRepository ?? FakeDiscourseRepository()
         self.todoRepository = todoRepository ?? FakeTodoRepository()
 
-        self.authStateManager = AuthStateManager(authRepository: authRepository)
+        // Storage layer (use standard UserDefaults for testing)
+        self.recentRecipientsStore = RecentRecipientsStore()
+        self.messageDraftStore = MessageDraftStore()
+
+        self.authStateManager = AuthStateManager(
+            authRepository: authRepository,
+            recentRecipientsStorage: recentRecipientsStore
+        )
         self.forumViewModel = ForumViewModel(discourseRepository: self.discourseRepository)
         self.messagesViewModel = MessagesViewModel(
             discourseRepository: self.discourseRepository,
