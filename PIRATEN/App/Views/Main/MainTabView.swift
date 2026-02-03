@@ -108,12 +108,24 @@ struct MainTabView: View {
         }
         .sheet(isPresented: $showingCompose, onDismiss: {
             // Clean up when compose sheet is dismissed
-            if case .sent = composeViewModel?.state {
-                // Refresh messages if sent
-                messagesViewModel.refresh()
+            // Check if message was sent before cleaning up
+            let wasSent: Bool
+            if let vm = composeViewModel, case .sent = vm.state {
+                wasSent = true
+            } else {
+                wasSent = false
             }
+
+            // Clean up state
             composeViewModel = nil
             selectedRecipient = nil
+
+            // Refresh messages if sent (small delay to allow Discourse to index)
+            if wasSent {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    messagesViewModel.refresh()
+                }
+            }
         }) {
             if let vm = composeViewModel {
                 ComposeMessageView(

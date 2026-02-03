@@ -106,13 +106,37 @@ final class DiscourseAPIClient {
         }
     }
 
-    /// Fetches private messages for the current user.
+    /// Fetches private messages inbox for the current user.
     /// Endpoint: GET /topics/private-messages/{username}.json
     /// - Parameter username: The username whose private messages to fetch
     /// - Returns: Raw response data for decoding by the caller
     /// - Throws: DiscourseError if the request fails
     func fetchPrivateMessages(for username: String) async throws -> Data {
         let path = "/topics/private-messages/\(username).json"
+        let request = HTTPRequest.get(url(for: path), headers: commonHeaders())
+        do {
+            let response = try await httpClient.execute(request)
+            guard response.isSuccess else {
+                throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
+            }
+            return response.data
+        } catch let error as HTTPError {
+            throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
+        }
+    }
+
+    /// Fetches sent private messages for the current user.
+    /// Endpoint: GET /topics/private-messages-sent/{username}.json
+    /// - Parameter username: The username whose sent messages to fetch
+    /// - Returns: Raw response data for decoding by the caller
+    /// - Throws: DiscourseError if the request fails
+    ///
+    /// This endpoint returns messages the user has sent that may not yet have replies,
+    /// and therefore wouldn't appear in the regular inbox.
+    func fetchSentPrivateMessages(for username: String) async throws -> Data {
+        let path = "/topics/private-messages-sent/\(username).json"
         let request = HTTPRequest.get(url(for: path), headers: commonHeaders())
         do {
             let response = try await httpClient.execute(request)
