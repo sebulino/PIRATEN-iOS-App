@@ -364,6 +364,7 @@ private struct ReplyComposerView: View {
 /// Row view for displaying a single message/post in the thread.
 /// Shows author avatar/initials, name, timestamp, and message content.
 /// Designed for private message context with a conversational appearance.
+/// Links in the content are clickable.
 ///
 /// Layout: Avatar circle | Message content (name, timestamp, body)
 private struct MessagePostRow: View {
@@ -387,6 +388,11 @@ private struct MessagePostRow: View {
         let colors: [Color] = [.orange, .blue, .green, .purple, .pink, .teal]
         let hash = post.author.username.hashValue
         return colors[abs(hash) % colors.count]
+    }
+
+    /// Parsed content with clickable links
+    private var parsedContent: AttributedString {
+        HTMLContentParser.parseToAttributedString(post.content)
     }
 
     var body: some View {
@@ -418,10 +424,11 @@ private struct MessagePostRow: View {
                         .foregroundColor(.secondary)
                 }
 
-                // Message body (HTML stripped)
-                Text(stripHTML(from: post.content))
+                // Message body with clickable links
+                Text(parsedContent)
                     .font(.body)
                     .foregroundColor(.primary)
+                    .tint(.blue)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -446,21 +453,6 @@ private struct MessagePostRow: View {
             formatter.timeStyle = .none
             return formatter.string(from: date)
         }
-    }
-
-    /// Strips HTML tags from content for display.
-    private func stripHTML(from htmlString: String) -> String {
-        let stripped = htmlString
-            .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-            .replacingOccurrences(of: "&nbsp;", with: " ")
-            .replacingOccurrences(of: "&amp;", with: "&")
-            .replacingOccurrences(of: "&lt;", with: "<")
-            .replacingOccurrences(of: "&gt;", with: ">")
-            .replacingOccurrences(of: "&quot;", with: "\"")
-            .replacingOccurrences(of: "&#39;", with: "'")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        return stripped
     }
 }
 

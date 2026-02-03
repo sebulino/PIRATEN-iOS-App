@@ -143,6 +143,7 @@ struct TopicDetailView: View {
 
 /// Row view for displaying a single post in the topic.
 /// Shows author, content excerpt, and metadata with expand/collapse support.
+/// Links in the content are clickable.
 private struct PostRow: View {
     let post: Post
 
@@ -152,15 +153,20 @@ private struct PostRow: View {
     /// Line limit when collapsed (nil when expanded for full content)
     private let collapsedLineLimit = 6
 
-    /// Stripped content for display
-    private var strippedContent: String {
-        stripHTML(from: post.content)
+    /// Parsed content with clickable links
+    private var parsedContent: AttributedString {
+        HTMLContentParser.parseToAttributedString(post.content)
+    }
+
+    /// Plain text content for length checking
+    private var plainTextContent: String {
+        HTMLContentParser.stripHTML(from: post.content)
     }
 
     /// Whether the content needs truncation (rough heuristic based on character count)
     private var needsTruncation: Bool {
         // Approximate: if content is longer than ~300 chars, it likely exceeds 6 lines
-        strippedContent.count > 300
+        plainTextContent.count > 300
     }
 
     var body: some View {
@@ -178,11 +184,12 @@ private struct PostRow: View {
                     .foregroundColor(.secondary)
             }
 
-            // Post content (HTML stripped for display)
-            Text(strippedContent)
+            // Post content with clickable links
+            Text(parsedContent)
                 .font(.body)
                 .lineLimit(isExpanded ? nil : collapsedLineLimit)
                 .foregroundColor(.primary)
+                .tint(.blue)
 
             // Expand/collapse button (only shown if content is long enough)
             if needsTruncation {
@@ -226,23 +233,6 @@ private struct PostRow: View {
             }
         }
         .padding(.vertical, 4)
-    }
-
-    /// Strips HTML tags from content for display.
-    /// Note: This is a simple implementation for excerpts.
-    /// For full HTML rendering, consider using AttributedString or a WebView.
-    private func stripHTML(from htmlString: String) -> String {
-        // Remove HTML tags using regex
-        let stripped = htmlString
-            .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-            .replacingOccurrences(of: "&nbsp;", with: " ")
-            .replacingOccurrences(of: "&amp;", with: "&")
-            .replacingOccurrences(of: "&lt;", with: "<")
-            .replacingOccurrences(of: "&gt;", with: ">")
-            .replacingOccurrences(of: "&quot;", with: "\"")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        return stripped
     }
 }
 
