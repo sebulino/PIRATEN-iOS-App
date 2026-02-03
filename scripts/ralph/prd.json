@@ -102,7 +102,7 @@
         "Tapping FAB opens recipient picker",
         "FAB positioned with proper safe area handling above tab bar"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

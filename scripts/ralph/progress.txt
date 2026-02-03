@@ -279,3 +279,25 @@ Started: Mo.  2 Feb. 2026 12:30:35 CET
   - Protocol abstraction (MessageDraftStorage) enables easy testing
   - Single draft storage is simpler than multi-draft - clear on restore or discard
 ---
+
+## [2026-02-03 01:30] - M4b-007
+- **What was implemented:**
+  - Floating Action Button (FAB) on Messages tab for creating new messages
+  - FAB uses orange tint matching app theme with square.and.pencil icon
+  - FAB only visible when authenticated (loaded, loading, error states)
+  - FAB positioned bottom-right with safe area handling
+  - Complete compose flow: FAB -> Recipient Picker -> Compose View
+  - Sheet presentations for both picker and compose screens
+  - Message list refresh after successful send
+- **Files changed:**
+  - PIRATEN/App/Views/Main/MessagesView.swift - Added FAB with ZStack overlay
+  - PIRATEN/App/Views/Main/MainTabView.swift - Added compose flow state and sheets
+  - PIRATEN/App/RootView.swift - Added compose factory parameters
+  - PIRATEN/App/PIRATENApp.swift - Wired compose factories from AppContainer
+- **Learnings for future iterations:**
+  - ZStack with alignment: .bottomTrailing for FAB positioning
+  - Conditional rendering based on auth state for authenticated-only UI
+  - Chain multiple sheets: dismiss first, then present second via state
+  - Factory closures capture container reference with [container] for DI
+  - accessibilityLabel for FAB buttons improves VoiceOver support
+---

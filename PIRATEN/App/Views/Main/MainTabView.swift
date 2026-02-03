@@ -20,6 +20,26 @@ struct MainTabView: View {
     /// Factory for creating MessageThreadDetailViewModels
     var messageThreadDetailViewModelFactory: ((MessageThread) -> MessageThreadDetailViewModel)?
 
+    /// Factory for creating RecipientPickerViewModels
+    var recipientPickerViewModelFactory: (() -> RecipientPickerViewModel)?
+
+    /// Factory for creating ComposeMessageViewModels
+    var composeMessageViewModelFactory: (() -> ComposeMessageViewModel)?
+
+    // MARK: - Compose Flow State
+
+    /// Whether the recipient picker is being shown
+    @State private var showingRecipientPicker = false
+
+    /// Whether the compose view is being shown
+    @State private var showingCompose = false
+
+    /// The selected recipient for composing
+    @State private var selectedRecipient: UserSearchResult?
+
+    /// The compose ViewModel (created when compose sheet is shown)
+    @State private var composeViewModel: ComposeMessageViewModel?
+
     var body: some View {
         TabView {
             ForumView(
@@ -33,7 +53,10 @@ struct MainTabView: View {
 
             MessagesView(
                 viewModel: messagesViewModel,
-                messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory
+                messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
+                onComposeTapped: {
+                    showingRecipientPicker = true
+                }
             )
                 .tabItem {
                     Label("Nachrichten", systemImage: "envelope")
@@ -54,6 +77,49 @@ struct MainTabView: View {
                     Label("Profil", systemImage: "person.circle")
                 }
         }
+        .sheet(isPresented: $showingRecipientPicker) {
+            if let factory = recipientPickerViewModelFactory {
+                RecipientPickerView(
+                    viewModel: factory(),
+                    onRecipientSelected: { recipient in
+                        selectedRecipient = recipient
+                        showingRecipientPicker = false
+                        // Create compose ViewModel and show compose sheet
+                        if let composeFactory = composeMessageViewModelFactory {
+                            let vm = composeFactory()
+                            vm.setRecipient(recipient)
+                            composeViewModel = vm
+                            showingCompose = true
+                        }
+                    },
+                    onCancel: {
+                        showingRecipientPicker = false
+                    }
+                )
+            }
+        }
+        .sheet(isPresented: $showingCompose) {
+            if let vm = composeViewModel {
+                ComposeMessageView(
+                    viewModel: vm,
+                    onChangeRecipient: {
+                        // Close compose and reopen recipient picker
+                        showingCompose = false
+                        showingRecipientPicker = true
+                    },
+                    onMessageSent: { _ in
+                        showingCompose = false
+                        composeViewModel = nil
+                        // Refresh messages list to show new thread
+                        messagesViewModel.refresh()
+                    },
+                    onCancel: {
+                        showingCompose = false
+                        composeViewModel = nil
+                    }
+                )
+            }
+        }
     }
 }
 
@@ -64,6 +130,7 @@ struct MainTabView: View {
     let authRepository = FakeAuthRepository(credentialStore: credentialStore)
     let fakeDiscourseRepo = FakeDiscourseRepository()
     let discourseAPIKeyProvider = KeychainDiscourseAPIKeyProvider(credentialStore: credentialStore)
+    let recentRecipientsStore = RecentRecipientsStore()
 
     return MainTabView(
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
@@ -83,6 +150,18 @@ struct MainTabView: View {
         },
         messageThreadDetailViewModelFactory: { thread in
             MessageThreadDetailViewModel(thread: thread, discourseRepository: fakeDiscourseRepo)
+        },
+        recipientPickerViewModelFactory: {
+            RecipientPickerViewModel(
+                discourseRepository: fakeDiscourseRepo,
+                recentRecipientsStorage: recentRecipientsStore
+            )
+        },
+        composeMessageViewModelFactory: {
+            ComposeMessageViewModel(
+                discourseRepository: fakeDiscourseRepo,
+                recentRecipientsStorage: recentRecipientsStore
+            )
         }
     )
 }

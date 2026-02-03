@@ -21,6 +21,12 @@ struct RootView: View {
     /// Factory for creating MessageThreadDetailViewModels
     var messageThreadDetailViewModelFactory: ((MessageThread) -> MessageThreadDetailViewModel)?
 
+    /// Factory for creating RecipientPickerViewModels
+    var recipientPickerViewModelFactory: (() -> RecipientPickerViewModel)?
+
+    /// Factory for creating ComposeMessageViewModels
+    var composeMessageViewModelFactory: (() -> ComposeMessageViewModel)?
+
     var body: some View {
         Group {
             switch authStateManager.currentState {
@@ -34,7 +40,9 @@ struct RootView: View {
                     profileViewModel: profileViewModel,
                     discourseAuthCoordinator: discourseAuthCoordinator,
                     topicDetailViewModelFactory: topicDetailViewModelFactory,
-                    messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory
+                    messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
+                    recipientPickerViewModelFactory: recipientPickerViewModelFactory,
+                    composeMessageViewModelFactory: composeMessageViewModelFactory
                 )
                 .provideWindow()
             case .failed(let error):
@@ -120,6 +128,7 @@ struct SessionExpiredView: View {
     let authRepository = FakeAuthRepository(credentialStore: credentialStore)
     let fakeDiscourseRepo = FakeDiscourseRepository()
     let discourseAPIKeyProvider = KeychainDiscourseAPIKeyProvider(credentialStore: credentialStore)
+    let recentRecipientsStore = RecentRecipientsStore()
 
     return RootView(
         authStateManager: AuthStateManager(authRepository: authRepository),
@@ -140,6 +149,18 @@ struct SessionExpiredView: View {
         },
         messageThreadDetailViewModelFactory: { thread in
             MessageThreadDetailViewModel(thread: thread, discourseRepository: fakeDiscourseRepo)
+        },
+        recipientPickerViewModelFactory: {
+            RecipientPickerViewModel(
+                discourseRepository: fakeDiscourseRepo,
+                recentRecipientsStorage: recentRecipientsStore
+            )
+        },
+        composeMessageViewModelFactory: {
+            ComposeMessageViewModel(
+                discourseRepository: fakeDiscourseRepo,
+                recentRecipientsStorage: recentRecipientsStore
+            )
         }
     )
 }
