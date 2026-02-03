@@ -31,13 +31,10 @@ struct MainTabView: View {
     /// Whether the recipient picker is being shown
     @State private var showingRecipientPicker = false
 
-    /// Whether the compose view is being shown
-    @State private var showingCompose = false
-
     /// The selected recipient for composing
     @State private var selectedRecipient: UserSearchResult?
 
-    /// The compose ViewModel (created when compose sheet is shown)
+    /// The compose ViewModel (used as item for sheet presentation)
     @State private var composeViewModel: ComposeMessageViewModel?
 
     var body: some View {
@@ -79,15 +76,12 @@ struct MainTabView: View {
         }
         .sheet(isPresented: $showingRecipientPicker, onDismiss: {
             // After recipient picker dismisses, show compose if we have a recipient
-            if selectedRecipient != nil, let composeFactory = composeMessageViewModelFactory {
+            if let recipient = selectedRecipient, let composeFactory = composeMessageViewModelFactory {
                 let vm = composeFactory()
-                if let recipient = selectedRecipient {
-                    vm.setRecipient(recipient)
-                }
-                composeViewModel = vm
+                vm.setRecipient(recipient)
                 // Small delay to allow sheet dismissal animation to complete
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    showingCompose = true
+                    composeViewModel = vm
                 }
             }
         }) {
@@ -106,7 +100,7 @@ struct MainTabView: View {
                 )
             }
         }
-        .sheet(isPresented: $showingCompose, onDismiss: {
+        .sheet(item: $composeViewModel, onDismiss: {
             // Clean up when compose sheet is dismissed
             // Check if message was sent before cleaning up
             let wasSent: Bool
@@ -117,7 +111,6 @@ struct MainTabView: View {
             }
 
             // Clean up state
-            composeViewModel = nil
             selectedRecipient = nil
 
             // Refresh messages if sent (small delay to allow Discourse to index)
@@ -126,26 +119,24 @@ struct MainTabView: View {
                     messagesViewModel.refresh()
                 }
             }
-        }) {
-            if let vm = composeViewModel {
-                ComposeMessageView(
-                    viewModel: vm,
-                    onChangeRecipient: {
-                        // Close compose and reopen recipient picker
-                        showingCompose = false
-                        // Small delay before reopening picker
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            showingRecipientPicker = true
-                        }
-                    },
-                    onMessageSent: { _ in
-                        showingCompose = false
-                    },
-                    onCancel: {
-                        showingCompose = false
+        }) { vm in
+            ComposeMessageView(
+                viewModel: vm,
+                onChangeRecipient: {
+                    // Close compose and reopen recipient picker
+                    composeViewModel = nil
+                    // Small delay before reopening picker
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        showingRecipientPicker = true
                     }
-                )
-            }
+                },
+                onMessageSent: { _ in
+                    composeViewModel = nil
+                },
+                onCancel: {
+                    composeViewModel = nil
+                }
+            )
         }
     }
 }

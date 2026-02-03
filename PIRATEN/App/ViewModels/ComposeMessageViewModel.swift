@@ -19,7 +19,8 @@ enum ComposeMessageState: Equatable {
 /// ViewModel for composing a new private message.
 /// Handles recipient, subject, body, safety validation, and draft persistence.
 @MainActor
-final class ComposeMessageViewModel: ObservableObject {
+final class ComposeMessageViewModel: ObservableObject, Identifiable {
+    let id = UUID()
 
     // MARK: - Published State
 
