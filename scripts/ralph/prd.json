@@ -88,7 +88,7 @@
         "Draft cleared after successful send",
         "Only one draft stored at a time"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M4b-007",

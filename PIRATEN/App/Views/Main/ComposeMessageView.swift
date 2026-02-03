@@ -25,6 +25,9 @@ struct ComposeMessageView: View {
     /// Whether to show cancel confirmation alert
     @State private var showCancelConfirmation = false
 
+    /// Whether to show draft restore prompt
+    @State private var showDraftRestorePrompt = false
+
     private enum Field {
         case subject
         case body
@@ -70,14 +73,43 @@ struct ComposeMessageView: View {
             .alert("Nachricht verwerfen?", isPresented: $showCancelConfirmation) {
                 Button("Abbrechen", role: .cancel) { }
                 Button("Verwerfen", role: .destructive) {
+                    viewModel.clearContent()
                     onCancel?()
                 }
             } message: {
                 Text("Die eingegebene Nachricht wird nicht gespeichert.")
             }
+            .alert("Entwurf wiederherstellen?", isPresented: $showDraftRestorePrompt) {
+                Button("Verwerfen", role: .destructive) {
+                    viewModel.discardDraft()
+                }
+                Button("Wiederherstellen") {
+                    viewModel.restoreFromDraft()
+                }
+            } message: {
+                if let draft = viewModel.pendingDraft {
+                    Text("Du hast einen ungesendeten Entwurf an @\(draft.recipientUsername).")
+                } else {
+                    Text("Du hast einen ungesendeten Entwurf.")
+                }
+            }
             .onChange(of: viewModel.state) { _, newState in
                 if case .sent(let topicId) = newState {
                     onMessageSent?(topicId)
+                }
+            }
+            .onAppear {
+                viewModel.checkForDraft()
+                if viewModel.hasPendingDraft {
+                    showDraftRestorePrompt = true
+                }
+            }
+            .onDisappear {
+                // Save draft when leaving (unless message was sent)
+                if case .sent = viewModel.state {
+                    // Don't save draft if sent
+                } else {
+                    viewModel.saveDraft()
                 }
             }
         }

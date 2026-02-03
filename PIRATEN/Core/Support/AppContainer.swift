@@ -95,6 +95,10 @@ final class AppContainer {
     /// Stores up to 10 recently messaged usernames.
     let recentRecipientsStore: RecentRecipientsStore
 
+    /// Message draft storage for auto-saving in-progress messages.
+    /// Stores a single draft that persists across app restarts.
+    let messageDraftStore: MessageDraftStore
+
     // MARK: - ViewModel Factories
 
     /// Creates a TopicDetailViewModel for the given topic.
@@ -127,7 +131,8 @@ final class AppContainer {
     func makeComposeMessageViewModel() -> ComposeMessageViewModel {
         ComposeMessageViewModel(
             discourseRepository: discourseRepository,
-            recentRecipientsStorage: recentRecipientsStore
+            recentRecipientsStorage: recentRecipientsStore,
+            draftStorage: messageDraftStore
         )
     }
 
@@ -157,6 +162,7 @@ final class AppContainer {
 
         // Storage layer
         self.recentRecipientsStore = RecentRecipientsStore()
+        self.messageDraftStore = MessageDraftStore()
 
         // Presentation layer - auth state manager first (needed for HTTP client)
         self.authStateManager = AuthStateManager(
@@ -257,6 +263,7 @@ final class AppContainer {
 
         // Storage layer (use standard UserDefaults for testing)
         self.recentRecipientsStore = RecentRecipientsStore()
+        self.messageDraftStore = MessageDraftStore()
 
         self.authStateManager = AuthStateManager(
             authRepository: authRepository,

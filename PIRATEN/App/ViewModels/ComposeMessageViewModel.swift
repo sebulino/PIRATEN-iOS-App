@@ -17,7 +17,7 @@ enum ComposeMessageState: Equatable {
 }
 
 /// ViewModel for composing a new private message.
-/// Handles recipient, subject, body, and safety validation.
+/// Handles recipient, subject, body, safety validation, and draft persistence.
 @MainActor
 final class ComposeMessageViewModel: ObservableObject {
 
@@ -38,22 +38,31 @@ final class ComposeMessageViewModel: ObservableObject {
     /// Validation error message for the body (from safety service)
     @Published private(set) var validationErrorMessage: String?
 
+    /// Whether a saved draft is available for restoration
+    @Published private(set) var hasPendingDraft: Bool = false
+
+    /// The pending draft (for display in restore prompt)
+    private(set) var pendingDraft: MessageDraft?
+
     // MARK: - Dependencies
 
     private let discourseRepository: DiscourseRepository
     private let safetyService: MessageSafetyService
     private let recentRecipientsStorage: RecentRecipientsStorage
+    private let draftStorage: MessageDraftStorage
 
     // MARK: - Initialization
 
     init(
         discourseRepository: DiscourseRepository,
         safetyService: MessageSafetyService? = nil,
-        recentRecipientsStorage: RecentRecipientsStorage
+        recentRecipientsStorage: RecentRecipientsStorage,
+        draftStorage: MessageDraftStorage? = nil
     ) {
         self.discourseRepository = discourseRepository
         self.safetyService = safetyService ?? MessageSafetyService()
         self.recentRecipientsStorage = recentRecipientsStorage
+        self.draftStorage = draftStorage ?? MessageDraftStore()
     }
 
     // MARK: - Computed Properties
@@ -125,6 +134,9 @@ final class ComposeMessageViewModel: ObservableObject {
                 // Update recent recipients on success
                 recentRecipientsStorage.addRecipient(recipient.username)
 
+                // Clear draft on successful send
+                draftStorage.clearDraft()
+
                 safetyService.didCompleteSend(success: true)
                 state = .sent(topicId: topicId)
             } catch let error as DiscourseRepositoryError {
@@ -151,12 +163,81 @@ final class ComposeMessageViewModel: ObservableObject {
         }
     }
 
-    /// Clears all content.
+    /// Clears all content and any saved draft.
     func clearContent() {
         recipient = nil
         subject = ""
         bodyText = ""
         state = .idle
         validationErrorMessage = nil
+        hasPendingDraft = false
+        pendingDraft = nil
+        draftStorage.clearDraft()
+    }
+
+    // MARK: - Draft Management
+
+    /// Checks for a saved draft and updates hasPendingDraft.
+    /// Call this when the compose screen appears.
+    func checkForDraft() {
+        if let draft = draftStorage.getDraft(), draft.hasContent {
+            pendingDraft = draft
+            hasPendingDraft = true
+        } else {
+            pendingDraft = nil
+            hasPendingDraft = false
+        }
+    }
+
+    /// Restores content from the pending draft.
+    /// Call this when the user accepts the restore prompt.
+    func restoreFromDraft() {
+        guard let draft = pendingDraft else { return }
+
+        // Restore recipient
+        recipient = UserSearchResult(
+            username: draft.recipientUsername,
+            displayName: draft.recipientDisplayName,
+            avatarUrl: nil
+        )
+
+        // Restore content
+        subject = draft.subject
+        bodyText = draft.body
+
+        // Clear draft state
+        hasPendingDraft = false
+        pendingDraft = nil
+        draftStorage.clearDraft()
+    }
+
+    /// Discards the pending draft without restoring.
+    /// Call this when the user declines the restore prompt.
+    func discardDraft() {
+        hasPendingDraft = false
+        pendingDraft = nil
+        draftStorage.clearDraft()
+    }
+
+    /// Saves the current content as a draft.
+    /// Call this when the compose screen disappears (if not sent).
+    func saveDraft() {
+        // Don't save if message was sent or if there's no content
+        if case .sent = state { return }
+        guard let recipient = recipient, hasContent else {
+            // If no meaningful content, clear any existing draft
+            draftStorage.clearDraft()
+            return
+        }
+
+        let draft = MessageDraft(
+            recipientUsername: recipient.username,
+            recipientDisplayName: recipient.displayName,
+            subject: subject,
+            body: bodyText,
+            savedAt: Date()
+        )
+
+        draftStorage.saveDraft(draft)
     }
 }
