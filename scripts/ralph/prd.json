@@ -1,62 +1,108 @@
 {
-  "project": "piraten-ios-m4-messaging-mvp",
-  "branchName": "ralph/m4-messaging-mvp",
-  "description": "Milestone 4: Discourse private messaging MVP (reply). Enable replying to PM threads with strict safeguards, conservative UX, and robust error handling. Read-only browsing from M3b remains; this milestone adds minimal write action (reply).",
+  "project": "piraten-ios-m4b-create-pm",
+  "branchName": "ralph/m4b-create-pm",
+  "description": "Milestone 4B: Create new private message threads. Enable users to start new PM conversations by searching for recipients and composing messages with subject and body. Includes recent recipients, draft auto-save, and FAB entry point.",
   "userStories": [
     {
-      "id": "M4-001",
-      "category": "messages-compose",
-      "title": "Compose UI for replying to an existing PM thread",
-      "description": "Add a reply composer to PM thread detail (no new-thread creation yet).",
+      "id": "M4b-001",
+      "category": "api",
+      "title": "User Search API Integration",
+      "description": "Implement Discourse user search for finding message recipients.",
       "acceptanceCriteria": [
-        "Message thread detail includes a Reply button that opens a composer",
-        "Composer supports plain text only (no attachments, no rich formatting beyond basic markdown passthrough if needed)",
-        "Send is disabled while request in flight; clear success/failure states",
-        "Unauthenticated users see a login prompt instead of composer",
-        "Context7 consulted for current SwiftUI compose patterns + safe text input handling; summary added to progress.txt"
+        "DiscourseAPIClient exposes searchUsers(query:) method using GET /u/search/users.json",
+        "Search returns username, display name, and avatar URL",
+        "Minimum 2 characters required before search executes",
+        "Errors map to domain errors with user-friendly messages",
+        "Context7 consulted for Discourse user search API; summary added to progress.txt"
       ],
       "passes": true
     },
     {
-      "id": "M4-002",
-      "category": "messages-api",
-      "title": "Discourse API call for replying to a PM thread",
-      "description": "Implement the minimal Discourse API request to post a reply into an existing PM thread.",
+      "id": "M4b-002",
+      "category": "storage",
+      "title": "Recent Recipients Storage",
+      "description": "Store recently messaged users for quick access when composing new messages.",
       "acceptanceCriteria": [
-        "DiscourseAPI client exposes a 'replyToMessageThread' method",
-        "Request uses AuthenticatedHTTPClient and applies token refresh rules from M3a",
-        "Reply is posted to the correct PM thread and reflected in UI after success (reload thread)",
-        "Errors map to domain errors; no crashes; retry available",
-        "Context7 consulted for Discourse PM reply endpoint/params; summary added to progress.txt"
+        "Store up to 10 recent recipient usernames in UserDefaults",
+        "Recent recipients updated when sending a new PM",
+        "List persists across app restarts",
+        "No PII beyond username stored; privacy-safe implementation",
+        "Clear recent recipients when user logs out"
       ],
       "passes": true
     },
     {
-      "id": "M4-003",
-      "category": "safety",
-      "title": "Add write-action safety rails for messaging",
-      "description": "Add conservative safeguards for write actions in an official tool.",
+      "id": "M4b-003",
+      "category": "ui",
+      "title": "Recipient Picker UI",
+      "description": "Create UI for selecting message recipient from recent contacts or search results.",
       "acceptanceCriteria": [
-        "Basic rate limiting: prevent rapid repeated sends (e.g., one send at a time + short cooldown)",
-        "Input length constraints and clear validation messages",
-        "No logging of message content; logs scrub identifiers",
-        "Docs/THREAT_MODEL.md updated for messaging write actions",
-        "Context7 consulted for recommended mobile app logging/privacy practices; summary added to progress.txt"
+        "Screen shows Recent section with up to 5 recent recipients",
+        "Search field at top with debounced search (300ms)",
+        "Each row shows avatar initials, display name, @username",
+        "Tapping user selects them and proceeds to compose screen",
+        "Cancel button returns to Messages tab",
+        "Context7 consulted for SwiftUI search/picker patterns; summary added to progress.txt"
       ],
       "passes": true
     },
     {
-      "id": "M4-004",
-      "category": "ux",
-      "title": "Improve PM thread rendering for conversational feel",
-      "description": "Refine the PM detail UI for readability and trust.",
+      "id": "M4b-004",
+      "category": "ui",
+      "title": "New Message Compose UI",
+      "description": "Create compose screen for new messages with recipient, subject, and body.",
       "acceptanceCriteria": [
-        "Messages show sender name + timestamp (as available) and body excerpt/rendering",
-        "Loading/empty/error states are polished and consistent with other tabs",
-        "Manual refresh supported",
-        "Context7 consulted for SwiftUI list/chat-like layout patterns; summary added to progress.txt"
+        "Shows selected recipient at top (avatar + name, tap to change)",
+        "Required subject field with Betreff placeholder",
+        "Message body reuses M4 composer patterns and safety validation",
+        "Send button disabled until subject and body are non-empty",
+        "Character count shown for body when approaching limit",
+        "Cancel button with confirmation if content exists"
       ],
       "passes": true
+    },
+    {
+      "id": "M4b-005",
+      "category": "api",
+      "title": "Create PM API Integration",
+      "description": "Implement Discourse API call to create new private message threads.",
+      "acceptanceCriteria": [
+        "DiscourseAPIClient exposes createPrivateMessage(recipient:title:content:) method",
+        "Uses POST /posts.json with archetype=private_message, target_recipients, title, raw",
+        "Success navigates to the new thread detail view",
+        "Errors display user-friendly messages",
+        "Reuses M4 safety service for rate limiting",
+        "Context7 consulted for Discourse create PM endpoint; summary added to progress.txt"
+      ],
+      "passes": true
+    },
+    {
+      "id": "M4b-006",
+      "category": "storage",
+      "title": "Draft Auto-Save",
+      "description": "Automatically save in-progress messages to prevent data loss.",
+      "acceptanceCriteria": [
+        "Draft saved to UserDefaults when compose screen disappears",
+        "Draft includes recipient username, subject, body, timestamp",
+        "Draft restored with prompt when returning to compose",
+        "Draft cleared after successful send",
+        "Only one draft stored at a time"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M4b-007",
+      "category": "ui",
+      "title": "New Message Entry Point (FAB)",
+      "description": "Add floating action button to Messages tab for creating new messages.",
+      "acceptanceCriteria": [
+        "FAB in bottom-right of Messages tab with square.and.pencil icon",
+        "FAB uses orange tint matching app theme",
+        "FAB only visible when authenticated",
+        "Tapping FAB opens recipient picker",
+        "FAB positioned with proper safe area handling above tab bar"
+      ],
+      "passes": false
     }
   ]
 }

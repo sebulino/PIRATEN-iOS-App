@@ -75,8 +75,9 @@ protocol DiscourseRepository {
     ///   - recipient: Username of the recipient
     ///   - title: Subject/title of the message
     ///   - content: Body content of the message
+    /// - Returns: The topic ID of the newly created PM thread (for navigation)
     /// - Throws: DiscourseRepositoryError if creation fails
     ///
     /// API Endpoint: POST /posts.json with archetype=private_message
-    func createPrivateMessage(recipient: String, title: String, content: String) async throws
+    func createPrivateMessage(recipient: String, title: String, content: String) async throws -> Int
 }

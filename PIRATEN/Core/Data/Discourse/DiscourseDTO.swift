@@ -505,3 +505,40 @@ struct DiscourseGroupDTO: Decodable {
         case fullName = "full_name"
     }
 }
+
+// MARK: - POST /posts.json Response DTO
+
+/// Response from Discourse POST /posts.json endpoint when creating a new post/PM.
+/// Contains the created post info including the topic_id for navigation.
+///
+/// API Reference: POST /posts.json
+/// - Used for both creating new topics/PMs and replying to existing ones
+/// - topic_id is essential for navigating to the newly created thread
+struct DiscourseCreatePostResponse: Decodable {
+    /// The unique ID of the created post
+    let id: Int
+
+    /// The topic ID the post belongs to (needed for navigation)
+    let topicId: Int
+
+    /// The sequential post number within the topic
+    let postNumber: Int
+
+    /// Username of the post author
+    let username: String
+
+    /// Rendered HTML content of the post
+    let cooked: String
+
+    /// The URL-friendly slug for the topic (optional)
+    let topicSlug: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case topicId = "topic_id"
+        case postNumber = "post_number"
+        case username
+        case cooked
+        case topicSlug = "topic_slug"
+    }
+}

@@ -12,7 +12,7 @@ import Combine
 enum ComposeMessageState: Equatable {
     case idle
     case sending
-    case sent
+    case sent(topicId: Int)  // Include topic ID for navigation to new thread
     case failed(message: String)
 }
 
@@ -104,7 +104,7 @@ final class ComposeMessageViewModel: ObservableObject {
     }
 
     /// Sends the message.
-    /// Note: Actual API call will be implemented in M4b-005.
+    /// On success, state changes to .sent(topicId:) with the new thread's topic ID.
     func sendMessage() {
         guard canSend, let recipient = recipient else { return }
 
@@ -116,8 +116,7 @@ final class ComposeMessageViewModel: ObservableObject {
 
         Task {
             do {
-                // API call will be implemented in M4b-005
-                try await discourseRepository.createPrivateMessage(
+                let topicId = try await discourseRepository.createPrivateMessage(
                     recipient: recipient.username,
                     title: trimmedSubject,
                     content: trimmedBody
@@ -127,7 +126,7 @@ final class ComposeMessageViewModel: ObservableObject {
                 recentRecipientsStorage.addRecipient(recipient.username)
 
                 safetyService.didCompleteSend(success: true)
-                state = .sent
+                state = .sent(topicId: topicId)
             } catch let error as DiscourseRepositoryError {
                 safetyService.didCompleteSend(success: false)
                 switch error {

@@ -16,8 +16,8 @@ struct ComposeMessageView: View {
     /// Callback to change recipient (opens picker)
     var onChangeRecipient: (() -> Void)?
 
-    /// Callback when message is sent successfully
-    var onMessageSent: (() -> Void)?
+    /// Callback when message is sent successfully, includes the new topic ID for navigation
+    var onMessageSent: ((Int) -> Void)?
 
     /// Callback when cancel is tapped
     var onCancel: (() -> Void)?
@@ -76,8 +76,8 @@ struct ComposeMessageView: View {
                 Text("Die eingegebene Nachricht wird nicht gespeichert.")
             }
             .onChange(of: viewModel.state) { _, newState in
-                if newState == .sent {
-                    onMessageSent?()
+                if case .sent(let topicId) = newState {
+                    onMessageSent?(topicId)
                 }
             }
         }

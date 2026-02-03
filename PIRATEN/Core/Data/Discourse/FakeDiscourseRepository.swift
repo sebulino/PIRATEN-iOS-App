@@ -331,9 +331,10 @@ final class FakeDiscourseRepository: DiscourseRepository {
         }
     }
 
-    func createPrivateMessage(recipient: String, title: String, content: String) async throws {
+    func createPrivateMessage(recipient: String, title: String, content: String) async throws -> Int {
         // Simulate network delay (placeholder behavior)
         try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
-        // For fake implementation, we don't actually create the message
+        // For fake implementation, return a mock topic ID
+        return 9999
     }
 }

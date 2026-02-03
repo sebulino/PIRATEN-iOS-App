@@ -154,16 +154,19 @@ final class RealDiscourseRepository: DiscourseRepository {
         }
     }
 
-    func createPrivateMessage(recipient: String, title: String, content: String) async throws {
-        // Implementation will be added in M4b-005
+    func createPrivateMessage(recipient: String, title: String, content: String) async throws -> Int {
         do {
-            _ = try await apiClient.createPrivateMessage(
+            let data = try await apiClient.createPrivateMessage(
                 recipient: recipient,
                 title: title,
                 content: content
             )
+            let response = try decodeCreatePostResponse(from: data)
+            return response.topicId
         } catch let error as DiscourseError {
             throw mapToRepositoryError(error)
+        } catch let error as DiscourseRepositoryError {
+            throw error
         } catch {
             throw DiscourseRepositoryError.loadFailed(
                 message: "Nachricht konnte nicht erstellt werden"
@@ -211,6 +214,16 @@ final class RealDiscourseRepository: DiscourseRepository {
         let decoder = JSONDecoder()
         do {
             return try decoder.decode(DiscourseUserSearchResponse.self, from: data)
+        } catch {
+            throw DiscourseError.decodingError(message: error.localizedDescription)
+        }
+    }
+
+    /// Decodes the POST /posts.json response (for creating posts/PMs).
+    private func decodeCreatePostResponse(from data: Data) throws -> DiscourseCreatePostResponse {
+        let decoder = JSONDecoder()
+        do {
+            return try decoder.decode(DiscourseCreatePostResponse.self, from: data)
         } catch {
             throw DiscourseError.decodingError(message: error.localizedDescription)
         }
