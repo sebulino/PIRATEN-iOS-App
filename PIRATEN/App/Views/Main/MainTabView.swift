@@ -77,45 +77,60 @@ struct MainTabView: View {
                     Label("Profil", systemImage: "person.circle")
                 }
         }
-        .sheet(isPresented: $showingRecipientPicker) {
+        .sheet(isPresented: $showingRecipientPicker, onDismiss: {
+            // After recipient picker dismisses, show compose if we have a recipient
+            if selectedRecipient != nil, let composeFactory = composeMessageViewModelFactory {
+                let vm = composeFactory()
+                if let recipient = selectedRecipient {
+                    vm.setRecipient(recipient)
+                }
+                composeViewModel = vm
+                // Small delay to allow sheet dismissal animation to complete
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    showingCompose = true
+                }
+            }
+        }) {
             if let factory = recipientPickerViewModelFactory {
                 RecipientPickerView(
                     viewModel: factory(),
                     onRecipientSelected: { recipient in
                         selectedRecipient = recipient
                         showingRecipientPicker = false
-                        // Create compose ViewModel and show compose sheet
-                        if let composeFactory = composeMessageViewModelFactory {
-                            let vm = composeFactory()
-                            vm.setRecipient(recipient)
-                            composeViewModel = vm
-                            showingCompose = true
-                        }
+                        // Compose sheet will be shown in onDismiss
                     },
                     onCancel: {
+                        selectedRecipient = nil
                         showingRecipientPicker = false
                     }
                 )
             }
         }
-        .sheet(isPresented: $showingCompose) {
+        .sheet(isPresented: $showingCompose, onDismiss: {
+            // Clean up when compose sheet is dismissed
+            if case .sent = composeViewModel?.state {
+                // Refresh messages if sent
+                messagesViewModel.refresh()
+            }
+            composeViewModel = nil
+            selectedRecipient = nil
+        }) {
             if let vm = composeViewModel {
                 ComposeMessageView(
                     viewModel: vm,
                     onChangeRecipient: {
                         // Close compose and reopen recipient picker
                         showingCompose = false
-                        showingRecipientPicker = true
+                        // Small delay before reopening picker
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showingRecipientPicker = true
+                        }
                     },
                     onMessageSent: { _ in
                         showingCompose = false
-                        composeViewModel = nil
-                        // Refresh messages list to show new thread
-                        messagesViewModel.refresh()
                     },
                     onCancel: {
                         showingCompose = false
-                        composeViewModel = nil
                     }
                 )
             }
