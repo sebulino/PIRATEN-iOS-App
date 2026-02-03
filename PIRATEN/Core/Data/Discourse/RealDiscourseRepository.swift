@@ -154,6 +154,23 @@ final class RealDiscourseRepository: DiscourseRepository {
         }
     }
 
+    func createPrivateMessage(recipient: String, title: String, content: String) async throws {
+        // Implementation will be added in M4b-005
+        do {
+            _ = try await apiClient.createPrivateMessage(
+                recipient: recipient,
+                title: title,
+                content: content
+            )
+        } catch let error as DiscourseError {
+            throw mapToRepositoryError(error)
+        } catch {
+            throw DiscourseRepositoryError.loadFailed(
+                message: "Nachricht konnte nicht erstellt werden"
+            )
+        }
+    }
+
     // MARK: - Private Helpers
 
     /// Decodes the /latest.json response.

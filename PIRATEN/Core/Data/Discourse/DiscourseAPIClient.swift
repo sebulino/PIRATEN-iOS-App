@@ -174,6 +174,45 @@ final class DiscourseAPIClient {
         }
     }
 
+    /// Creates a new private message thread.
+    /// Endpoint: POST /posts.json with archetype=private_message
+    /// - Parameters:
+    ///   - recipient: Username of the recipient
+    ///   - title: Subject/title of the message
+    ///   - content: The raw markdown content of the message
+    /// - Returns: Raw response data containing the created post/topic
+    /// - Throws: DiscourseError if the request fails
+    func createPrivateMessage(recipient: String, title: String, content: String) async throws -> Data {
+        let body = CreatePrivateMessageRequest(
+            targetRecipients: recipient,
+            title: title,
+            raw: content,
+            archetype: "private_message"
+        )
+        let bodyData: Data
+        do {
+            bodyData = try JSONEncoder().encode(body)
+        } catch {
+            throw DiscourseError.unknown(statusCode: nil, message: "Failed to encode request")
+        }
+
+        var headers = commonHeaders()
+        headers["Content-Type"] = "application/json"
+
+        let request = HTTPRequest.post(url(for: "/posts.json"), body: bodyData, headers: headers)
+        do {
+            let response = try await httpClient.execute(request)
+            guard response.isSuccess else {
+                throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
+            }
+            return response.data
+        } catch let error as HTTPError {
+            throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
+        }
+    }
+
     /// Posts a reply to an existing message thread (PM).
     /// Endpoint: POST /posts.json
     /// - Parameters:
@@ -296,5 +335,20 @@ private struct CreatePostRequest: Encodable {
     enum CodingKeys: String, CodingKey {
         case topicId = "topic_id"
         case raw
+    }
+}
+
+/// Request body for creating a new private message via POST /posts.json
+private struct CreatePrivateMessageRequest: Encodable {
+    let targetRecipients: String
+    let title: String
+    let raw: String
+    let archetype: String
+
+    enum CodingKeys: String, CodingKey {
+        case targetRecipients = "target_recipients"
+        case title
+        case raw
+        case archetype
     }
 }

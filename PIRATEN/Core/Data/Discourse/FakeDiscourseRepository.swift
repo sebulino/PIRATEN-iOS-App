@@ -330,4 +330,10 @@ final class FakeDiscourseRepository: DiscourseRepository {
             (result.displayName?.lowercased().contains(lowercasedQuery) ?? false)
         }
     }
+
+    func createPrivateMessage(recipient: String, title: String, content: String) async throws {
+        // Simulate network delay (placeholder behavior)
+        try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
+        // For fake implementation, we don't actually create the message
+    }
 }

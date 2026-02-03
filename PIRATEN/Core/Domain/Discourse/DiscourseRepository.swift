@@ -69,4 +69,14 @@ protocol DiscourseRepository {
     /// API Endpoint: GET /u/search/users.json?term={query}
     /// Used for finding recipients when composing new private messages.
     func searchUsers(query: String) async throws -> [UserSearchResult]
+
+    /// Creates a new private message thread.
+    /// - Parameters:
+    ///   - recipient: Username of the recipient
+    ///   - title: Subject/title of the message
+    ///   - content: Body content of the message
+    /// - Throws: DiscourseRepositoryError if creation fails
+    ///
+    /// API Endpoint: POST /posts.json with archetype=private_message
+    func createPrivateMessage(recipient: String, title: String, content: String) async throws
 }

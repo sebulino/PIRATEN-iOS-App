@@ -122,6 +122,15 @@ final class AppContainer {
         )
     }
 
+    /// Creates a ComposeMessageViewModel for composing new messages.
+    /// - Returns: A configured ComposeMessageViewModel
+    func makeComposeMessageViewModel() -> ComposeMessageViewModel {
+        ComposeMessageViewModel(
+            discourseRepository: discourseRepository,
+            recentRecipientsStorage: recentRecipientsStore
+        )
+    }
+
     // MARK: - Initialization
 
     /// Creates the container with default production dependencies.
