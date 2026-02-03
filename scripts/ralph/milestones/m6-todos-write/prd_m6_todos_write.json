@@ -1,10 +1,10 @@
 {
-  "project": "piraten-ios-m5-todos-write",
-  "branchName": "ralph/m5-todos-write",
+  "project": "piraten-ios-m6-todos-write",
+  "branchName": "ralph/m6-todos-write",
   "description": "Milestone 5: Actionable Todos. Users can create, claim, complete, and comment on Todos. Todos belong to an owning organization type (Kreisverband/Landesverband/Bundesverband/Arbeitsgemeinschaft). Deletion is supported but not exposed in the UI (soft/hidden).",
   "userStories": [
     {
-      "id": "M5-001",
+      "id": "M6-001",
       "category": "todos-domain",
       "title": "Extend Todo domain model with ownership and lifecycle fields",
       "description": "Introduce explicit ownership types and lifecycle/assignment fields for Todos.",
@@ -17,7 +17,7 @@
       "passes": false
     },
     {
-      "id": "M5-002",
+      "id": "M6-002",
       "category": "todos-create",
       "title": "Create Todo UI and repository method (POST)",
       "description": "Allow authenticated users to create Todos with required ownership fields.",
@@ -31,7 +31,7 @@
       "passes": false
     },
     {
-      "id": "M5-003",
+      "id": "M6-003",
       "category": "todos-claim-complete",
       "title": "Claim and complete Todo actions",
       "description": "Enable low-risk participation by claiming and completing Todos.",
@@ -45,7 +45,7 @@
       "passes": false
     },
     {
-      "id": "M5-004",
+      "id": "M6-004",
       "category": "todos-comments",
       "title": "Todo comments (lightweight)",
       "description": "Allow adding short comments/updates to a Todo (if backend supports; otherwise keep as local-only stub with clear label).",
@@ -58,7 +58,7 @@
       "passes": false
     },
     {
-      "id": "M5-005",
+      "id": "M6-005",
       "category": "todos-delete-hidden",
       "title": "Implement Todo deletion capability but keep it hidden from UI",
       "description": "Deletion is supported at repository level for admins/maintenance but not shown in the view.",

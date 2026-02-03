@@ -1,10 +1,10 @@
 {
-  "project": "piraten-ios-m6-push-notifications",
-  "branchName": "ralph/m6-push-notifications",
+  "project": "piraten-ios-m5-push-notifications",
+  "branchName": "ralph/m5-push-notifications",
   "description": "Milestone 6: Opt-in push notifications for Messages and Todos only, with transparent controls and privacy-first defaults. Implement device token registration, notification settings, and deep links to relevant screens.",
   "userStories": [
     {
-      "id": "M6-001",
+      "id": "M5-001",
       "category": "push-permissions",
       "title": "Notification permission flow and settings UI",
       "description": "Add opt-in notification permissions with transparent settings.",
@@ -17,7 +17,7 @@
       "passes": false
     },
     {
-      "id": "M6-002",
+      "id": "M5-002",
       "category": "push-registration",
       "title": "APNs device token registration and secure storage",
       "description": "Register for remote notifications and store device token securely for backend registration.",
@@ -30,7 +30,7 @@
       "passes": false
     },
     {
-      "id": "M6-003",
+      "id": "M5-003",
       "category": "push-deeplinks",
       "title": "Deep links from notifications to Messages/Todos",
       "description": "Route notifications into the correct tab and detail screen.",
@@ -43,7 +43,7 @@
       "passes": false
     },
     {
-      "id": "M6-004",
+      "id": "M5-004",
       "category": "push-backend-contract",
       "title": "Document push backend contract and privacy constraints",
       "description": "Define what server endpoints/payload fields are required for push, without building server-side yet.",

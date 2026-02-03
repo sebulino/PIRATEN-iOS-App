@@ -4,6 +4,15 @@
 
 set -e
 
+cleanup() {
+  echo ""
+  echo "[ralph] Caught interrupt — shutting down cleanly..."
+  jobs -p | xargs -r kill 2>/dev/null || true
+  exit 130
+}
+
+trap cleanup INT TERM
+
 # Parse arguments
 TOOL="amp"  # Default to amp for backwards compatibility
 MAX_ITERATIONS=10
@@ -82,7 +91,7 @@ fi
 echo "Starting Ralph - Tool: $TOOL - Max iterations: $MAX_ITERATIONS"
 
 now="$(date '+%Y-%m-%d %H:%M:%S')"
-for i in $(seq 1 $MAX_ITERATIONS); do
+for ((i=1; i<=MAX_ITERATIONS; i++)); do
   echo ""
   echo "==============================================================="
   echo "  Ralph Iteration $i of $MAX_ITERATIONS ($TOOL) at $now"
@@ -106,14 +115,14 @@ for i in $(seq 1 $MAX_ITERATIONS); do
     (
       while true; do
         echo "[ralph] waiting for claude... (iter=$i) $(date '+%H:%M:%S')" >&2
-        sleep 60
+        sleep 300
       done
     ) &
     HB_PID=$!
 
     # Ensure heartbeat stops no matter how the command exits
     cleanup_hb() { kill "$HB_PID" 2>/dev/null || true; }
-    trap cleanup_hb RETURN
+    trap cleanup_hb EXIT INT TERM
 
     OUTPUT=$(
       claude --dangerously-skip-permissions --print "$(cat "$SCRIPT_DIR/CLAUDE.md")" \

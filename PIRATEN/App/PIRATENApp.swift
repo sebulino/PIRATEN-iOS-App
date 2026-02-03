@@ -46,6 +46,7 @@ struct PIRATENApp: App {
                 todosViewModel: container.todosViewModel,
                 profileViewModel: container.profileViewModel,
                 discourseAuthCoordinator: container.discourseAuthCoordinator,
+                notificationSettings: container.notificationSettingsManager,
                 topicDetailViewModelFactory: { [container] topic in
                     container.makeTopicDetailViewModel(for: topic)
                 },

@@ -14,6 +14,7 @@ struct RootView: View {
     @ObservedObject var todosViewModel: TodosViewModel
     @ObservedObject var profileViewModel: ProfileViewModel
     @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
+    @ObservedObject var notificationSettings: NotificationSettingsManager
 
     /// Factory for creating TopicDetailViewModels
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
@@ -39,6 +40,7 @@ struct RootView: View {
                     todosViewModel: todosViewModel,
                     profileViewModel: profileViewModel,
                     discourseAuthCoordinator: discourseAuthCoordinator,
+                    notificationSettings: notificationSettings,
                     topicDetailViewModelFactory: topicDetailViewModelFactory,
                     messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
                     recipientPickerViewModelFactory: recipientPickerViewModelFactory,
@@ -144,6 +146,7 @@ struct SessionExpiredView: View {
             discourseAPIKeyProvider: discourseAPIKeyProvider,
             credentialStore: credentialStore
         ),
+        notificationSettings: NotificationSettingsManager(),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
         },

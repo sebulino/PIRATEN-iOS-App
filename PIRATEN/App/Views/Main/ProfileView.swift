@@ -7,12 +7,13 @@
 
 import SwiftUI
 
-/// View displaying the user's profile information.
+/// View displaying the user's profile information and notification settings.
 ///
 /// Note: Currently displays PLACEHOLDER DATA for development.
 /// Real user information will come from Piratenlogin SSO once integrated.
 struct ProfileView: View {
     @ObservedObject var viewModel: ProfileViewModel
+    @ObservedObject var notificationSettings: NotificationSettingsManager
 
     var body: some View {
         NavigationStack {
@@ -116,6 +117,9 @@ struct ProfileView: View {
                 }
             }
 
+            // Notification settings section
+            notificationSettingsSection
+
             // Note about placeholder data
             Section {
                 HStack {
@@ -129,6 +133,70 @@ struct ProfileView: View {
         }
         .refreshable {
             viewModel.refresh()
+        }
+    }
+
+    // MARK: - Notification Settings
+
+    @ViewBuilder
+    private var notificationSettingsSection: some View {
+        Section {
+            // Messages toggle
+            Toggle(isOn: $notificationSettings.messagesEnabled) {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Nachrichten")
+                        Text("Bei neuen privaten Nachrichten")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "envelope.fill")
+                        .foregroundColor(.orange)
+                }
+            }
+
+            // Todos toggle
+            Toggle(isOn: $notificationSettings.todosEnabled) {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Aufgaben")
+                        Text("Bei neuen oder geänderten Aufgaben")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "checklist")
+                        .foregroundColor(.orange)
+                }
+            }
+
+            // System permission status (if denied)
+            if notificationSettings.authorizationStatus == .denied {
+                Button {
+                    notificationSettings.openSystemSettings()
+                } label: {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Mitteilungen deaktiviert")
+                                .foregroundColor(.primary)
+                            Text("In den Einstellungen aktivieren")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "arrow.up.forward.app")
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+        } header: {
+            Text("Mitteilungen")
+        } footer: {
+            Text("Mitteilungen werden nur für die aktivierten Kategorien gesendet. Es werden keine Tracking-Daten erfasst.")
+                .font(.caption)
         }
     }
 }
@@ -159,7 +227,10 @@ private struct ProfileRow: View {
 #Preview {
     // Preview with fake data - uses FakeAuthRepository via KeychainCredentialStore
     // Note: Requires an authenticated session for user data to display
-    ProfileView(viewModel: ProfileViewModel(
-        authRepository: FakeAuthRepository(credentialStore: KeychainCredentialStore())
-    ))
+    ProfileView(
+        viewModel: ProfileViewModel(
+            authRepository: FakeAuthRepository(credentialStore: KeychainCredentialStore())
+        ),
+        notificationSettings: NotificationSettingsManager()
+    )
 }

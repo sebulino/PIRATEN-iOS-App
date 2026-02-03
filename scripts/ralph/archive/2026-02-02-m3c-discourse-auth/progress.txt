@@ -1,0 +1,74 @@
+# Ralph Progress Log
+Started: So.  1 Feb. 2026 19:14:18 CET
+---
+
+## [2026-02-01 19:30] - M3C-001
+- Implemented RSAKeyManager for Discourse User API Key authentication
+- Created RSAKeyManager.swift with full RSA key pair generation and management
+- Created comprehensive test suite (RSAKeyManagerTests.swift) with 12 passing tests
+- Files changed:
+  - PIRATEN/Core/Support/RSAKeyManager.swift (new)
+  - PIRATENTests/RSAKeyManagerTests.swift (new)
+- **Learnings for future iterations:**
+  - iOS Security framework provides SecKeyCreateRandomKey for generating RSA keys
+  - Private keys are stored in Keychain using kSecClassKey (not kSecClassGenericPassword)
+  - Use kSecAttrApplicationTag to uniquely identify keys in Keychain
+  - SecKeyCopyPublicKey derives public key from private key
+  - SecKeyCopyExternalRepresentation exports key data as DER format
+  - PEM format is DER data base64-encoded with header/footer
+  - Use kSecAttrAccessibleWhenUnlockedThisDeviceOnly for maximum security
+  - SecKeyCreateDecryptedData handles RSA decryption with proper algorithm selection
+  - Context7 consulted for iOS Security framework best practices (though results focused on legacy FEE, native Security framework documentation was more relevant)
+---
+## [2026-02-01 20:45] - M3C-002
+- Implemented DiscourseAuthManager for building User API Key auth URLs
+- Created DiscourseAuthManager.swift following Discourse User API Keys specification
+- Created comprehensive test suite (DiscourseAuthManagerTests.swift) with 14 passing tests
+- Files changed:
+  - PIRATEN/Core/Data/Discourse/DiscourseAuthManager.swift (new)
+  - PIRATENTests/DiscourseAuthManagerTests.swift (new)
+  - Config/Debug.xcconfig (added Discourse config)
+  - Config/Secrets.sample.xcconfig (documented config vars)
+  - PIRATEN/Info.plist (added config key placeholders)
+- **Learnings for future iterations:**
+  - Discourse User API Key auth follows spec at https://meta.discourse.org/t/user-api-keys-specification/48536
+  - Required parameters: client_id, nonce, auth_redirect, application_name, public_key, scopes
+  - Nonce must be 32 bytes cryptographically random (SecRandomCopyBytes), hex-encoded to 64 chars
+  - Scopes: start with minimal read-only (notifications, session_info)
+  - auth_redirect uses custom URL scheme configured in Info.plist (de.meine-piraten://discourse-auth)
+  - .xcconfig values must be referenced in Info.plist using $(VARIABLE_NAME) to be accessible via Bundle.main.infoDictionary
+  - Context7 consulted for Discourse User API Key endpoint - official specification found via WebSearch provided complete parameter documentation
+---
+## [2026-02-02 12:10] - M3C-003, M3C-004, M3C-005, M3C-006, M3C-007
+- Completed full Discourse User API Key authentication flow
+- Fixed multiple issues discovered during real-world testing:
+  1. RSA public key format: iOS exports PKCS#1, Discourse expects SPKI - added ASN.1 header conversion
+  2. Base64 newlines: Discourse returns payload with %0A newlines - use .ignoreUnknownCharacters option
+  3. URL encoding: PEM base64 chars (+/=) need strict RFC 3986 encoding
+  4. PEM format: Ensure trailing newline before -----END PUBLIC KEY-----
+  5. Redirect URL: Updated to piratenapp://discourse_auth (configured in Discourse admin)
+  6. Scopes: Changed to read,session_info (notifications requires push_url)
+- Files changed:
+  - PIRATEN/Core/Support/RSAKeyManager.swift (PKCS#1→SPKI conversion)
+  - PIRATEN/Core/Data/Discourse/DiscourseAuthManager.swift (logging, base64 fix, URL encoding)
+  - PIRATEN/Core/Data/Discourse/DiscourseAuthCoordinator.swift (new - UI flow orchestration)
+  - PIRATEN/Core/Data/HTTP/DiscourseHTTPClient.swift (new - User-Api-Key header injection)
+  - PIRATEN/Core/Domain/Discourse/DiscourseCredential.swift (new)
+  - PIRATEN/Core/Domain/Discourse/DiscourseAuthResponse.swift (new)
+  - PIRATEN/Core/Domain/Discourse/DiscourseAPIKeyProvider.swift (new - protocol)
+  - PIRATEN/Core/Data/Discourse/KeychainDiscourseAPIKeyProvider.swift (new)
+  - PIRATEN/Core/Support/WindowEnvironment.swift (new - ASWebAuthenticationSession anchor)
+  - Config/Debug.xcconfig, Config/Release.xcconfig (redirect URL config)
+  - PIRATEN/Info.plist (piratenapp URL scheme)
+  - Docs/DECISIONS.md (D-014, D-015, D-016)
+  - Docs/OPEN_QUESTIONS.md (Q-002 resolved)
+- **Learnings for future iterations:**
+  - iOS SecKeyCopyExternalRepresentation returns PKCS#1, not SPKI - conversion required for most servers
+  - SPKI = SEQUENCE { AlgorithmIdentifier, BIT STRING { PKCS#1 } } - 15-byte header + BIT STRING wrapper
+  - Data(base64Encoded:) fails on whitespace by default - always use .ignoreUnknownCharacters
+  - URL query encoding: use custom CharacterSet with only alphanumerics + -._~ for base64 content
+  - ASWebAuthenticationSession needs a window anchor - pass via environment or use UIApplication.shared
+  - Discourse scopes: notifications/push require push_url parameter; use read,session_info for basic access
+  - Debug logging is essential for auth flows - use os.log with subsystem/category filtering
+---
+

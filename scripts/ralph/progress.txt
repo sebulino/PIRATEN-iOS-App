@@ -301,3 +301,31 @@ Started: Mo.  2 Feb. 2026 12:30:35 CET
   - Factory closures capture container reference with [container] for DI
   - accessibilityLabel for FAB buttons improves VoiceOver support
 ---
+
+## [2026-02-03 14:30] - M5-001
+- **What was implemented:**
+  - NotificationSettingsManager for handling UNUserNotificationCenter
+  - Notification settings section in ProfileView with toggles for Messages and Todos
+  - Both toggles default to off (privacy-first)
+  - Permission requested only when user explicitly enables a toggle
+  - Clear German copy explaining what's sent and no tracking
+  - System settings link when permissions are denied
+- **Files changed:**
+  - PIRATEN/Core/Support/NotificationSettingsManager.swift - NEW: Notification preferences manager
+  - PIRATEN/App/Views/Main/ProfileView.swift - Added notification settings section
+  - PIRATEN/App/Views/Main/MainTabView.swift - Pass notificationSettings to ProfileView
+  - PIRATEN/App/RootView.swift - Pass notificationSettings to MainTabView
+  - PIRATEN/App/PIRATENApp.swift - Wire notificationSettingsManager from container
+  - PIRATEN/Core/Support/AppContainer.swift - Added notificationSettingsManager
+- **Context7 Docs Summary (Apple Developer - UNUserNotificationCenter):**
+  - Use `UNUserNotificationCenter.current().requestAuthorization(options:)` for permission
+  - Options: `.alert`, `.sound`, `.badge` for standard notifications
+  - Use `notificationSettings()` to check current authorization status
+  - Status can be: `.notDetermined`, `.authorized`, `.denied`, `.provisional`
+  - Always check status before scheduling notifications
+- **Learnings for future iterations:**
+  - UNUserNotificationCenter requires UIKit import for UIApplication.openSettingsURLString
+  - UserDefaults for simple notification preferences (non-sensitive)
+  - Toggle binding directly to @Published property for automatic persistence
+  - Privacy-first: request permission only on explicit user action, not on app launch
+---

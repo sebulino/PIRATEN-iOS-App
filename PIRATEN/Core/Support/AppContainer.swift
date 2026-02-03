@@ -99,6 +99,10 @@ final class AppContainer {
     /// Stores a single draft that persists across app restarts.
     let messageDraftStore: MessageDraftStore
 
+    /// Notification settings manager for push notification preferences.
+    /// Privacy-first: all notifications are opt-in (default off).
+    let notificationSettingsManager: NotificationSettingsManager
+
     // MARK: - ViewModel Factories
 
     /// Creates a TopicDetailViewModel for the given topic.
@@ -163,6 +167,7 @@ final class AppContainer {
         // Storage layer
         self.recentRecipientsStore = RecentRecipientsStore()
         self.messageDraftStore = MessageDraftStore()
+        self.notificationSettingsManager = NotificationSettingsManager()
 
         // Presentation layer - auth state manager first (needed for HTTP client)
         self.authStateManager = AuthStateManager(
@@ -264,6 +269,7 @@ final class AppContainer {
         // Storage layer (use standard UserDefaults for testing)
         self.recentRecipientsStore = RecentRecipientsStore()
         self.messageDraftStore = MessageDraftStore()
+        self.notificationSettingsManager = NotificationSettingsManager()
 
         self.authStateManager = AuthStateManager(
             authRepository: authRepository,

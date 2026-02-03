@@ -13,6 +13,7 @@ struct MainTabView: View {
     @ObservedObject var todosViewModel: TodosViewModel
     @ObservedObject var profileViewModel: ProfileViewModel
     @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
+    @ObservedObject var notificationSettings: NotificationSettingsManager
 
     /// Factory for creating TopicDetailViewModels
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
@@ -69,7 +70,7 @@ struct MainTabView: View {
                     Label("Todos", systemImage: "checklist")
                 }
 
-            ProfileView(viewModel: profileViewModel)
+            ProfileView(viewModel: profileViewModel, notificationSettings: notificationSettings)
                 .tabItem {
                     Label("Profil", systemImage: "person.circle")
                 }
@@ -163,6 +164,7 @@ struct MainTabView: View {
             discourseAPIKeyProvider: discourseAPIKeyProvider,
             credentialStore: credentialStore
         ),
+        notificationSettings: NotificationSettingsManager(),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
         },
