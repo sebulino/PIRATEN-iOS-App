@@ -12,11 +12,11 @@ struct KnowledgeView: View {
         NavigationStack {
             VStack {
                 Spacer()
-                Text("Knowledge")
+                Text("Hier statischer Text mit Infos zu 'Was ist Kommunalpolitik?', 'Was macht ein Schatzmeister?', ...")
                     .font(.largeTitle)
                 Spacer()
             }
-            .navigationTitle("Knowledge")
+            .navigationTitle("Wissen")
         }
     }
 }

@@ -62,12 +62,12 @@ struct MainTabView: View {
 
             KnowledgeView()
                 .tabItem {
-                    Label("Knowledge", systemImage: "book")
+                    Label("Wissen", systemImage: "book")
                 }
 
             TodosView(viewModel: todosViewModel)
                 .tabItem {
-                    Label("Todos", systemImage: "checklist")
+                    Label("ToDos", systemImage: "checklist")
                 }
 
             ProfileView(viewModel: profileViewModel, notificationSettings: notificationSettings)
@@ -150,8 +150,9 @@ struct MainTabView: View {
     let fakeDiscourseRepo = FakeDiscourseRepository()
     let discourseAPIKeyProvider = KeychainDiscourseAPIKeyProvider(credentialStore: credentialStore)
     let recentRecipientsStore = RecentRecipientsStore()
+    let deviceTokenManager = DeviceTokenManager()
 
-    return MainTabView(
+    MainTabView(
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
         messagesViewModel: MessagesViewModel(
             discourseRepository: fakeDiscourseRepo,
@@ -164,7 +165,7 @@ struct MainTabView: View {
             discourseAPIKeyProvider: discourseAPIKeyProvider,
             credentialStore: credentialStore
         ),
-        notificationSettings: NotificationSettingsManager(),
+        notificationSettings: NotificationSettingsManager(deviceTokenManager: deviceTokenManager),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
         },

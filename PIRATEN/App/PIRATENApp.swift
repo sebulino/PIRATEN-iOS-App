@@ -9,6 +9,9 @@ import SwiftUI
 
 @main
 struct PIRATENApp: App {
+    /// App delegate for handling APNs device token callbacks
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     /// The central dependency container for the application.
     /// All dependencies are constructed here and injected into the view hierarchy.
     private let container: AppContainer
@@ -20,6 +23,9 @@ struct PIRATENApp: App {
         }
 
         self.container = AppContainer()
+
+        // Wire AppDelegate to DeviceTokenManager for APNs callbacks
+        appDelegate.deviceTokenManager = container.deviceTokenManager
     }
 
     /// Resets authentication state for UI testing.

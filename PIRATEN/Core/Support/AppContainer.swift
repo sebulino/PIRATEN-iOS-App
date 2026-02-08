@@ -99,6 +99,10 @@ final class AppContainer {
     /// Stores a single draft that persists across app restarts.
     let messageDraftStore: MessageDraftStore
 
+    /// Device token manager for APNs registration and storage.
+    /// Stores device tokens locally (non-sensitive data).
+    let deviceTokenManager: DeviceTokenManager
+
     /// Notification settings manager for push notification preferences.
     /// Privacy-first: all notifications are opt-in (default off).
     let notificationSettingsManager: NotificationSettingsManager
@@ -167,7 +171,10 @@ final class AppContainer {
         // Storage layer
         self.recentRecipientsStore = RecentRecipientsStore()
         self.messageDraftStore = MessageDraftStore()
-        self.notificationSettingsManager = NotificationSettingsManager()
+
+        // Push notification layer
+        self.deviceTokenManager = DeviceTokenManager()
+        self.notificationSettingsManager = NotificationSettingsManager(deviceTokenManager: deviceTokenManager)
 
         // Presentation layer - auth state manager first (needed for HTTP client)
         self.authStateManager = AuthStateManager(
@@ -269,7 +276,10 @@ final class AppContainer {
         // Storage layer (use standard UserDefaults for testing)
         self.recentRecipientsStore = RecentRecipientsStore()
         self.messageDraftStore = MessageDraftStore()
-        self.notificationSettingsManager = NotificationSettingsManager()
+
+        // Push notification layer (testing)
+        self.deviceTokenManager = DeviceTokenManager()
+        self.notificationSettingsManager = NotificationSettingsManager(deviceTokenManager: deviceTokenManager)
 
         self.authStateManager = AuthStateManager(
             authRepository: authRepository,

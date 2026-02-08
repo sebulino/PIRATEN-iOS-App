@@ -16,6 +16,10 @@ import UIKit
 @MainActor
 final class NotificationSettingsManager: ObservableObject {
 
+    // MARK: - Dependencies
+
+    private let deviceTokenManager: DeviceTokenManager
+
     // MARK: - Published State
 
     /// Whether message notifications are enabled by the user
@@ -53,7 +57,9 @@ final class NotificationSettingsManager: ObservableObject {
 
     // MARK: - Initialization
 
-    init() {
+    init(deviceTokenManager: DeviceTokenManager) {
+        self.deviceTokenManager = deviceTokenManager
+
         // Load saved preferences (default to false for privacy)
         self.messagesEnabled = UserDefaults.standard.bool(forKey: Keys.messagesEnabled)
         self.todosEnabled = UserDefaults.standard.bool(forKey: Keys.todosEnabled)
@@ -90,15 +96,24 @@ final class NotificationSettingsManager: ObservableObject {
     /// Requests system notification permission if not already granted.
     /// Only called when user explicitly enables a notification toggle.
     func requestPermissionIfNeeded() {
-        guard !isSystemPermissionGranted else { return }
+        guard !isSystemPermissionGranted else {
+            // Permission already granted - register for remote notifications
+            deviceTokenManager.registerForRemoteNotifications()
+            return
+        }
 
         isRequestingPermission = true
 
         Task {
             do {
                 let center = UNUserNotificationCenter.current()
-                try await center.requestAuthorization(options: [.alert, .sound, .badge])
+                let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
                 await refreshAuthorizationStatus()
+
+                // If permission was granted, register for remote notifications
+                if granted {
+                    deviceTokenManager.registerForRemoteNotifications()
+                }
             } catch {
                 // Permission denied or error - status will reflect this
                 await refreshAuthorizationStatus()
@@ -121,5 +136,8 @@ final class NotificationSettingsManager: ObservableObject {
         todosEnabled = false
         UserDefaults.standard.removeObject(forKey: Keys.messagesEnabled)
         UserDefaults.standard.removeObject(forKey: Keys.todosEnabled)
+
+        // Clear device token on logout
+        deviceTokenManager.clearDeviceToken()
     }
 }

@@ -131,8 +131,9 @@ struct SessionExpiredView: View {
     let fakeDiscourseRepo = FakeDiscourseRepository()
     let discourseAPIKeyProvider = KeychainDiscourseAPIKeyProvider(credentialStore: credentialStore)
     let recentRecipientsStore = RecentRecipientsStore()
+    let deviceTokenManager = DeviceTokenManager()
 
-    return RootView(
+    RootView(
         authStateManager: AuthStateManager(authRepository: authRepository),
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
         messagesViewModel: MessagesViewModel(
@@ -146,7 +147,7 @@ struct SessionExpiredView: View {
             discourseAPIKeyProvider: discourseAPIKeyProvider,
             credentialStore: credentialStore
         ),
-        notificationSettings: NotificationSettingsManager(),
+        notificationSettings: NotificationSettingsManager(deviceTokenManager: deviceTokenManager),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
         },

@@ -227,10 +227,11 @@ private struct ProfileRow: View {
 #Preview {
     // Preview with fake data - uses FakeAuthRepository via KeychainCredentialStore
     // Note: Requires an authenticated session for user data to display
+    let deviceTokenManager = DeviceTokenManager()
     ProfileView(
         viewModel: ProfileViewModel(
             authRepository: FakeAuthRepository(credentialStore: KeychainCredentialStore())
         ),
-        notificationSettings: NotificationSettingsManager()
+        notificationSettings: NotificationSettingsManager(deviceTokenManager: deviceTokenManager)
     )
 }
