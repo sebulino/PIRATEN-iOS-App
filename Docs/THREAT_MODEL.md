@@ -423,6 +423,144 @@ This section documents security considerations for messaging write operations in
 
 ---
 
+## Push Notifications (M5)
+
+This section documents security and privacy considerations for push notifications introduced in M5.
+
+### T-014: Push Notification Content Leakage
+
+**Threat:** Sensitive message content or user information exposed via push notification payloads.
+
+**Attack vectors:**
+- Notification banners visible on lock screen
+- Notification history accessible to unauthorized users
+- APNs payloads transit through Apple's servers (not E2E encrypted)
+- Shoulder surfing when notification appears
+- Forensic analysis of notification history
+
+**Mitigations:**
+- **Content prohibition:** Message content NEVER included in payload
+- **Generic text only:** "Du hast eine neue Nachricht" not "Klaus: Hi there"
+- **No usernames:** Sender/recipient names not in payload
+- **Minimal routing data:** Only deepLink type + ID for navigation
+- **User control:** Notifications opt-in only (default off)
+- **Clear policy:** Backend implementation must enforce content restrictions
+
+**Residual risk:** Low if payload policy strictly enforced
+
+**Implementation notes:**
+- App fetches actual content after user taps notification and authenticates
+- Deep link contains only topicId/todoId, not content preview
+- Badge count shows unread total but no per-conversation details
+
+---
+
+### T-015: Device Token Theft and Impersonation
+
+**Threat:** Attacker obtains device token and sends unauthorized push notifications.
+
+**Attack vectors:**
+- Device token stolen from backend database
+- Man-in-the-middle during token registration
+- Token reused after user logs out
+
+**Mitigations:**
+- **Token transmission security:** HTTPS only for registration endpoint
+- **Backend validation:** Verify user owns the device before accepting token
+- **Token revocation:** Clear tokens on logout (client and server)
+- **APNs auth security:** Server-side APNs keys never exposed to client
+- **Rate limiting:** Prevent token registration spam
+
+**Residual risk:** Medium - depends on backend security
+
+**Implementation notes:**
+- Device tokens are non-sensitive (designed to be stored openly)
+- Actual threat is unauthorized notification sending, not token theft itself
+- APNs enforces bundle ID matching, preventing cross-app token abuse
+
+---
+
+### T-016: Notification Metadata Leakage
+
+**Threat:** Notification metadata (timing, frequency, badge count) reveals user behavior patterns.
+
+**Attack vectors:**
+- Notification arrival times reveal when user receives messages
+- Badge count exposes unread message volume
+- Notification frequency shows conversation activity
+
+**Mitigations:**
+- **Awareness:** Users informed that notification timing is observable
+- **Opt-in only:** Notifications disabled by default
+- **No analytics:** App does not track notification opens/dismissals
+- **Clear settings:** Transparent controls for enabling/disabling per category
+
+**Residual risk:** Medium - metadata always observable by Apple/network
+
+**Accepted trade-off:** Real-time notifications inherently leak timing metadata. This is disclosed to users via settings UI.
+
+---
+
+### T-017: Notification Spoofing
+
+**Threat:** Malicious actor sends fake push notifications pretending to be from the app.
+
+**Attack vectors:**
+- Compromised backend server
+- Stolen APNs authentication credentials
+- Phishing via fake notifications
+
+**Mitigations:**
+- **APNs authentication:** Only backend with valid APNs key can send
+- **Bundle ID enforcement:** APNs validates bundle ID matches certificate
+- **Backend security:** APNs auth keys stored securely (not in code)
+- **Key rotation:** Regular rotation of APNs authentication keys
+- **User education:** App UI clearly identifies official notifications
+
+**Residual risk:** Low if backend security maintained
+
+---
+
+### T-018: Privacy Violation via Notification Aggregation
+
+**Threat:** Third-party notification aggregators or analytics tools collect notification metadata.
+
+**Mitigations:**
+- **No tracking SDKs:** App includes no analytics or notification tracking
+- **Generic content:** Payloads contain no identifying information
+- **iOS privacy:** System manages notification display, not app
+- **User control:** iOS notification settings allow complete disabling
+
+**Residual risk:** Low - iOS system notifications provide baseline privacy
+
+---
+
+## Push Notification Privacy Requirements (Summary)
+
+**Payload Content Policy:**
+- ✅ Generic alert text only
+- ✅ Deep link routing IDs (topicId, todoId)
+- ✅ Badge counts
+- ❌ Message content or previews
+- ❌ Usernames or display names
+- ❌ Subject lines or titles
+- ❌ Any PII beyond minimum for routing
+
+**Backend Requirements:**
+- Device tokens stored securely with user association
+- Tokens cleared on logout (client-initiated or server timeout)
+- APNs auth keys never exposed to clients
+- Notification sending respects user's enabled categories
+- No tracking or analytics of notification delivery
+
+**User Controls:**
+- All notifications opt-in (default disabled)
+- Per-category toggles (Messages, Todos)
+- Clear explanation of what is sent
+- Easy access to iOS system settings
+
+---
+
 ## Future Considerations
 
 As features are implemented, this document will be updated:

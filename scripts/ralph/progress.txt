@@ -361,3 +361,39 @@ Started: Mo.  2 Feb. 2026 12:30:35 CET
   - Privacy: log only token prefix (2 bytes) in debug, never full token
   - SwiftUI previews need explicit return removal in modern SwiftUI
 ---
+
+## [2026-02-08 18:32] - M5-003
+- **What was implemented:**
+  - DeepLink enum for representing notification destinations (message thread, todo detail)
+  - DeepLinkRouter to manage navigation state and tab switching
+  - AppDelegate.userNotificationCenter(_:didReceive:) for handling notification taps
+  - MainTabView programmatic tab selection via binding to selectedTab
+  - Deep link navigation handler with .onChange to consume pending deep links
+  - Sheet presentation for deep-linked message threads
+  - Pending deep link persists through unauthenticated state (handled on login)
+  - DeepLinkTests with 8 test cases covering payload parsing edge cases
+- **Files changed:**
+  - PIRATEN/Core/Domain/DeepLink/DeepLink.swift - NEW: Deep link model with payload parsing
+  - PIRATEN/Core/Domain/DeepLink/DeepLinkRouter.swift - NEW: Navigation state manager
+  - PIRATEN/App/AppDelegate.swift - Added UNUserNotificationCenterDelegate, notification tap handling
+  - PIRATEN/Core/Support/AppContainer.swift - Added deepLinkRouter dependency
+  - PIRATEN/App/PIRATENApp.swift - Wired deepLinkRouter to AppDelegate and RootView
+  - PIRATEN/App/RootView.swift - Pass deepLinkRouter to MainTabView, preserve pending deep link during login
+  - PIRATEN/App/Views/Main/MainTabView.swift - Added tab tags, selection binding, deep link handler
+  - PIRATENTests/DeepLinkTests.swift - NEW: Unit tests for deep link parsing
+- **Context7 Docs Summary (Apple Developer - Notifications & Navigation):**
+  - UNUserNotificationCenterDelegate must be set before app finishes launching
+  - `userNotificationCenter(_:didReceive:withCompletionHandler:)` called when user taps notification
+  - NavigationStack supports programmatic navigation via path binding
+  - TabView selection binding allows programmatic tab switching
+  - .onChange(of:) modifier watches for state changes and triggers navigation
+  - Sheet presentation with `item:` binding for presenting detail views
+- **Learnings for future iterations:**
+  - Deep link payload parsing should return Optional for safe handling of malformed data
+  - DeepLinkRouter holds pending deep link until consumed by UI layer
+  - Programmatic tab switching: bind TabView selection to @Published property
+  - Pending deep links preserved across auth state changes (login/logout)
+  - Message thread ID is `id`, not `topicId` - domain model uses Identifiable
+  - Unit tests for payload parsing cover all edge cases (missing keys, wrong types, etc.)
+  - .sheet(item:) automatically handles dismissal when item becomes nil
+---

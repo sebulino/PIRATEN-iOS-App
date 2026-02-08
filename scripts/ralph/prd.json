@@ -40,7 +40,7 @@
         "Routing logic is covered by unit tests where feasible",
         "Context7 consulted for deep link routing patterns in SwiftUI apps; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M5-004",

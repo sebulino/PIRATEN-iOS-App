@@ -349,6 +349,150 @@ Not implemented.
 
 ---
 
+## Push Notifications
+
+### Q-014: Push Notification Backend Infrastructure
+
+**Status:** Open
+**Blocking:** M5 (Push Notifications) backend integration
+**Asked:** 2026-02-08
+
+**Question:**
+What backend infrastructure is required to support push notifications for Messages and Todos?
+
+**What we need:**
+
+**1. Device Token Registration Endpoint**
+- Endpoint to register APNs device tokens
+- Required fields: device_token (hex string), user_id, platform (iOS), enabled_categories (messages, todos)
+- Authentication: requires valid user session
+- Response: confirmation of registration
+- Deregistration endpoint for logout/opt-out
+
+**2. Notification Sending Logic**
+- Server must send push notifications via APNs when:
+  - New private message received (if messages notifications enabled)
+  - New/updated todo assigned (if todos notifications enabled)
+- APNs endpoint: `https://api.push.apple.com/3/device/<device_token>` (production)
+- APNs endpoint: `https://api.sandbox.push.apple.com/3/device/<device_token>` (development)
+- Required: APNs authentication certificate or token-based auth (JWT with signing key)
+
+**3. Notification Payload Format**
+```json
+{
+  "aps": {
+    "alert": {
+      "title": "Neue Nachricht",
+      "body": "Du hast eine neue Nachricht erhalten"
+    },
+    "badge": 1,
+    "sound": "default"
+  },
+  "deepLink": "message",
+  "topicId": 12345
+}
+```
+
+**Privacy Requirements:**
+- ❌ NEVER include message content in notification payload
+- ❌ NEVER include sender username in payload (fetch on device after tap)
+- ✅ Use generic text: "Du hast eine neue Nachricht" not "Klaus sent: Hi there"
+- ✅ Only include minimal routing data: deepLink type + ID
+- ✅ Respect user's enabled categories (only send if opted in)
+
+**4. APNs Configuration**
+- APNs Auth Key (.p8 file) from Apple Developer account
+- Team ID and Key ID for token-based auth (recommended over certificates)
+- App Bundle ID: `de.piratenpartei.PIRATEN` (must match Xcode project)
+- Topics: same as bundle ID
+
+**5. User Preferences Storage**
+- Server must store per-user notification preferences
+- Fields: messages_enabled (bool), todos_enabled (bool), device_token (string)
+- Must support multiple devices per user (different tokens)
+- Clear tokens on logout or when device unregisters
+
+**Current implementation:**
+- ✅ iOS app registers for remote notifications when permission granted
+- ✅ Device token captured and stored locally
+- ✅ Deep link routing implemented for message threads and todo details
+- ❌ Backend registration endpoint not implemented
+- ❌ APNs sending logic not implemented
+
+**Recommendation:**
+Use token-based APNs authentication (JWT) instead of certificates for easier rotation and management.
+
+---
+
+### Q-015: Push Notification Privacy and Content Policy
+
+**Status:** Open
+**Blocking:** Backend implementation
+**Asked:** 2026-02-08
+
+**Question:**
+What content is allowed in push notification payloads to maintain privacy?
+
+**Privacy Policy (MANDATORY):**
+
+**Allowed in payload:**
+- Generic alert text (no user names, no message content)
+- Badge count (unread messages total)
+- Sound identifier
+- Deep link routing data (type + ID only)
+
+**Prohibited in payload:**
+- ❌ Message content or preview
+- ❌ Sender username or display name
+- ❌ Recipient list
+- ❌ Subject line or title of message
+- ❌ Any PII beyond absolute minimum for routing
+
+**Rationale:**
+- APNs payloads transit through Apple's servers (not E2E encrypted)
+- Notification banners may appear on lock screen
+- Notification history stored on device until dismissed
+- Risk of shoulder surfing or unauthorized device access
+
+**Implementation requirement:**
+All notification text must be generic and fetch actual content after app opens via deep link.
+
+**Example compliant payloads:**
+
+Message notification:
+```json
+{
+  "aps": {
+    "alert": {
+      "title": "PIRATEN App",
+      "body": "Du hast eine neue Nachricht"
+    },
+    "badge": 3,
+    "sound": "default"
+  },
+  "deepLink": "message",
+  "topicId": 12345
+}
+```
+
+Todo notification:
+```json
+{
+  "aps": {
+    "alert": {
+      "title": "PIRATEN App",
+      "body": "Ein ToDo wurde aktualisiert"
+    },
+    "badge": 1,
+    "sound": "default"
+  },
+  "deepLink": "todo",
+  "todoId": "abc-123"
+}
+```
+
+---
+
 ## Resolved Questions
 
 (Move questions here once answered)
