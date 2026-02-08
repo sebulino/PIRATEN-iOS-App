@@ -14,6 +14,7 @@ struct MainTabView: View {
     @ObservedObject var profileViewModel: ProfileViewModel
     @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
     @ObservedObject var notificationSettings: NotificationSettingsManager
+    @ObservedObject var deepLinkRouter: DeepLinkRouter
 
     /// Factory for creating TopicDetailViewModels
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
@@ -38,8 +39,11 @@ struct MainTabView: View {
     /// The compose ViewModel (used as item for sheet presentation)
     @State private var composeViewModel: ComposeMessageViewModel?
 
+    /// State for handling deep link navigation to message threads
+    @State private var deepLinkedMessageThread: MessageThread?
+
     var body: some View {
-        TabView {
+        TabView(selection: $deepLinkRouter.selectedTab) {
             ForumView(
                 viewModel: forumViewModel,
                 discourseAuthCoordinator: discourseAuthCoordinator,
@@ -48,6 +52,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Forum", systemImage: "bubble.left.and.bubble.right")
                 }
+                .tag(0)
 
             MessagesView(
                 viewModel: messagesViewModel,
@@ -59,21 +64,25 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Nachrichten", systemImage: "envelope")
                 }
+                .tag(1)
 
             KnowledgeView()
                 .tabItem {
                     Label("Wissen", systemImage: "book")
                 }
+                .tag(2)
 
             TodosView(viewModel: todosViewModel)
                 .tabItem {
                     Label("ToDos", systemImage: "checklist")
                 }
+                .tag(3)
 
             ProfileView(viewModel: profileViewModel, notificationSettings: notificationSettings)
                 .tabItem {
                     Label("Profil", systemImage: "person.circle")
                 }
+                .tag(4)
         }
         .sheet(isPresented: $showingRecipientPicker, onDismiss: {
             // After recipient picker dismisses, show compose if we have a recipient
@@ -139,6 +148,38 @@ struct MainTabView: View {
                 }
             )
         }
+        .sheet(item: $deepLinkedMessageThread) { thread in
+            // Present message thread detail from deep link
+            if let factory = messageThreadDetailViewModelFactory {
+                NavigationStack {
+                    MessageThreadDetailView(viewModel: factory(thread))
+                }
+            }
+        }
+        .onChange(of: deepLinkRouter.pendingDeepLink) { _, pendingDeepLink in
+            guard let deepLink = pendingDeepLink else { return }
+
+            // Handle the deep link based on type
+            switch deepLink {
+            case .messageThread(let topicId):
+                // Fetch thread data and present detail view
+                Task {
+                    messagesViewModel.loadMessages()
+                    // Give a moment for messages to load
+                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                    if let thread = messagesViewModel.messageThreads.first(where: { $0.id == topicId }) {
+                        deepLinkedMessageThread = thread
+                    }
+                    // Clear pending deep link after handling
+                    deepLinkRouter.clearPendingDeepLink()
+                }
+
+            case .todoDetail:
+                // TODO: Implement when todo detail view is available
+                // For now, just switch to the Todos tab (already done by router)
+                deepLinkRouter.clearPendingDeepLink()
+            }
+        }
     }
 }
 
@@ -166,6 +207,7 @@ struct MainTabView: View {
             credentialStore: credentialStore
         ),
         notificationSettings: NotificationSettingsManager(deviceTokenManager: deviceTokenManager),
+        deepLinkRouter: DeepLinkRouter(),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
         },

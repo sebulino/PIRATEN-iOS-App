@@ -15,6 +15,7 @@ struct RootView: View {
     @ObservedObject var profileViewModel: ProfileViewModel
     @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
     @ObservedObject var notificationSettings: NotificationSettingsManager
+    @ObservedObject var deepLinkRouter: DeepLinkRouter
 
     /// Factory for creating TopicDetailViewModels
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
@@ -33,6 +34,10 @@ struct RootView: View {
             switch authStateManager.currentState {
             case .unauthenticated, .authenticating:
                 LoginView(authStateManager: authStateManager)
+                    .onChange(of: authStateManager.currentState) { _, newState in
+                        // If user just authenticated and there's a pending deep link,
+                        // it will be handled by MainTabView when it appears
+                    }
             case .authenticated:
                 MainTabView(
                     forumViewModel: forumViewModel,
@@ -41,6 +46,7 @@ struct RootView: View {
                     profileViewModel: profileViewModel,
                     discourseAuthCoordinator: discourseAuthCoordinator,
                     notificationSettings: notificationSettings,
+                    deepLinkRouter: deepLinkRouter,
                     topicDetailViewModelFactory: topicDetailViewModelFactory,
                     messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
                     recipientPickerViewModelFactory: recipientPickerViewModelFactory,
@@ -148,6 +154,7 @@ struct SessionExpiredView: View {
             credentialStore: credentialStore
         ),
         notificationSettings: NotificationSettingsManager(deviceTokenManager: deviceTokenManager),
+        deepLinkRouter: DeepLinkRouter(),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
         },

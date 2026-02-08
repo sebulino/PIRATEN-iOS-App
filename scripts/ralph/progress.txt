@@ -329,3 +329,35 @@ Started: Mo.  2 Feb. 2026 12:30:35 CET
   - Toggle binding directly to @Published property for automatic persistence
   - Privacy-first: request permission only on explicit user action, not on app launch
 ---
+
+## [2026-02-08 16:42] - M5-002
+- **What was implemented:**
+  - DeviceTokenManager for APNs device token storage and management
+  - AppDelegate integrated via @UIApplicationDelegateAdaptor for APNs callbacks
+  - NotificationSettingsManager triggers registerForRemoteNotifications when permission granted
+  - Device token stored in UserDefaults (non-sensitive data) for backend registration
+  - Privacy: device token never logged in full (only first 2 bytes in debug builds)
+  - Device token cleared on logout to respect privacy
+- **Files changed:**
+  - PIRATEN/Core/Support/DeviceTokenManager.swift - NEW: Manages APNs token storage
+  - PIRATEN/App/AppDelegate.swift - NEW: Handles APNs lifecycle callbacks
+  - PIRATEN/Core/Support/NotificationSettingsManager.swift - Added deviceTokenManager dependency, triggers registration
+  - PIRATEN/App/PIRATENApp.swift - Integrated AppDelegate via @UIApplicationDelegateAdaptor
+  - PIRATEN/Core/Support/AppContainer.swift - Added deviceTokenManager to DI container
+  - PIRATEN/App/Views/Main/MainTabView.swift - Fixed preview with deviceTokenManager
+  - PIRATEN/App/Views/Main/ProfileView.swift - Fixed preview with deviceTokenManager
+  - PIRATEN/App/RootView.swift - Fixed preview with deviceTokenManager
+- **Context7 Docs Summary (Apple Developer - APNs Registration):**
+  - `UIApplication.shared.registerForRemoteNotifications()` initiates APNs registration
+  - Callbacks: `didRegisterForRemoteNotificationsWithDeviceToken` (success) and `didFailToRegisterForRemoteNotificationsWithError` (failure)
+  - `@UIApplicationDelegateAdaptor` integrates UIKit AppDelegate in SwiftUI apps
+  - Device token is Data type, convert to hex string for backend transmission
+  - Registration should be called after user grants notification permission
+- **Learnings for future iterations:**
+  - AppDelegate needs Combine import for @Published properties in DeviceTokenManager
+  - UIKit import required for UIApplication.shared.registerForRemoteNotifications()
+  - @UIApplicationDelegateAdaptor allows wiring dependencies after init via property assignment
+  - Device token hex conversion: `token.map { String(format: "%02x", $0) }.joined()`
+  - Privacy: log only token prefix (2 bytes) in debug, never full token
+  - SwiftUI previews need explicit return removal in modern SwiftUI
+---

@@ -26,6 +26,9 @@ struct PIRATENApp: App {
 
         // Wire AppDelegate to DeviceTokenManager for APNs callbacks
         appDelegate.deviceTokenManager = container.deviceTokenManager
+
+        // Wire AppDelegate to DeepLinkRouter for notification routing
+        appDelegate.deepLinkRouter = container.deepLinkRouter
     }
 
     /// Resets authentication state for UI testing.
@@ -53,6 +56,7 @@ struct PIRATENApp: App {
                 profileViewModel: container.profileViewModel,
                 discourseAuthCoordinator: container.discourseAuthCoordinator,
                 notificationSettings: container.notificationSettingsManager,
+                deepLinkRouter: container.deepLinkRouter,
                 topicDetailViewModelFactory: { [container] topic in
                     container.makeTopicDetailViewModel(for: topic)
                 },

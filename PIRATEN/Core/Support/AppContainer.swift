@@ -107,6 +107,9 @@ final class AppContainer {
     /// Privacy-first: all notifications are opt-in (default off).
     let notificationSettingsManager: NotificationSettingsManager
 
+    /// Deep link router for handling notification-based navigation.
+    let deepLinkRouter: DeepLinkRouter
+
     // MARK: - ViewModel Factories
 
     /// Creates a TopicDetailViewModel for the given topic.
@@ -175,6 +178,7 @@ final class AppContainer {
         // Push notification layer
         self.deviceTokenManager = DeviceTokenManager()
         self.notificationSettingsManager = NotificationSettingsManager(deviceTokenManager: deviceTokenManager)
+        self.deepLinkRouter = DeepLinkRouter()
 
         // Presentation layer - auth state manager first (needed for HTTP client)
         self.authStateManager = AuthStateManager(
@@ -280,6 +284,7 @@ final class AppContainer {
         // Push notification layer (testing)
         self.deviceTokenManager = DeviceTokenManager()
         self.notificationSettingsManager = NotificationSettingsManager(deviceTokenManager: deviceTokenManager)
+        self.deepLinkRouter = DeepLinkRouter()
 
         self.authStateManager = AuthStateManager(
             authRepository: authRepository,

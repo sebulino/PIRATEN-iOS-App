@@ -27,7 +27,7 @@
         "No device token is logged in full (mask or avoid logging)",
         "Context7 consulted for APNs registration flow and iOS lifecycle concerns; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M5-003",
