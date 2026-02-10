@@ -7,6 +7,41 @@
 
 import Foundation
 
+/// The type of organization that owns a Todo.
+/// Represents the organizational level within the Piratenpartei.
+enum OwnerType: String, CaseIterable {
+    case kreisverband
+    case landesverband
+    case bundesverband
+    case arbeitsgemeinschaft
+
+    /// German display name for the owner type
+    var displayName: String {
+        switch self {
+        case .kreisverband: return "Kreisverband"
+        case .landesverband: return "Landesverband"
+        case .bundesverband: return "Bundesverband"
+        case .arbeitsgemeinschaft: return "Arbeitsgemeinschaft"
+        }
+    }
+}
+
+/// Lifecycle status of a Todo.
+enum TodoStatus: String, CaseIterable {
+    case open
+    case claimed
+    case done
+
+    /// German display name for the status
+    var displayName: String {
+        switch self {
+        case .open: return "Offen"
+        case .claimed: return "Übernommen"
+        case .done: return "Erledigt"
+        }
+    }
+}
+
 /// Domain model representing a task from meine-piraten.de.
 /// This is independent of the actual API JSON shape - DTOs will handle mapping.
 ///
@@ -22,8 +57,14 @@ struct Todo: Identifiable, Equatable {
     /// Detailed description of the task, if available
     let description: String?
 
-    /// The group/organization this task belongs to
-    let groupName: String
+    /// The type of organization that owns this todo
+    let ownerType: OwnerType
+
+    /// Identifier of the owning organization
+    let ownerId: String
+
+    /// Display name of the owning organization
+    let ownerName: String
 
     /// When the task was created
     let createdAt: Date
@@ -31,8 +72,11 @@ struct Todo: Identifiable, Equatable {
     /// Due date for the task, if set
     let dueDate: Date?
 
-    /// Whether the task has been completed
-    let isCompleted: Bool
+    /// Current lifecycle status of the todo
+    let status: TodoStatus
+
+    /// Username of the person who claimed this todo, if any
+    let assignee: String?
 
     /// Priority level of the task (placeholder until API confirms structure)
     let priority: Priority

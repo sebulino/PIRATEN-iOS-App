@@ -71,6 +71,12 @@ struct PIRATENApp: App {
                 },
                 userProfileViewModelFactory: { [container] username in
                     container.makeUserProfileViewModel(username: username)
+                },
+                createTodoViewModelFactory: { [container] in
+                    container.makeCreateTodoViewModel()
+                },
+                todoDetailViewModelFactory: { [container] todo in
+                    container.makeTodoDetailViewModel(for: todo)
                 }
             )
             .onOpenURL { url in

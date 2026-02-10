@@ -1,73 +1,79 @@
 # Project Status
 
-Last updated: 2026-02-02 (Discourse auth working)
+Last updated: 2026-02-10 (M6 — Actionable Todos)
 
 ## Current Milestone
 
-**Milestone 1: Bootstrap** (In Progress)
+**Milestone 6: Actionable Todos (Write Operations)** — Complete
 
-Goal: Establish project structure, architecture foundation, and documentation.
+Goal: Turn Todos from a passive read-only list into an actionable participation tool with create, claim, complete, comment, and (hidden) delete capabilities.
 
-## Milestone 1 Progress
+## Milestone 6 Progress
 
 | Story ID | Title | Status |
 |----------|-------|--------|
-| M1-001 | Create required repo folders | Complete |
-| M1-002 | Implement AppState auth state machine | Complete |
-| M1-003 | Create Tab Bar shell with 5 tabs | Complete |
-| M1-004 | Add xcconfig configuration system | Complete |
-| M1-005 | Add KeychainService wrapper | Complete |
-| M1-006 | Add required documentation files | Complete |
-| M1-007 | Add smoke UI test | Pending |
+| M6-001 | Extend Todo domain model with ownership and lifecycle fields | Complete |
+| M6-002 | Create Todo UI and repository method (POST) | Complete |
+| M6-003 | Claim and complete Todo actions | Complete |
+| M6-004 | Todo comments (lightweight) | Complete |
+| M6-005 | Todo deletion (hidden from UI) | Complete |
 
 ## Completed Work
 
-### M1-001: Folder Structure
-- Created Clean Architecture folder structure
-- App/, Core/, Features/, Resources/, Config/, Docs/
-- Project builds successfully
+### M6-001: Domain Model Extension
+- Added `OwnerType` enum (kreisverband, landesverband, bundesverband, arbeitsgemeinschaft)
+- Added `TodoStatus` enum (open, claimed, done) replacing `isCompleted: Bool`
+- Added `ownerId`, `ownerName`, `assignee` fields to `Todo`
+- Updated `FakeTodoRepository`, `TodosViewModel`, `TodosView` for new model
 
-### M1-002: Auth State Machine
-- AppState enum: loggedOut, loggingIn, loggedIn, error
-- AuthStateManager for state transitions
-- LoginView with fake login toggle
-- RootView routes between login and main views
+### M6-002: Create Todo
+- Added `createTodo(...)` to `TodoRepository` protocol
+- Created `CreateTodoViewModel` with validation (title required, length limits)
+- Created `CreateTodoView` form with title, description, owner type picker, owner name
+- Wired factory through `AppContainer` → `PIRATENApp` → view hierarchy
+- "+" toolbar button in TodosView opens create sheet
 
-### M1-003: Tab Bar Shell
-- MainTabView with 5 tabs
-- Placeholder views: Forum, Messages, Knowledge, Todos, Profile
-- Each tab has NavigationStack for future navigation
+### M6-003: Claim and Complete
+- Added `claimTodo`, `completeTodo`, `unclaimTodo` to `TodoRepository`
+- Created `TodoDetailView` with full info display and status-dependent actions
+- Created `TodoDetailViewModel` with optimistic updates and revert on failure
+- `NavigationLink` from `TodoRow` to detail view
+- Deep link handling for `todoDetail` in `MainTabView`
 
-### M1-004: Configuration System
-- Debug.xcconfig and Release.xcconfig
-- Secrets.sample.xcconfig template
-- Secrets.xcconfig is git-ignored
+### M6-004: Comments
+- Added `TodoComment` domain model (id, todoId, authorName, text, createdAt)
+- Added `fetchComments`, `addComment` to `TodoRepository`
+- Comments section in `TodoDetailView` with list and text input
+- Labeled as "Stub" since backend support is unknown
 
-### M1-005: Keychain Service
-- KeychainService with protocol for DI
-- Native Security framework implementation
-- Unit tests for set/get/delete/contains
-- No PII/token logging
+### M6-005: Deletion (Hidden)
+- Added `deleteTodo(id:)` to `TodoRepository` protocol
+- Implemented in-memory deletion in `FakeTodoRepository`
+- No UI element exposes delete — repository-level only
+- Rationale documented in `Docs/DECISIONS.md` (D-017)
 
-### M1-006: Documentation
-- README.md with build instructions
-- Docs/PROJECT_STATUS.md (this file)
-- Docs/DECISIONS.md
-- Docs/OPEN_QUESTIONS.md
-- Docs/THREAT_MODEL.md
+## Previous Milestones
 
-## Upcoming Milestones
+### Milestone 1: Bootstrap
+- Clean Architecture folder structure, auth state machine, tab bar shell
+- Configuration system, Keychain service, documentation
 
 ### Milestone 2: Authentication
-- SSO integration (pending API details)
-- Token storage in Keychain
-- Session management
+- SSO integration via AppAuth-iOS (OIDC/OAuth2 + PKCE)
+- Token storage in Keychain, session management
 
 ### Milestone 3: Forum Integration
-- Discourse API client (Complete)
-- Topic listing (Complete)
-- Post viewing (Complete)
-- Discourse User API Key auth (Complete - M3C-001 through M3C-006)
+- Discourse API client, topic listing, post viewing
+- User API Key authentication for Discourse
+
+### Milestone 4: Private Messages
+- Message threads, compose flow, recipient picker
+- Recent recipients, draft storage
+
+### Milestone 5: Push Notifications
+- APNs device token registration
+- Deep links from notifications to Messages/Todos
+- Push backend contract documentation
 
 ## Blockers
 

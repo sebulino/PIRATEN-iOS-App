@@ -32,6 +32,12 @@ struct RootView: View {
     /// Factory for creating UserProfileViewModels
     var userProfileViewModelFactory: ((String) -> UserProfileViewModel)?
 
+    /// Factory for creating CreateTodoViewModels
+    var createTodoViewModelFactory: (() -> CreateTodoViewModel)?
+
+    /// Factory for creating TodoDetailViewModels
+    var todoDetailViewModelFactory: ((Todo) -> TodoDetailViewModel)?
+
     var body: some View {
         Group {
             switch authStateManager.currentState {
@@ -54,7 +60,9 @@ struct RootView: View {
                     messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
                     recipientPickerViewModelFactory: recipientPickerViewModelFactory,
                     composeMessageViewModelFactory: composeMessageViewModelFactory,
-                    userProfileViewModelFactory: userProfileViewModelFactory
+                    userProfileViewModelFactory: userProfileViewModelFactory,
+                    createTodoViewModelFactory: createTodoViewModelFactory,
+                    todoDetailViewModelFactory: todoDetailViewModelFactory
                 )
                 .provideWindow()
             case .failed(let error):
@@ -176,6 +184,12 @@ struct SessionExpiredView: View {
                 discourseRepository: fakeDiscourseRepo,
                 recentRecipientsStorage: recentRecipientsStore
             )
+        },
+        createTodoViewModelFactory: {
+            CreateTodoViewModel(todoRepository: FakeTodoRepository())
+        },
+        todoDetailViewModelFactory: { todo in
+            TodoDetailViewModel(todo: todo, todoRepository: FakeTodoRepository())
         }
     )
 }

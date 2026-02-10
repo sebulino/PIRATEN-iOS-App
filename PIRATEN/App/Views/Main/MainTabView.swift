@@ -31,6 +31,12 @@ struct MainTabView: View {
     /// Factory for creating UserProfileViewModels
     var userProfileViewModelFactory: ((String) -> UserProfileViewModel)?
 
+    /// Factory for creating CreateTodoViewModels
+    var createTodoViewModelFactory: (() -> CreateTodoViewModel)?
+
+    /// Factory for creating TodoDetailViewModels
+    var todoDetailViewModelFactory: ((Todo) -> TodoDetailViewModel)?
+
     // MARK: - Compose Flow State
 
     /// Whether the recipient picker is being shown
@@ -44,6 +50,9 @@ struct MainTabView: View {
 
     /// State for handling deep link navigation to message threads
     @State private var deepLinkedMessageThread: MessageThread?
+
+    /// State for handling deep link navigation to todo detail
+    @State private var deepLinkedTodo: Todo?
 
     var body: some View {
         TabView(selection: $deepLinkRouter.selectedTab) {
@@ -83,7 +92,11 @@ struct MainTabView: View {
                 }
                 .tag(2)
 
-            TodosView(viewModel: todosViewModel)
+            TodosView(
+                viewModel: todosViewModel,
+                createTodoViewModelFactory: createTodoViewModelFactory,
+                todoDetailViewModelFactory: todoDetailViewModelFactory
+            )
                 .tabItem {
                     Label("ToDos", systemImage: "checklist")
                 }
@@ -167,6 +180,14 @@ struct MainTabView: View {
                 }
             }
         }
+        .sheet(item: $deepLinkedTodo) { todo in
+            // Present todo detail from deep link
+            if let factory = todoDetailViewModelFactory {
+                NavigationStack {
+                    TodoDetailView(viewModel: factory(todo))
+                }
+            }
+        }
         .onChange(of: deepLinkRouter.pendingDeepLink) { _, pendingDeepLink in
             guard let deepLink = pendingDeepLink else { return }
 
@@ -185,10 +206,16 @@ struct MainTabView: View {
                     deepLinkRouter.clearPendingDeepLink()
                 }
 
-            case .todoDetail:
-                // TODO: Implement when todo detail view is available
-                // For now, just switch to the Todos tab (already done by router)
-                deepLinkRouter.clearPendingDeepLink()
+            case .todoDetail(let todoId):
+                Task {
+                    todosViewModel.loadTodos()
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    if let todoIdInt = Int(todoId),
+                       let todo = todosViewModel.todos.first(where: { $0.id == todoIdInt }) {
+                        deepLinkedTodo = todo
+                    }
+                    deepLinkRouter.clearPendingDeepLink()
+                }
             }
         }
     }
@@ -260,6 +287,12 @@ struct MainTabView: View {
         },
         userProfileViewModelFactory: { username in
             UserProfileViewModel(username: username, discourseRepository: fakeDiscourseRepo)
+        },
+        createTodoViewModelFactory: {
+            CreateTodoViewModel(todoRepository: FakeTodoRepository())
+        },
+        todoDetailViewModelFactory: { todo in
+            TodoDetailViewModel(todo: todo, todoRepository: FakeTodoRepository())
         }
     )
 }

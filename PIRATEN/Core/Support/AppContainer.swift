@@ -155,6 +155,19 @@ final class AppContainer {
         UserProfileViewModel(username: username, discourseRepository: discourseRepository)
     }
 
+    /// Creates a CreateTodoViewModel for the create todo form.
+    /// - Returns: A configured CreateTodoViewModel
+    func makeCreateTodoViewModel() -> CreateTodoViewModel {
+        CreateTodoViewModel(todoRepository: todoRepository)
+    }
+
+    /// Creates a TodoDetailViewModel for the given todo.
+    /// - Parameter todo: The todo to display in detail
+    /// - Returns: A configured TodoDetailViewModel
+    func makeTodoDetailViewModel(for todo: Todo) -> TodoDetailViewModel {
+        TodoDetailViewModel(todo: todo, todoRepository: todoRepository)
+    }
+
     // MARK: - Initialization
 
     /// Creates the container with default production dependencies.
