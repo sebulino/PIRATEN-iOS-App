@@ -33,15 +33,6 @@ struct TodoDetailView: View {
                         .fontWeight(.medium)
                 }
 
-                LabeledContent("Organisation") {
-                    VStack(alignment: .trailing) {
-                        Text(viewModel.todo.ownerName)
-                        Text(viewModel.todo.ownerType.displayName)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-
                 if let assignee = viewModel.todo.assignee {
                     LabeledContent("Zugewiesen an") {
                         Text(assignee)
@@ -59,8 +50,29 @@ struct TodoDetailView: View {
                     Text(viewModel.todo.createdAt, style: .date)
                 }
 
-                LabeledContent("Priorität") {
-                    Text(viewModel.todo.priority.rawValue.capitalized)
+                if let creatorName = viewModel.todo.creatorName {
+                    LabeledContent("Erstellt von") {
+                        Text(creatorName)
+                    }
+                }
+
+                if viewModel.todo.urgent {
+                    LabeledContent("Dringend") {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.red)
+                    }
+                }
+
+                if let points = viewModel.todo.activityPoints {
+                    LabeledContent("Aktivitätspunkte") {
+                        Text("\(points)")
+                    }
+                }
+
+                if let hours = viewModel.todo.timeNeededInHours {
+                    LabeledContent("Zeitaufwand") {
+                        Text("\(hours) Std.")
+                    }
                 }
             }
 
@@ -71,7 +83,7 @@ struct TodoDetailView: View {
                 }
             }
 
-            // Comments section (stub — backend support unknown)
+            // Comments section
             Section {
                 if viewModel.isLoadingComments {
                     ProgressView("Lade Kommentare...")
@@ -109,7 +121,7 @@ struct TodoDetailView: View {
                     .disabled(viewModel.commentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isSendingComment)
                 }
             } header: {
-                Text("Kommentare (Stub)")
+                Text("Kommentare")
             }
 
             // Error display
@@ -179,14 +191,16 @@ struct TodoDetailView: View {
                     id: 1,
                     title: "Wahlkampfmaterial bestellen",
                     description: "Flyer und Plakate für den Infostand am Samstag vorbereiten.",
-                    ownerType: .arbeitsgemeinschaft,
-                    ownerId: "ag-oeffentlichkeitsarbeit",
-                    ownerName: "AG Öffentlichkeitsarbeit",
+                    entityId: 1,
+                    categoryId: 1,
                     createdAt: Date().addingTimeInterval(-86400 * 3),
                     dueDate: Date().addingTimeInterval(86400 * 4),
                     status: .open,
                     assignee: nil,
-                    priority: .high
+                    urgent: true,
+                    activityPoints: 10,
+                    timeNeededInHours: 2,
+                    creatorName: "pirat42"
                 ),
                 todoRepository: FakeTodoRepository()
             )

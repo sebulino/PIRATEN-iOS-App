@@ -106,7 +106,6 @@ struct TodosView: View {
 }
 
 /// Row view for displaying a single todo in the list.
-/// Shows task title, owner name, status badge, and due date.
 struct TodoRow: View {
     let todo: Todo
 
@@ -124,9 +123,11 @@ struct TodoRow: View {
                         .strikethrough(todo.status == .done)
                         .foregroundColor(todo.status == .done ? .secondary : .primary)
 
-                    Text(todo.ownerName)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    if let creatorName = todo.creatorName {
+                        Text(creatorName)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                 }
 
                 Spacer()
@@ -151,7 +152,7 @@ struct TodoRow: View {
         case .claimed:
             return "person.circle"
         case .open:
-            return priorityIcon
+            return todo.urgent ? "exclamationmark.circle" : "circle"
         }
     }
 
@@ -162,7 +163,7 @@ struct TodoRow: View {
         case .claimed:
             return .blue
         case .open:
-            return priorityColor
+            return todo.urgent ? .red : .orange
         }
     }
 
@@ -176,28 +177,6 @@ struct TodoRow: View {
             .background(statusColor.opacity(0.15))
             .foregroundColor(statusColor)
             .clipShape(Capsule())
-    }
-
-    private var priorityIcon: String {
-        switch todo.priority {
-        case .high:
-            return "exclamationmark.circle"
-        case .medium:
-            return "circle"
-        case .low:
-            return "circle"
-        }
-    }
-
-    private var priorityColor: Color {
-        switch todo.priority {
-        case .high:
-            return .red
-        case .medium:
-            return .orange
-        case .low:
-            return .blue
-        }
     }
 
     @ViewBuilder

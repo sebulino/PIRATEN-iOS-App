@@ -1,79 +1,88 @@
 # Project Status
 
-Last updated: 2026-02-10 (M6 — Actionable Todos)
+Last updated: 2026-02-10 (M7 — Real Todo API Integration)
 
 ## Current Milestone
 
-**Milestone 6: Actionable Todos (Write Operations)** — Complete
+**Milestone 7: Real Todo API Integration** — Complete
 
-Goal: Turn Todos from a passive read-only list into an actionable participation tool with create, claim, complete, comment, and (hidden) delete capabilities.
+Goal: Replace the fake in-memory Todo implementation with a real REST API client connected to the meine-piraten.de Rails server.
 
-## Milestone 6 Progress
+## Milestone 7 Progress
 
 | Story ID | Title | Status |
 |----------|-------|--------|
-| M6-001 | Extend Todo domain model with ownership and lifecycle fields | Complete |
-| M6-002 | Create Todo UI and repository method (POST) | Complete |
-| M6-003 | Claim and complete Todo actions | Complete |
-| M6-004 | Todo comments (lightweight) | Complete |
-| M6-005 | Todo deletion (hidden from UI) | Complete |
+| M7-001 | Document the meine-piraten.de API | Complete |
+| M7-002 | Add status and assignee to tasks (server) | Complete |
+| M7-003 | Add comments model and REST API (server) | Complete |
+| M7-004 | Align iOS domain model to server schema | Complete |
+| M7-005 | Create DTOs and TodoAPIClient | Complete |
+| M7-006 | Create RealTodoRepository | Complete |
+| M7-007 | Wire RealTodoRepository in AppContainer | Complete |
 
 ## Completed Work
 
-### M6-001: Domain Model Extension
-- Added `OwnerType` enum (kreisverband, landesverband, bundesverband, arbeitsgemeinschaft)
-- Added `TodoStatus` enum (open, claimed, done) replacing `isCompleted: Bool`
-- Added `ownerId`, `ownerName`, `assignee` fields to `Todo`
-- Updated `FakeTodoRepository`, `TodosViewModel`, `TodosView` for new model
+### M7-001–003: Server Extensions (meine-piraten-server)
+- Documented all API endpoints in `docs/API_OVERVIEW.md`
+- Added `status` (string, default "open") and `assignee` (string, nullable) to tasks table
+- Model validation: status must be one of "open", "claimed", "done"
+- Created Comments model (belongs_to :task) with nested REST endpoints
+- Routes: `GET/POST /tasks/:task_id/comments.json`, `DELETE /tasks/:task_id/comments/:id.json`
 
-### M6-002: Create Todo
-- Added `createTodo(...)` to `TodoRepository` protocol
-- Created `CreateTodoViewModel` with validation (title required, length limits)
-- Created `CreateTodoView` form with title, description, owner type picker, owner name
-- Wired factory through `AppContainer` → `PIRATENApp` → view hierarchy
-- "+" toolbar button in TodosView opens create sheet
+### M7-004: iOS Domain Model Alignment
+- Removed `OwnerType` and `Priority` enums
+- `Todo` struct now uses `entityId`, `categoryId`, `urgent`, `activityPoints`, `timeNeededInHours`, `creatorName`
+- Created `Entity` and `TodoCategory` domain models
+- Added `fetchEntities()` and `fetchCategories()` to `TodoRepository` protocol
+- Updated `createTodo` signature to take `entityId`/`categoryId`/`urgent`
+- Updated all views: entity/category pickers in CreateTodoView, urgent display in detail/row
+- Updated FakeTodoRepository with fake entities and categories
 
-### M6-003: Claim and Complete
-- Added `claimTodo`, `completeTodo`, `unclaimTodo` to `TodoRepository`
-- Created `TodoDetailView` with full info display and status-dependent actions
-- Created `TodoDetailViewModel` with optimistic updates and revert on failure
-- `NavigationLink` from `TodoRow` to detail view
-- Deep link handling for `todoDetail` in `MainTabView`
+### M7-005: DTOs and API Client
+- `TaskDTO`, `EntityDTO`, `CategoryDTO`, `CommentDTO` with snake_case CodingKeys
+- Each DTO has `toDomainModel()` mapping to domain structs
+- `TodoAPIClient` follows `DiscourseAPIClient` pattern (HTTPClient injection, returns Data)
+- `TodoAPIError` enum with German localized descriptions
+- Base URL configurable via `MEINE_PIRATEN_BASE_URL` xcconfig
 
-### M6-004: Comments
-- Added `TodoComment` domain model (id, todoId, authorName, text, createdAt)
-- Added `fetchComments`, `addComment` to `TodoRepository`
-- Comments section in `TodoDetailView` with list and text input
-- Labeled as "Stub" since backend support is unknown
+### M7-006: RealTodoRepository
+- Implements all `TodoRepository` methods using `TodoAPIClient`
+- Decodes DTOs and maps to domain models
+- Error mapping from `TodoAPIError` to `TodoError`
 
-### M6-005: Deletion (Hidden)
-- Added `deleteTodo(id:)` to `TodoRepository` protocol
-- Implemented in-memory deletion in `FakeTodoRepository`
-- No UI element exposes delete — repository-level only
-- Rationale documented in `Docs/DECISIONS.md` (D-017)
+### M7-007: Wiring
+- Production `AppContainer` uses `RealTodoRepository` with `TodoAPIClient`
+- Base URL read from Info.plist (set via xcconfig)
+- Test `AppContainer` still uses `FakeTodoRepository`
+- Q-003 resolved in OPEN_QUESTIONS.md
 
 ## Previous Milestones
 
-### Milestone 1: Bootstrap
-- Clean Architecture folder structure, auth state machine, tab bar shell
-- Configuration system, Keychain service, documentation
-
-### Milestone 2: Authentication
-- SSO integration via AppAuth-iOS (OIDC/OAuth2 + PKCE)
-- Token storage in Keychain, session management
-
-### Milestone 3: Forum Integration
-- Discourse API client, topic listing, post viewing
-- User API Key authentication for Discourse
-
-### Milestone 4: Private Messages
-- Message threads, compose flow, recipient picker
-- Recent recipients, draft storage
+### Milestone 6: Actionable Todos (Write Operations)
+- Create, claim, complete, unclaim, comment, delete (hidden) for Todos
+- Full UI with TodoDetailView, CreateTodoView, TodoRow
+- FakeTodoRepository with in-memory data
 
 ### Milestone 5: Push Notifications
 - APNs device token registration
 - Deep links from notifications to Messages/Todos
 - Push backend contract documentation
+
+### Milestone 4: Private Messages
+- Message threads, compose flow, recipient picker
+- Recent recipients, draft storage
+
+### Milestone 3: Forum Integration
+- Discourse API client, topic listing, post viewing
+- User API Key authentication for Discourse
+
+### Milestone 2: Authentication
+- SSO integration via AppAuth-iOS (OIDC/OAuth2 + PKCE)
+- Token storage in Keychain, session management
+
+### Milestone 1: Bootstrap
+- Clean Architecture folder structure, auth state machine, tab bar shell
+- Configuration system, Keychain service, documentation
 
 ## Blockers
 

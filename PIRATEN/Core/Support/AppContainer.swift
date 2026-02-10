@@ -68,7 +68,7 @@ final class AppContainer {
     let discourseRepository: DiscourseRepository
 
     /// Todo repository implementation.
-    /// Currently uses FakeTodoRepository; will be swapped for real meine-piraten.de API later.
+    /// Production uses RealTodoRepository (meine-piraten.de API); tests use FakeTodoRepository.
     let todoRepository: TodoRepository
 
     // MARK: - Presentation Layer (ViewModels)
@@ -244,7 +244,18 @@ final class AppContainer {
         )
         self.discourseRepository = RealDiscourseRepository(apiClient: discourseAPIClient)
 
-        self.todoRepository = FakeTodoRepository()
+        // meine-piraten.de API client and repository
+        // Base URL read from Info.plist (set via xcconfig MEINE_PIRATEN_BASE_URL)
+        let meinePiratenBaseURL: URL
+        if let urlString = Bundle.main.infoDictionary?["MEINE_PIRATEN_BASE_URL"] as? String,
+           let url = URL(string: urlString) {
+            meinePiratenBaseURL = url
+        } else {
+            // Fallback for development — should not happen in production
+            meinePiratenBaseURL = URL(string: "https://meine-piraten.de")!
+        }
+        let todoAPIClient = TodoAPIClient(httpClient: baseHTTPClient, baseURL: meinePiratenBaseURL)
+        self.todoRepository = RealTodoRepository(apiClient: todoAPIClient)
 
         // Remaining presentation layer
         self.forumViewModel = ForumViewModel(discourseRepository: discourseRepository)

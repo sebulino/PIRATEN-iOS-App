@@ -17,8 +17,15 @@ final class CreateTodoViewModel: ObservableObject {
 
     @Published var title: String = ""
     @Published var description: String = ""
-    @Published var ownerType: OwnerType = .kreisverband
-    @Published var ownerName: String = ""
+    @Published var selectedEntityId: Int?
+    @Published var selectedCategoryId: Int?
+    @Published var urgent: Bool = false
+
+    // MARK: - Reference Data
+
+    @Published private(set) var entities: [Entity] = []
+    @Published private(set) var categories: [TodoCategory] = []
+    @Published private(set) var isLoadingReferenceData: Bool = false
 
     // MARK: - Submission State
 
@@ -36,6 +43,20 @@ final class CreateTodoViewModel: ObservableObject {
         self.todoRepository = todoRepository
     }
 
+    // MARK: - Data Loading
+
+    func loadReferenceData() {
+        guard entities.isEmpty else { return }
+        isLoadingReferenceData = true
+        Task {
+            async let fetchedEntities = todoRepository.fetchEntities()
+            async let fetchedCategories = todoRepository.fetchCategories()
+            self.entities = await fetchedEntities
+            self.categories = await fetchedCategories
+            self.isLoadingReferenceData = false
+        }
+    }
+
     // MARK: - Validation
 
     var isTitleValid: Bool {
@@ -43,32 +64,29 @@ final class CreateTodoViewModel: ObservableObject {
         return !trimmed.isEmpty && trimmed.count <= 200
     }
 
-    var isOwnerNameValid: Bool {
-        !ownerName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
     var canSubmit: Bool {
-        isTitleValid && isOwnerNameValid && !isSubmitting
+        isTitleValid && selectedEntityId != nil && selectedCategoryId != nil && !isSubmitting
     }
 
     // MARK: - Actions
 
     func submit() {
-        guard canSubmit else { return }
+        guard canSubmit,
+              let entityId = selectedEntityId,
+              let categoryId = selectedCategoryId else { return }
 
         isSubmitting = true
         errorMessage = nil
 
         Task {
             do {
-                let trimmedOwnerName = ownerName.trimmingCharacters(in: .whitespacesAndNewlines)
                 let desc = description.trimmingCharacters(in: .whitespacesAndNewlines)
                 let _ = try await todoRepository.createTodo(
                     title: title,
                     description: desc.isEmpty ? nil : desc,
-                    ownerType: ownerType,
-                    ownerId: trimmedOwnerName.lowercased().replacingOccurrences(of: " ", with: "-"),
-                    ownerName: trimmedOwnerName
+                    entityId: entityId,
+                    categoryId: categoryId,
+                    urgent: urgent
                 )
                 self.didCreateSuccessfully = true
             } catch let error as TodoError {

@@ -106,21 +106,28 @@ Standard REST API with Bearer token authentication assumed until confirmed.
 
 ### Q-003: meine-piraten.de API
 
-**Status:** Open
+**Status:** Resolved ✅
 **Blocking:** Todos feature
 **Asked:** 2026-01-30
+**Resolved:** 2026-02-10
 
 **Question:**
 Is there an API for meine-piraten.de todo/task functionality?
 
-**What we need:**
-- API documentation or OpenAPI spec
-- Authentication method
-- Available endpoints
-- Rate limits
+**Answer:**
+The meine-piraten.de server is a Rails 8 app with a standard REST API (JSON via jbuilder).
+- **Resources:** Tasks, Entities, Categories, Comments (nested under tasks)
+- **Authentication:** None currently
+- **Database:** SQLite3
+- **API docs:** See `meine-piraten-server/docs/API_OVERVIEW.md`
+- **Task fields:** title, description, status (open/claimed/done), assignee, entity_id, category_id, urgent, activity_points, time_needed_in_hours, creator_name, due_date
+- **Comments:** Nested under tasks (GET/POST/DELETE)
 
-**Current assumption:**
-Todos view is a placeholder. No API calls implemented.
+**Implementation (M7):**
+- iOS domain model aligned to server schema (M7-004)
+- DTOs + TodoAPIClient created (M7-005)
+- RealTodoRepository wired in AppContainer (M7-007)
+- Base URL configurable via `MEINE_PIRATEN_BASE_URL` in xcconfig
 
 ---
 

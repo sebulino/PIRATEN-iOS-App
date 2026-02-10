@@ -22,17 +22,28 @@ struct CreateTodoView: View {
 
                     TextField("Beschreibung (optional)", text: $viewModel.description, axis: .vertical)
                         .lineLimit(3...6)
+
+                    Toggle("Dringend", isOn: $viewModel.urgent)
                 }
 
                 Section("Organisation") {
-                    Picker("Typ", selection: $viewModel.ownerType) {
-                        ForEach(OwnerType.allCases, id: \.self) { type in
-                            Text(type.displayName).tag(type)
+                    if viewModel.isLoadingReferenceData {
+                        ProgressView("Lade...")
+                    } else {
+                        Picker("Gliederung", selection: $viewModel.selectedEntityId) {
+                            Text("Bitte wählen").tag(nil as Int?)
+                            ForEach(viewModel.entities) { entity in
+                                Text(entity.name).tag(entity.id as Int?)
+                            }
+                        }
+
+                        Picker("Kategorie", selection: $viewModel.selectedCategoryId) {
+                            Text("Bitte wählen").tag(nil as Int?)
+                            ForEach(viewModel.categories) { category in
+                                Text(category.name).tag(category.id as Int?)
+                            }
                         }
                     }
-
-                    TextField("Name der Organisation", text: $viewModel.ownerName)
-                        .textInputAutocapitalization(.words)
                 }
 
                 if let error = viewModel.errorMessage {
@@ -68,6 +79,9 @@ struct CreateTodoView: View {
                 if success {
                     onDismiss()
                 }
+            }
+            .onAppear {
+                viewModel.loadReferenceData()
             }
         }
     }

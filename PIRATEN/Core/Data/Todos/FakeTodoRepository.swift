@@ -9,30 +9,35 @@ import Foundation
 
 /// Fake implementation of TodoRepository for development and testing.
 /// Returns in-memory data. Will be replaced by real meine-piraten.de API integration later.
-///
-/// No HTTP calls are made. All data is hardcoded for UI development.
 @MainActor
 final class FakeTodoRepository: TodoRepository {
 
     // MARK: - In-Memory Storage
 
-    /// Mutable in-memory todos for create/update operations
     private var todos: [Todo]
-
-    /// Auto-incrementing ID for new todos
     private var nextId: Int
-
-    /// In-memory comment storage keyed by todo ID
     private var comments: [Int: [TodoComment]] = [:]
-
-    /// Auto-incrementing ID for new comments
     private var nextCommentId: Int = 1000
+
+    private let entities: [Entity] = [
+        Entity(id: 1, name: "KV Frankfurt", isLV: false, isOV: false, isKV: true, parentEntityId: 2),
+        Entity(id: 2, name: "LV Hessen", isLV: true, isOV: false, isKV: false, parentEntityId: nil),
+        Entity(id: 3, name: "KV München", isLV: false, isOV: false, isKV: true, parentEntityId: 4),
+        Entity(id: 4, name: "LV Bayern", isLV: true, isOV: false, isKV: false, parentEntityId: nil),
+        Entity(id: 5, name: "OV Schwabing", isLV: false, isOV: true, isKV: false, parentEntityId: 3)
+    ]
+
+    private let categories: [TodoCategory] = [
+        TodoCategory(id: 1, name: "Wahlkampf"),
+        TodoCategory(id: 2, name: "Verwaltung"),
+        TodoCategory(id: 3, name: "Öffentlichkeitsarbeit"),
+        TodoCategory(id: 4, name: "Veranstaltung")
+    ]
 
     init() {
         self.todos = Self.makeFakeTodos()
         self.nextId = 100
 
-        // Seed some fake comments
         self.comments = [
             1: [
                 TodoComment(id: 1, todoId: 1, authorName: "pirat42", text: "Kann ich Samstag mitbringen.", createdAt: Date().addingTimeInterval(-86400)),
@@ -41,86 +46,61 @@ final class FakeTodoRepository: TodoRepository {
         ]
     }
 
-    /// Static fake todos (placeholder data for development)
     private static func makeFakeTodos() -> [Todo] {
         [
             Todo(
-                id: 1,
-                title: "Wahlkampfmaterial bestellen",
+                id: 1, title: "Wahlkampfmaterial bestellen",
                 description: "Flyer und Plakate für den Infostand am Samstag vorbereiten.",
-                ownerType: .arbeitsgemeinschaft,
-                ownerId: "ag-oeffentlichkeitsarbeit",
-                ownerName: "AG Öffentlichkeitsarbeit",
+                entityId: 1, categoryId: 1,
                 createdAt: Date().addingTimeInterval(-86400 * 3),
                 dueDate: Date().addingTimeInterval(86400 * 4),
-                status: .open,
-                assignee: nil,
-                priority: .high
+                status: .open, assignee: nil,
+                urgent: true, activityPoints: 10, timeNeededInHours: 2, creatorName: "pirat42"
             ),
             Todo(
-                id: 2,
-                title: "Protokoll der letzten Sitzung",
+                id: 2, title: "Protokoll der letzten Sitzung",
                 description: "Protokoll der Kreisvorstandssitzung vom 25.01. ins Wiki eintragen.",
-                ownerType: .kreisverband,
-                ownerId: "kv-muenchen",
-                ownerName: "Kreisverband München",
+                entityId: 3, categoryId: 2,
                 createdAt: Date().addingTimeInterval(-86400 * 5),
                 dueDate: Date().addingTimeInterval(-86400 * 1),
-                status: .claimed,
-                assignee: "pirat42",
-                priority: .medium
+                status: .claimed, assignee: "pirat42",
+                urgent: false, activityPoints: 5, timeNeededInHours: 1, creatorName: "pirat99"
             ),
             Todo(
-                id: 3,
-                title: "Pressemitteilung Digitalisierung",
+                id: 3, title: "Pressemitteilung Digitalisierung",
                 description: nil,
-                ownerType: .arbeitsgemeinschaft,
-                ownerId: "ag-presse",
-                ownerName: "AG Presse",
+                entityId: 2, categoryId: 3,
                 createdAt: Date().addingTimeInterval(-86400 * 2),
                 dueDate: Date().addingTimeInterval(86400 * 7),
-                status: .open,
-                assignee: nil,
-                priority: .medium
+                status: .open, assignee: nil,
+                urgent: false, activityPoints: 15, timeNeededInHours: 3, creatorName: "pirat42"
             ),
             Todo(
-                id: 4,
-                title: "Social Media Posts vorbereiten",
+                id: 4, title: "Social Media Posts vorbereiten",
                 description: "3-5 Posts für die kommende Woche zum Thema Netzpolitik.",
-                ownerType: .arbeitsgemeinschaft,
-                ownerId: "ag-oeffentlichkeitsarbeit",
-                ownerName: "AG Öffentlichkeitsarbeit",
+                entityId: 1, categoryId: 3,
                 createdAt: Date().addingTimeInterval(-86400 * 1),
                 dueDate: nil,
-                status: .open,
-                assignee: nil,
-                priority: .low
+                status: .open, assignee: nil,
+                urgent: false, activityPoints: nil, timeNeededInHours: nil, creatorName: nil
             ),
             Todo(
-                id: 5,
-                title: "Newsletter-Entwurf prüfen",
+                id: 5, title: "Newsletter-Entwurf prüfen",
                 description: "Korrekturlesen des monatlichen Newsletters.",
-                ownerType: .landesverband,
-                ownerId: "lv-bayern",
-                ownerName: "Landesverband Bayern",
+                entityId: 4, categoryId: 3,
                 createdAt: Date().addingTimeInterval(-86400 * 7),
                 dueDate: Date().addingTimeInterval(-86400 * 2),
-                status: .done,
-                assignee: "pirat42",
-                priority: .high
+                status: .done, assignee: "pirat42",
+                urgent: true, activityPoints: 5, timeNeededInHours: 1, creatorName: "pirat99"
             ),
             Todo(
-                id: 6,
-                title: "Raumreservierung Stammtisch",
+                id: 6, title: "Raumreservierung Stammtisch",
                 description: "Raum für den monatlichen Stammtisch im Februar reservieren.",
-                ownerType: .kreisverband,
-                ownerId: "kv-muenchen",
-                ownerName: "Kreisverband München",
+                entityId: 3, categoryId: 4,
                 createdAt: Date().addingTimeInterval(-86400 * 10),
                 dueDate: Date().addingTimeInterval(-86400 * 5),
-                status: .done,
-                assignee: "pirat99",
-                priority: .medium
+                status: .done, assignee: "pirat99",
+                urgent: false, activityPoints: 3, timeNeededInHours: nil, creatorName: "pirat42"
             )
         ]
     }
@@ -146,7 +126,7 @@ final class FakeTodoRepository: TodoRepository {
         return todos.first { $0.id == id }
     }
 
-    func createTodo(title: String, description: String?, ownerType: OwnerType, ownerId: String, ownerName: String) async throws -> Todo {
+    func createTodo(title: String, description: String?, entityId: Int, categoryId: Int, urgent: Bool) async throws -> Todo {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTitle.isEmpty else { throw TodoError.titleRequired }
         guard trimmedTitle.count <= 200 else { throw TodoError.titleTooLong }
@@ -158,14 +138,16 @@ final class FakeTodoRepository: TodoRepository {
             id: nextId,
             title: trimmedTitle,
             description: description,
-            ownerType: ownerType,
-            ownerId: ownerId,
-            ownerName: ownerName,
+            entityId: entityId,
+            categoryId: categoryId,
             createdAt: Date(),
             dueDate: nil,
             status: .open,
             assignee: nil,
-            priority: .medium
+            urgent: urgent,
+            activityPoints: nil,
+            timeNeededInHours: nil,
+            creatorName: "current_user"
         )
         nextId += 1
         todos.insert(newTodo, at: 0)
@@ -183,10 +165,11 @@ final class FakeTodoRepository: TodoRepository {
         let old = todos[index]
         let updated = Todo(
             id: old.id, title: old.title, description: old.description,
-            ownerType: old.ownerType, ownerId: old.ownerId, ownerName: old.ownerName,
+            entityId: old.entityId, categoryId: old.categoryId,
             createdAt: old.createdAt, dueDate: old.dueDate,
             status: .claimed, assignee: "current_user",
-            priority: old.priority
+            urgent: old.urgent, activityPoints: old.activityPoints,
+            timeNeededInHours: old.timeNeededInHours, creatorName: old.creatorName
         )
         todos[index] = updated
         return updated
@@ -203,10 +186,11 @@ final class FakeTodoRepository: TodoRepository {
         let old = todos[index]
         let updated = Todo(
             id: old.id, title: old.title, description: old.description,
-            ownerType: old.ownerType, ownerId: old.ownerId, ownerName: old.ownerName,
+            entityId: old.entityId, categoryId: old.categoryId,
             createdAt: old.createdAt, dueDate: old.dueDate,
             status: .done, assignee: old.assignee,
-            priority: old.priority
+            urgent: old.urgent, activityPoints: old.activityPoints,
+            timeNeededInHours: old.timeNeededInHours, creatorName: old.creatorName
         )
         todos[index] = updated
         return updated
@@ -223,16 +207,17 @@ final class FakeTodoRepository: TodoRepository {
         let old = todos[index]
         let updated = Todo(
             id: old.id, title: old.title, description: old.description,
-            ownerType: old.ownerType, ownerId: old.ownerId, ownerName: old.ownerName,
+            entityId: old.entityId, categoryId: old.categoryId,
             createdAt: old.createdAt, dueDate: old.dueDate,
             status: .open, assignee: nil,
-            priority: old.priority
+            urgent: old.urgent, activityPoints: old.activityPoints,
+            timeNeededInHours: old.timeNeededInHours, creatorName: old.creatorName
         )
         todos[index] = updated
         return updated
     }
 
-    // MARK: - Comments (stub)
+    // MARK: - Comments
 
     func fetchComments(todoId: Int) async -> [TodoComment] {
         try? await Task.sleep(nanoseconds: 100_000_000)
@@ -265,5 +250,17 @@ final class FakeTodoRepository: TodoRepository {
         try? await Task.sleep(nanoseconds: 100_000_000)
         todos.remove(at: index)
         comments.removeValue(forKey: id)
+    }
+
+    // MARK: - Reference Data
+
+    func fetchEntities() async -> [Entity] {
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        return entities
+    }
+
+    func fetchCategories() async -> [TodoCategory] {
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        return categories
     }
 }
