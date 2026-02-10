@@ -1,0 +1,62 @@
+{
+  "project": "piraten-ios-m4-messaging-mvp",
+  "branchName": "ralph/m4-messaging-mvp",
+  "description": "Milestone 4: Discourse private messaging MVP (reply). Enable replying to PM threads with strict safeguards, conservative UX, and robust error handling. Read-only browsing from M3b remains; this milestone adds minimal write action (reply).",
+  "userStories": [
+    {
+      "id": "M4-001",
+      "category": "messages-compose",
+      "title": "Compose UI for replying to an existing PM thread",
+      "description": "Add a reply composer to PM thread detail (no new-thread creation yet).",
+      "acceptanceCriteria": [
+        "Message thread detail includes a Reply button that opens a composer",
+        "Composer supports plain text only (no attachments, no rich formatting beyond basic markdown passthrough if needed)",
+        "Send is disabled while request in flight; clear success/failure states",
+        "Unauthenticated users see a login prompt instead of composer",
+        "Context7 consulted for current SwiftUI compose patterns + safe text input handling; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M4-002",
+      "category": "messages-api",
+      "title": "Discourse API call for replying to a PM thread",
+      "description": "Implement the minimal Discourse API request to post a reply into an existing PM thread.",
+      "acceptanceCriteria": [
+        "DiscourseAPI client exposes a 'replyToMessageThread' method",
+        "Request uses AuthenticatedHTTPClient and applies token refresh rules from M3a",
+        "Reply is posted to the correct PM thread and reflected in UI after success (reload thread)",
+        "Errors map to domain errors; no crashes; retry available",
+        "Context7 consulted for Discourse PM reply endpoint/params; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M4-003",
+      "category": "safety",
+      "title": "Add write-action safety rails for messaging",
+      "description": "Add conservative safeguards for write actions in an official tool.",
+      "acceptanceCriteria": [
+        "Basic rate limiting: prevent rapid repeated sends (e.g., one send at a time + short cooldown)",
+        "Input length constraints and clear validation messages",
+        "No logging of message content; logs scrub identifiers",
+        "Docs/THREAT_MODEL.md updated for messaging write actions",
+        "Context7 consulted for recommended mobile app logging/privacy practices; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M4-004",
+      "category": "ux",
+      "title": "Improve PM thread rendering for conversational feel",
+      "description": "Refine the PM detail UI for readability and trust.",
+      "acceptanceCriteria": [
+        "Messages show sender name + timestamp (as available) and body excerpt/rendering",
+        "Loading/empty/error states are polished and consistent with other tabs",
+        "Manual refresh supported",
+        "Context7 consulted for SwiftUI list/chat-like layout patterns; summary added to progress.txt"
+      ],
+      "passes": false
+    }
+  ]
+}

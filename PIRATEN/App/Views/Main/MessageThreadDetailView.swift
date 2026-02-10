@@ -19,38 +19,46 @@ struct MessageThreadDetailView: View {
     /// Optional callback for when user taps login button in unauthenticated state
     var onLoginTapped: (() -> Void)?
 
+    /// Factory for creating UserProfileViewModel instances
+    var userProfileViewModelFactory: ((String) -> UserProfileViewModel)?
+
+    /// Callback when user taps "Nachricht senden" from a profile
+    var onSendMessageFromProfile: ((UserProfile) -> Void)?
+
+    /// Currently selected username for profile sheet
+    @State private var selectedUsername: String?
+
     var body: some View {
-        VStack(spacing: 0) {
-            // Main content area
-            Group {
-                switch viewModel.loadState {
-                case .idle, .loading:
-                    if viewModel.posts.isEmpty {
-                        ProgressView("Lade Nachrichten...")
-                    } else {
-                        messagesListWithReply
-                    }
-
-                case .loaded:
-                    if viewModel.posts.isEmpty {
-                        emptyState
-                    } else {
-                        messagesListWithReply
-                    }
-
-                case .notAuthenticated:
-                    notAuthenticatedState
-
-                case .authenticationFailed(let message):
-                    authenticationFailedState(message: message)
-
-                case .error(let message):
-                    errorState(message: message)
+        Group {
+            switch viewModel.loadState {
+            case .idle, .loading:
+                if viewModel.posts.isEmpty {
+                    ProgressView("Lade Nachrichten...")
+                } else {
+                    messagesList
                 }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Reply composer at bottom (only shown when authenticated and composer is visible)
+            case .loaded:
+                if viewModel.posts.isEmpty {
+                    emptyState
+                } else {
+                    messagesList
+                }
+
+            case .notAuthenticated:
+                notAuthenticatedState
+
+            case .authenticationFailed(let message):
+                authenticationFailedState(message: message)
+
+            case .error(let message):
+                errorState(message: message)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Reply composer as safeAreaInset - doesn't trigger List relayout
+        // because it lives outside the List's layout hierarchy
+        .safeAreaInset(edge: .bottom) {
             if viewModel.isAuthenticated && viewModel.isComposerVisible {
                 ReplyComposerView(
                     replyText: $viewModel.replyText,
@@ -80,6 +88,24 @@ struct MessageThreadDetailView: View {
                 }
             }
         }
+        .sheet(item: Binding(
+            get: { selectedUsername.map { SelectedUsername(username: $0) } },
+            set: { selectedUsername = $0?.username }
+        )) { selected in
+            if let factory = userProfileViewModelFactory {
+                UserProfileView(
+                    viewModel: factory(selected.username),
+                    onLoginTapped: {
+                        selectedUsername = nil
+                        onLoginTapped?()
+                    },
+                    onSendMessageTapped: { profile in
+                        selectedUsername = nil
+                        onSendMessageFromProfile?(profile)
+                    }
+                )
+            }
+        }
         .onAppear {
             if viewModel.loadState == .idle {
                 viewModel.loadPosts()
@@ -89,39 +115,28 @@ struct MessageThreadDetailView: View {
 
     // MARK: - State Views
 
+    /// Messages list using ScrollView + LazyVStack instead of List to avoid
+    /// UICollectionView cell dequeue crashes (AttributeGraph cycles).
     @ViewBuilder
-    private var messagesListWithReply: some View {
-        List {
-            ForEach(viewModel.posts) { post in
-                MessagePostRow(post: post)
-            }
-
-            // Show inline reply prompt at the bottom of the list when composer is not visible
-            if viewModel.isAuthenticated && !viewModel.isComposerVisible {
-                replyPromptRow
+    private var messagesList: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                ForEach(viewModel.posts) { post in
+                    MessagePostRow(
+                        post: post,
+                        onUsernameTapped: { username in
+                            selectedUsername = username
+                        }
+                    )
+                    .padding(.horizontal, 16)
+                    Divider()
+                        .padding(.leading, 16)
+                }
             }
         }
         .refreshable {
             viewModel.retry()
         }
-    }
-
-    @ViewBuilder
-    private var replyPromptRow: some View {
-        Button {
-            viewModel.showComposer()
-            isComposerFocused = true
-        } label: {
-            HStack {
-                Image(systemName: "text.bubble")
-                    .foregroundColor(.accentColor)
-                Text("Antworten...")
-                    .foregroundColor(.secondary)
-                Spacer()
-            }
-            .padding(.vertical, 8)
-        }
-        .buttonStyle(.plain)
     }
 
     @ViewBuilder
@@ -370,12 +385,18 @@ private struct ReplyComposerView: View {
 private struct MessagePostRow: View {
     let post: Post
 
+    /// Callback when username is tapped
+    var onUsernameTapped: ((String) -> Void)?
+
+    /// Cached parsed content - HTML parsing via NSAttributedString is expensive
+    /// (spawns WebKit parser). Computed once via .task(id:) instead of on every render.
+    @State private var parsedContent: AttributedString?
+
     /// Extracts initials from the display name or username
     private var authorInitials: String {
         let name = post.author.displayName ?? post.author.username
         let words = name.split(separator: " ")
         if words.count >= 2 {
-            // First letter of first two words
             return String(words[0].prefix(1) + words[1].prefix(1)).uppercased()
         } else if let first = name.first {
             return String(first).uppercased()
@@ -388,11 +409,6 @@ private struct MessagePostRow: View {
         let colors: [Color] = [.orange, .blue, .green, .purple, .pink, .teal]
         let hash = post.author.username.hashValue
         return colors[abs(hash) % colors.count]
-    }
-
-    /// Parsed content with clickable links
-    private var parsedContent: AttributedString {
-        HTMLContentParser.parseToAttributedString(post.content)
     }
 
     var body: some View {
@@ -411,10 +427,15 @@ private struct MessagePostRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 // Author name and timestamp row
                 HStack(alignment: .firstTextBaseline) {
-                    Text(post.author.displayName ?? post.author.username)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
+                    Button {
+                        onUsernameTapped?(post.author.username)
+                    } label: {
+                        Text(post.author.displayName ?? post.author.username)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                    }
+                    .buttonStyle(.plain)
 
                     Spacer()
 
@@ -425,14 +446,26 @@ private struct MessagePostRow: View {
                 }
 
                 // Message body with clickable links
-                Text(parsedContent)
-                    .font(.body)
-                    .foregroundColor(.primary)
-                    .tint(.blue)
-                    .fixedSize(horizontal: false, vertical: true)
+                if let content = parsedContent {
+                    Text(content)
+                        .font(.body)
+                        .foregroundColor(.primary)
+                        .tint(.blue)
+                } else {
+                    // Brief placeholder while HTML is being parsed
+                    Text(HTMLContentParser.stripHTML(from: post.content))
+                        .font(.body)
+                        .foregroundColor(.primary)
+                }
             }
         }
         .padding(.vertical, 8)
+        .task(id: post.id) {
+            // Pre-parse HTML content once when the row appears.
+            // NSAttributedString HTML parsing is expensive (WebKit parser),
+            // so we cache the result in @State to avoid re-parsing on every render.
+            parsedContent = HTMLContentParser.parseToAttributedString(post.content)
+        }
     }
 
     /// Formats timestamp: relative for recent messages, date for older ones
@@ -454,6 +487,12 @@ private struct MessagePostRow: View {
             return formatter.string(from: date)
         }
     }
+}
+
+/// Helper struct to make String identifiable for sheet presentation
+private struct SelectedUsername: Identifiable {
+    let username: String
+    var id: String { username }
 }
 
 #Preview {

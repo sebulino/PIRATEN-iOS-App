@@ -9,6 +9,9 @@ import SwiftUI
 
 @main
 struct PIRATENApp: App {
+    /// App delegate for handling APNs device token callbacks
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     /// The central dependency container for the application.
     /// All dependencies are constructed here and injected into the view hierarchy.
     private let container: AppContainer
@@ -20,6 +23,12 @@ struct PIRATENApp: App {
         }
 
         self.container = AppContainer()
+
+        // Wire AppDelegate to DeviceTokenManager for APNs callbacks
+        appDelegate.deviceTokenManager = container.deviceTokenManager
+
+        // Wire AppDelegate to DeepLinkRouter for notification routing
+        appDelegate.deepLinkRouter = container.deepLinkRouter
     }
 
     /// Resets authentication state for UI testing.
@@ -39,13 +48,15 @@ struct PIRATENApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView(
+            StartupContainerView(
                 authStateManager: container.authStateManager,
                 forumViewModel: container.forumViewModel,
                 messagesViewModel: container.messagesViewModel,
                 todosViewModel: container.todosViewModel,
                 profileViewModel: container.profileViewModel,
                 discourseAuthCoordinator: container.discourseAuthCoordinator,
+                notificationSettings: container.notificationSettingsManager,
+                deepLinkRouter: container.deepLinkRouter,
                 topicDetailViewModelFactory: { [container] topic in
                     container.makeTopicDetailViewModel(for: topic)
                 },
@@ -57,6 +68,9 @@ struct PIRATENApp: App {
                 },
                 composeMessageViewModelFactory: { [container] in
                     container.makeComposeMessageViewModel()
+                },
+                userProfileViewModelFactory: { [container] username in
+                    container.makeUserProfileViewModel(username: username)
                 }
             )
             .onOpenURL { url in

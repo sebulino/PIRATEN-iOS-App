@@ -172,7 +172,7 @@ final class DiscourseAPIClient {
     /// Used for finding recipients when composing new private messages.
     func searchUsers(query: String) async throws -> Data {
         // URL encode the query and build the path with query parameter
-        guard let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+        guard query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) != nil else {
             throw DiscourseError.unknown(statusCode: nil, message: "Invalid search query")
         }
 
@@ -185,6 +185,29 @@ final class DiscourseAPIClient {
         }
 
         let request = HTTPRequest.get(requestUrl, headers: commonHeaders())
+        do {
+            let response = try await httpClient.execute(request)
+            guard response.isSuccess else {
+                throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
+            }
+            return response.data
+        } catch let error as HTTPError {
+            throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
+        }
+    }
+
+    /// Fetches a full user profile by username.
+    /// Endpoint: GET /u/{username}.json
+    /// - Parameter username: The username to fetch the profile for
+    /// - Returns: Raw response data for decoding by the caller
+    /// - Throws: DiscourseError if the request fails or user not found
+    ///
+    /// Response contains user object with id, username, name, bio, stats, etc.
+    /// Used for displaying user profiles and facilitating messaging.
+    func fetchUserProfile(username: String) async throws -> Data {
+        let request = HTTPRequest.get(url(for: "/u/\(username).json"), headers: commonHeaders())
         do {
             let response = try await httpClient.execute(request)
             guard response.isSuccess else {

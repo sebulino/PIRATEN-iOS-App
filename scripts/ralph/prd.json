@@ -1,106 +1,57 @@
 {
-  "project": "piraten-ios-m4b-create-pm",
-  "branchName": "ralph/m4b-create-pm",
-  "description": "Milestone 4B: Create new private message threads. Enable users to start new PM conversations by searching for recipients and composing messages with subject and body. Includes recent recipients, draft auto-save, and FAB entry point.",
+  "project": "piraten-ios-m5-push-notifications",
+  "branchName": "ralph/m5-push-notifications",
+  "description": "Milestone 6: Opt-in push notifications for Messages and Todos only, with transparent controls and privacy-first defaults. Implement device token registration, notification settings, and deep links to relevant screens.",
   "userStories": [
     {
-      "id": "M4b-001",
-      "category": "api",
-      "title": "User Search API Integration",
-      "description": "Implement Discourse user search for finding message recipients.",
+      "id": "M5-001",
+      "category": "push-permissions",
+      "title": "Notification permission flow and settings UI",
+      "description": "Add opt-in notification permissions with transparent settings.",
       "acceptanceCriteria": [
-        "DiscourseAPIClient exposes searchUsers(query:) method using GET /u/search/users.json",
-        "Search returns username, display name, and avatar URL",
-        "Minimum 2 characters required before search executes",
-        "Errors map to domain errors with user-friendly messages",
-        "Context7 consulted for Discourse user search API; summary added to progress.txt"
+        "Profile/Settings includes notification toggles: Messages, Todos (default off)",
+        "Request permission only after user explicitly enables a toggle",
+        "Clear copy explains what will be sent and what will not be tracked",
+        "Context7 consulted for UNUserNotificationCenter best practices and permission UX; summary added to progress.txt"
       ],
       "passes": true
     },
     {
-      "id": "M4b-002",
-      "category": "storage",
-      "title": "Recent Recipients Storage",
-      "description": "Store recently messaged users for quick access when composing new messages.",
+      "id": "M5-002",
+      "category": "push-registration",
+      "title": "APNs device token registration and secure storage",
+      "description": "Register for remote notifications and store device token securely for backend registration.",
       "acceptanceCriteria": [
-        "Store up to 10 recent recipient usernames in UserDefaults",
-        "Recent recipients updated when sending a new PM",
-        "List persists across app restarts",
-        "No PII beyond username stored; privacy-safe implementation",
-        "Clear recent recipients when user logs out"
+        "App registers for remote notifications when permission granted",
+        "Device token is captured and stored (non-sensitive) and can be sent to backend when available",
+        "No device token is logged in full (mask or avoid logging)",
+        "Context7 consulted for APNs registration flow and iOS lifecycle concerns; summary added to progress.txt"
       ],
       "passes": true
     },
     {
-      "id": "M4b-003",
-      "category": "ui",
-      "title": "Recipient Picker UI",
-      "description": "Create UI for selecting message recipient from recent contacts or search results.",
+      "id": "M5-003",
+      "category": "push-deeplinks",
+      "title": "Deep links from notifications to Messages/Todos",
+      "description": "Route notifications into the correct tab and detail screen.",
       "acceptanceCriteria": [
-        "Screen shows Recent section with up to 5 recent recipients",
-        "Search field at top with debounced search (300ms)",
-        "Each row shows avatar initials, display name, @username",
-        "Tapping user selects them and proceeds to compose screen",
-        "Cancel button returns to Messages tab",
-        "Context7 consulted for SwiftUI search/picker patterns; summary added to progress.txt"
+        "Notification payload routing supports opening a specific PM thread or Todo detail",
+        "If app is locked/unauthenticated, route user to login then to destination",
+        "Routing logic is covered by unit tests where feasible",
+        "Context7 consulted for deep link routing patterns in SwiftUI apps; summary added to progress.txt"
       ],
       "passes": true
     },
     {
-      "id": "M4b-004",
-      "category": "ui",
-      "title": "New Message Compose UI",
-      "description": "Create compose screen for new messages with recipient, subject, and body.",
+      "id": "M5-004",
+      "category": "push-backend-contract",
+      "title": "Document push backend contract and privacy constraints",
+      "description": "Define what server endpoints/payload fields are required for push, without building server-side yet.",
       "acceptanceCriteria": [
-        "Shows selected recipient at top (avatar + name, tap to change)",
-        "Required subject field with Betreff placeholder",
-        "Message body reuses M4 composer patterns and safety validation",
-        "Send button disabled until subject and body are non-empty",
-        "Character count shown for body when approaching limit",
-        "Cancel button with confirmation if content exists"
-      ],
-      "passes": true
-    },
-    {
-      "id": "M4b-005",
-      "category": "api",
-      "title": "Create PM API Integration",
-      "description": "Implement Discourse API call to create new private message threads.",
-      "acceptanceCriteria": [
-        "DiscourseAPIClient exposes createPrivateMessage(recipient:title:content:) method",
-        "Uses POST /posts.json with archetype=private_message, target_recipients, title, raw",
-        "Success navigates to the new thread detail view",
-        "Errors display user-friendly messages",
-        "Reuses M4 safety service for rate limiting",
-        "Context7 consulted for Discourse create PM endpoint; summary added to progress.txt"
-      ],
-      "passes": true
-    },
-    {
-      "id": "M4b-006",
-      "category": "storage",
-      "title": "Draft Auto-Save",
-      "description": "Automatically save in-progress messages to prevent data loss.",
-      "acceptanceCriteria": [
-        "Draft saved to UserDefaults when compose screen disappears",
-        "Draft includes recipient username, subject, body, timestamp",
-        "Draft restored with prompt when returning to compose",
-        "Draft cleared after successful send",
-        "Only one draft stored at a time"
-      ],
-      "passes": true
-    },
-    {
-      "id": "M4b-007",
-      "category": "ui",
-      "title": "New Message Entry Point (FAB)",
-      "description": "Add floating action button to Messages tab for creating new messages.",
-      "acceptanceCriteria": [
-        "FAB in bottom-right of Messages tab with square.and.pencil icon",
-        "FAB uses orange tint matching app theme",
-        "FAB only visible when authenticated",
-        "Tapping FAB opens recipient picker",
-        "FAB positioned with proper safe area handling above tab bar"
+        "Docs/OPEN_QUESTIONS.md updated with backend requirements for push registration & delivery",
+        "Docs/THREAT_MODEL.md updated for push metadata and minimization",
+        "No tracking/analytics added",
+        "Context7 consulted for minimal payload and privacy guidance; summary added to progress.txt"
       ],
       "passes": true
     }

@@ -15,6 +15,15 @@ struct TopicDetailView: View {
     /// Optional callback for when user taps login button in unauthenticated state
     var onLoginTapped: (() -> Void)?
 
+    /// Factory for creating UserProfileViewModel instances
+    var userProfileViewModelFactory: ((String) -> UserProfileViewModel)?
+
+    /// Callback when user taps "Nachricht senden" from a profile
+    var onSendMessageFromProfile: ((UserProfile) -> Void)?
+
+    /// Currently selected username for profile sheet
+    @State private var selectedUsername: String?
+
     var body: some View {
         Group {
             switch viewModel.loadState {
@@ -44,6 +53,24 @@ struct TopicDetailView: View {
         }
         .navigationTitle(viewModel.topic.title)
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: Binding(
+            get: { selectedUsername.map { SelectedUsername(username: $0) } },
+            set: { selectedUsername = $0?.username }
+        )) { selected in
+            if let factory = userProfileViewModelFactory {
+                UserProfileView(
+                    viewModel: factory(selected.username),
+                    onLoginTapped: {
+                        selectedUsername = nil
+                        onLoginTapped?()
+                    },
+                    onSendMessageTapped: { profile in
+                        selectedUsername = nil
+                        onSendMessageFromProfile?(profile)
+                    }
+                )
+            }
+        }
         .onAppear {
             if viewModel.loadState == .idle {
                 viewModel.loadPosts()
@@ -53,10 +80,24 @@ struct TopicDetailView: View {
 
     // MARK: - State Views
 
+    /// Posts list using ScrollView + LazyVStack instead of List to avoid
+    /// UICollectionView cell dequeue crashes (AttributeGraph cycles).
     @ViewBuilder
     private var postsList: some View {
-        List(viewModel.posts) { post in
-            PostRow(post: post)
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                ForEach(viewModel.posts) { post in
+                    PostRow(
+                        post: post,
+                        onUsernameTapped: { username in
+                            selectedUsername = username
+                        }
+                    )
+                    .padding(.horizontal, 16)
+                    Divider()
+                        .padding(.leading, 16)
+                }
+            }
         }
     }
 
@@ -147,35 +188,34 @@ struct TopicDetailView: View {
 private struct PostRow: View {
     let post: Post
 
+    /// Callback when username is tapped
+    var onUsernameTapped: ((String) -> Void)?
+
     /// Whether the post content is expanded to show full text
     @State private var isExpanded = false
 
+    /// Cached parsed content - HTML parsing via NSAttributedString is expensive
+    /// (spawns WebKit parser). Computed once via .task(id:) instead of on every render.
+    @State private var parsedContent: AttributedString?
+
+    /// Whether the content needs truncation (cached alongside parsed content)
+    @State private var needsTruncation = false
+
     /// Line limit when collapsed (nil when expanded for full content)
     private let collapsedLineLimit = 6
-
-    /// Parsed content with clickable links
-    private var parsedContent: AttributedString {
-        HTMLContentParser.parseToAttributedString(post.content)
-    }
-
-    /// Plain text content for length checking
-    private var plainTextContent: String {
-        HTMLContentParser.stripHTML(from: post.content)
-    }
-
-    /// Whether the content needs truncation (rough heuristic based on character count)
-    private var needsTruncation: Bool {
-        // Approximate: if content is longer than ~300 chars, it likely exceeds 6 lines
-        plainTextContent.count > 300
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Author and post number
             HStack {
-                Text(post.author.displayName ?? post.author.username)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
+                Button {
+                    onUsernameTapped?(post.author.username)
+                } label: {
+                    Text(post.author.displayName ?? post.author.username)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                }
+                .buttonStyle(.plain)
 
                 Spacer()
 
@@ -185,11 +225,19 @@ private struct PostRow: View {
             }
 
             // Post content with clickable links
-            Text(parsedContent)
-                .font(.body)
-                .lineLimit(isExpanded ? nil : collapsedLineLimit)
-                .foregroundColor(.primary)
-                .tint(.blue)
+            if let content = parsedContent {
+                Text(content)
+                    .font(.body)
+                    .lineLimit(isExpanded ? nil : collapsedLineLimit)
+                    .foregroundColor(.primary)
+                    .tint(.blue)
+            } else {
+                // Brief placeholder while HTML is being parsed
+                Text(HTMLContentParser.stripHTML(from: post.content))
+                    .font(.body)
+                    .lineLimit(collapsedLineLimit)
+                    .foregroundColor(.primary)
+            }
 
             // Expand/collapse button (only shown if content is long enough)
             if needsTruncation {
@@ -233,7 +281,22 @@ private struct PostRow: View {
             }
         }
         .padding(.vertical, 4)
+        .task(id: post.id) {
+            // Pre-parse HTML content once when the row appears.
+            // NSAttributedString HTML parsing is expensive (WebKit parser),
+            // so we cache the result in @State to avoid re-parsing on every render.
+            let content = HTMLContentParser.parseToAttributedString(post.content)
+            let plainText = HTMLContentParser.stripHTML(from: post.content)
+            parsedContent = content
+            needsTruncation = plainText.count > 300
+        }
     }
+}
+
+/// Helper struct to make String identifiable for sheet presentation
+private struct SelectedUsername: Identifiable {
+    let username: String
+    var id: String { username }
 }
 
 #Preview {

@@ -99,6 +99,17 @@ final class AppContainer {
     /// Stores a single draft that persists across app restarts.
     let messageDraftStore: MessageDraftStore
 
+    /// Device token manager for APNs registration and storage.
+    /// Stores device tokens locally (non-sensitive data).
+    let deviceTokenManager: DeviceTokenManager
+
+    /// Notification settings manager for push notification preferences.
+    /// Privacy-first: all notifications are opt-in (default off).
+    let notificationSettingsManager: NotificationSettingsManager
+
+    /// Deep link router for handling notification-based navigation.
+    let deepLinkRouter: DeepLinkRouter
+
     // MARK: - ViewModel Factories
 
     /// Creates a TopicDetailViewModel for the given topic.
@@ -136,6 +147,14 @@ final class AppContainer {
         )
     }
 
+    /// Creates a UserProfileViewModel for the given username.
+    /// Used for displaying user profiles when tapping usernames in forum posts and messages.
+    /// - Parameter username: The username to fetch the profile for
+    /// - Returns: A configured UserProfileViewModel
+    func makeUserProfileViewModel(username: String) -> UserProfileViewModel {
+        UserProfileViewModel(username: username, discourseRepository: discourseRepository)
+    }
+
     // MARK: - Initialization
 
     /// Creates the container with default production dependencies.
@@ -163,6 +182,11 @@ final class AppContainer {
         // Storage layer
         self.recentRecipientsStore = RecentRecipientsStore()
         self.messageDraftStore = MessageDraftStore()
+
+        // Push notification layer
+        self.deviceTokenManager = DeviceTokenManager()
+        self.notificationSettingsManager = NotificationSettingsManager(deviceTokenManager: deviceTokenManager)
+        self.deepLinkRouter = DeepLinkRouter()
 
         // Presentation layer - auth state manager first (needed for HTTP client)
         self.authStateManager = AuthStateManager(
@@ -264,6 +288,11 @@ final class AppContainer {
         // Storage layer (use standard UserDefaults for testing)
         self.recentRecipientsStore = RecentRecipientsStore()
         self.messageDraftStore = MessageDraftStore()
+
+        // Push notification layer (testing)
+        self.deviceTokenManager = DeviceTokenManager()
+        self.notificationSettingsManager = NotificationSettingsManager(deviceTokenManager: deviceTokenManager)
+        self.deepLinkRouter = DeepLinkRouter()
 
         self.authStateManager = AuthStateManager(
             authRepository: authRepository,

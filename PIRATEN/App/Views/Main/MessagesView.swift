@@ -16,42 +16,48 @@ struct MessagesView: View {
     /// Factory for creating MessageThreadDetailViewModels
     var messageThreadDetailViewModelFactory: ((MessageThread) -> MessageThreadDetailViewModel)?
 
+    /// Factory for creating UserProfileViewModels
+    var userProfileViewModelFactory: ((String) -> UserProfileViewModel)?
+
+    /// Callback when user taps "Nachricht senden" from a profile
+    var onSendMessageFromProfile: ((UserProfile) -> Void)?
+
     /// Callback for when user taps the compose FAB to create a new message
     var onComposeTapped: (() -> Void)?
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .bottomTrailing) {
-                Group {
-                    switch viewModel.loadState {
-                    case .idle, .loading:
-                        if viewModel.messageThreads.isEmpty {
-                            ProgressView("Lade Nachrichten...")
-                        } else {
-                            // Show existing threads while refreshing
-                            messageThreadsList
-                        }
-
-                    case .loaded:
-                        if viewModel.messageThreads.isEmpty {
-                            emptyState
-                        } else {
-                            messageThreadsList
-                        }
-
-                    case .notAuthenticated:
-                        notAuthenticatedState
-
-                    case .authenticationFailed(let message):
-                        authenticationFailedState(message: message)
-
-                    case .error(let message):
-                        errorState(message: message)
+            Group {
+                switch viewModel.loadState {
+                case .idle, .loading:
+                    if viewModel.messageThreads.isEmpty {
+                        ProgressView("Lade Nachrichten...")
+                    } else {
+                        // Show existing threads while refreshing
+                        messageThreadsList
                     }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                // Floating Action Button - only visible when authenticated
+                case .loaded:
+                    if viewModel.messageThreads.isEmpty {
+                        emptyState
+                    } else {
+                        messageThreadsList
+                    }
+
+                case .notAuthenticated:
+                    notAuthenticatedState
+
+                case .authenticationFailed(let message):
+                    authenticationFailedState(message: message)
+
+                case .error(let message):
+                    errorState(message: message)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // FAB as overlay - doesn't participate in layout, so it can't
+            // trigger a layout flush on the List's collection view
+            .overlay(alignment: .bottomTrailing) {
                 if isAuthenticated {
                     composeButton
                 }
@@ -103,21 +109,35 @@ struct MessagesView: View {
 
     // MARK: - State Views
 
+    /// Message threads list using ScrollView + LazyVStack instead of List to avoid
+    /// UICollectionView cell dequeue crashes (AttributeGraph cycles).
     @ViewBuilder
     private var messageThreadsList: some View {
-        List(viewModel.messageThreads) { thread in
-            if let factory = messageThreadDetailViewModelFactory {
-                NavigationLink {
-                    MessageThreadDetailView(
-                        viewModel: factory(thread),
-                        onLoginTapped: onLoginTapped
-                    )
-                } label: {
-                    MessageThreadRow(thread: thread)
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                ForEach(viewModel.messageThreads) { thread in
+                    if let factory = messageThreadDetailViewModelFactory {
+                        NavigationLink {
+                            MessageThreadDetailView(
+                                viewModel: factory(thread),
+                                onLoginTapped: onLoginTapped,
+                                userProfileViewModelFactory: userProfileViewModelFactory,
+                                onSendMessageFromProfile: onSendMessageFromProfile
+                            )
+                        } label: {
+                            MessageThreadRow(thread: thread)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        MessageThreadRow(thread: thread)
+                    }
+                    Divider()
+                        .padding(.leading, 16)
                 }
-            } else {
-                MessageThreadRow(thread: thread)
             }
+            .padding(.horizontal, 16)
         }
         .refreshable {
             viewModel.refresh()
@@ -234,8 +254,8 @@ private struct MessageThreadRow: View {
                 .lineLimit(1)
 
             HStack {
-                // Post count
-                Label("\(thread.postsCount)", systemImage: "bubble.left")
+                // Reply count (postsCount includes the original post, so subtract 1)
+                Label("\(max(0, thread.postsCount - 1))", systemImage: "bubble.left")
                     .font(.caption)
                     .foregroundColor(.secondary)
 

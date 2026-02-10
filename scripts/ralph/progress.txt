@@ -301,3 +301,128 @@ Started: Mo.  2 Feb. 2026 12:30:35 CET
   - Factory closures capture container reference with [container] for DI
   - accessibilityLabel for FAB buttons improves VoiceOver support
 ---
+
+## [2026-02-03 14:30] - M5-001
+- **What was implemented:**
+  - NotificationSettingsManager for handling UNUserNotificationCenter
+  - Notification settings section in ProfileView with toggles for Messages and Todos
+  - Both toggles default to off (privacy-first)
+  - Permission requested only when user explicitly enables a toggle
+  - Clear German copy explaining what's sent and no tracking
+  - System settings link when permissions are denied
+- **Files changed:**
+  - PIRATEN/Core/Support/NotificationSettingsManager.swift - NEW: Notification preferences manager
+  - PIRATEN/App/Views/Main/ProfileView.swift - Added notification settings section
+  - PIRATEN/App/Views/Main/MainTabView.swift - Pass notificationSettings to ProfileView
+  - PIRATEN/App/RootView.swift - Pass notificationSettings to MainTabView
+  - PIRATEN/App/PIRATENApp.swift - Wire notificationSettingsManager from container
+  - PIRATEN/Core/Support/AppContainer.swift - Added notificationSettingsManager
+- **Context7 Docs Summary (Apple Developer - UNUserNotificationCenter):**
+  - Use `UNUserNotificationCenter.current().requestAuthorization(options:)` for permission
+  - Options: `.alert`, `.sound`, `.badge` for standard notifications
+  - Use `notificationSettings()` to check current authorization status
+  - Status can be: `.notDetermined`, `.authorized`, `.denied`, `.provisional`
+  - Always check status before scheduling notifications
+- **Learnings for future iterations:**
+  - UNUserNotificationCenter requires UIKit import for UIApplication.openSettingsURLString
+  - UserDefaults for simple notification preferences (non-sensitive)
+  - Toggle binding directly to @Published property for automatic persistence
+  - Privacy-first: request permission only on explicit user action, not on app launch
+---
+
+## [2026-02-08 16:42] - M5-002
+- **What was implemented:**
+  - DeviceTokenManager for APNs device token storage and management
+  - AppDelegate integrated via @UIApplicationDelegateAdaptor for APNs callbacks
+  - NotificationSettingsManager triggers registerForRemoteNotifications when permission granted
+  - Device token stored in UserDefaults (non-sensitive data) for backend registration
+  - Privacy: device token never logged in full (only first 2 bytes in debug builds)
+  - Device token cleared on logout to respect privacy
+- **Files changed:**
+  - PIRATEN/Core/Support/DeviceTokenManager.swift - NEW: Manages APNs token storage
+  - PIRATEN/App/AppDelegate.swift - NEW: Handles APNs lifecycle callbacks
+  - PIRATEN/Core/Support/NotificationSettingsManager.swift - Added deviceTokenManager dependency, triggers registration
+  - PIRATEN/App/PIRATENApp.swift - Integrated AppDelegate via @UIApplicationDelegateAdaptor
+  - PIRATEN/Core/Support/AppContainer.swift - Added deviceTokenManager to DI container
+  - PIRATEN/App/Views/Main/MainTabView.swift - Fixed preview with deviceTokenManager
+  - PIRATEN/App/Views/Main/ProfileView.swift - Fixed preview with deviceTokenManager
+  - PIRATEN/App/RootView.swift - Fixed preview with deviceTokenManager
+- **Context7 Docs Summary (Apple Developer - APNs Registration):**
+  - `UIApplication.shared.registerForRemoteNotifications()` initiates APNs registration
+  - Callbacks: `didRegisterForRemoteNotificationsWithDeviceToken` (success) and `didFailToRegisterForRemoteNotificationsWithError` (failure)
+  - `@UIApplicationDelegateAdaptor` integrates UIKit AppDelegate in SwiftUI apps
+  - Device token is Data type, convert to hex string for backend transmission
+  - Registration should be called after user grants notification permission
+- **Learnings for future iterations:**
+  - AppDelegate needs Combine import for @Published properties in DeviceTokenManager
+  - UIKit import required for UIApplication.shared.registerForRemoteNotifications()
+  - @UIApplicationDelegateAdaptor allows wiring dependencies after init via property assignment
+  - Device token hex conversion: `token.map { String(format: "%02x", $0) }.joined()`
+  - Privacy: log only token prefix (2 bytes) in debug, never full token
+  - SwiftUI previews need explicit return removal in modern SwiftUI
+---
+
+## [2026-02-08 18:32] - M5-003
+- **What was implemented:**
+  - DeepLink enum for representing notification destinations (message thread, todo detail)
+  - DeepLinkRouter to manage navigation state and tab switching
+  - AppDelegate.userNotificationCenter(_:didReceive:) for handling notification taps
+  - MainTabView programmatic tab selection via binding to selectedTab
+  - Deep link navigation handler with .onChange to consume pending deep links
+  - Sheet presentation for deep-linked message threads
+  - Pending deep link persists through unauthenticated state (handled on login)
+  - DeepLinkTests with 8 test cases covering payload parsing edge cases
+- **Files changed:**
+  - PIRATEN/Core/Domain/DeepLink/DeepLink.swift - NEW: Deep link model with payload parsing
+  - PIRATEN/Core/Domain/DeepLink/DeepLinkRouter.swift - NEW: Navigation state manager
+  - PIRATEN/App/AppDelegate.swift - Added UNUserNotificationCenterDelegate, notification tap handling
+  - PIRATEN/Core/Support/AppContainer.swift - Added deepLinkRouter dependency
+  - PIRATEN/App/PIRATENApp.swift - Wired deepLinkRouter to AppDelegate and RootView
+  - PIRATEN/App/RootView.swift - Pass deepLinkRouter to MainTabView, preserve pending deep link during login
+  - PIRATEN/App/Views/Main/MainTabView.swift - Added tab tags, selection binding, deep link handler
+  - PIRATENTests/DeepLinkTests.swift - NEW: Unit tests for deep link parsing
+- **Context7 Docs Summary (Apple Developer - Notifications & Navigation):**
+  - UNUserNotificationCenterDelegate must be set before app finishes launching
+  - `userNotificationCenter(_:didReceive:withCompletionHandler:)` called when user taps notification
+  - NavigationStack supports programmatic navigation via path binding
+  - TabView selection binding allows programmatic tab switching
+  - .onChange(of:) modifier watches for state changes and triggers navigation
+  - Sheet presentation with `item:` binding for presenting detail views
+- **Learnings for future iterations:**
+  - Deep link payload parsing should return Optional for safe handling of malformed data
+  - DeepLinkRouter holds pending deep link until consumed by UI layer
+  - Programmatic tab switching: bind TabView selection to @Published property
+  - Pending deep links preserved across auth state changes (login/logout)
+  - Message thread ID is `id`, not `topicId` - domain model uses Identifiable
+  - Unit tests for payload parsing cover all edge cases (missing keys, wrong types, etc.)
+  - .sheet(item:) automatically handles dismissal when item becomes nil
+---
+
+## [2026-02-08 18:50] - M5-004
+- **What was implemented:**
+  - Comprehensive documentation of push notification backend requirements
+  - Two new open questions (Q-014, Q-015) for backend infrastructure
+  - Five new threats (T-014 through T-018) for push notification security
+  - Privacy-first payload content policy with examples
+  - APNs integration requirements and authentication options
+  - Device token registration/deregistration endpoint specifications
+- **Files changed:**
+  - Docs/OPEN_QUESTIONS.md - Added Q-014 (backend infrastructure) and Q-015 (privacy policy)
+  - Docs/THREAT_MODEL.md - Added T-014 through T-018 for push notification threats
+- **Context7 Docs Summary (Apple Developer - APNs):**
+  - APNs payloads transit through Apple servers (not E2E encrypted)
+  - Token-based auth (JWT) recommended over certificates for APNs
+  - Production endpoint: `api.push.apple.com/3/device/<token>`
+  - Sandbox endpoint: `api.sandbox.push.apple.com/3/device/<token>`
+  - Notification service extensions can modify payloads before delivery
+  - Generic notification content recommended for privacy
+- **Learnings for future iterations:**
+  - NEVER include message content or usernames in push payloads
+  - Device tokens are non-sensitive and designed to be stored openly
+  - Actual security risk is unauthorized sending, not token theft
+  - APNs enforces bundle ID matching to prevent cross-app abuse
+  - Badge counts acceptable but per-conversation details should be avoided
+  - Backend must respect user's per-category notification preferences
+  - Token-based APNs auth (JWT with .p8 key) easier to manage than certificates
+  - Notification metadata (timing, frequency) always observable - accept this trade-off
+---

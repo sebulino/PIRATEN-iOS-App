@@ -14,6 +14,8 @@ struct RootView: View {
     @ObservedObject var todosViewModel: TodosViewModel
     @ObservedObject var profileViewModel: ProfileViewModel
     @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
+    @ObservedObject var notificationSettings: NotificationSettingsManager
+    @ObservedObject var deepLinkRouter: DeepLinkRouter
 
     /// Factory for creating TopicDetailViewModels
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
@@ -27,11 +29,18 @@ struct RootView: View {
     /// Factory for creating ComposeMessageViewModels
     var composeMessageViewModelFactory: (() -> ComposeMessageViewModel)?
 
+    /// Factory for creating UserProfileViewModels
+    var userProfileViewModelFactory: ((String) -> UserProfileViewModel)?
+
     var body: some View {
         Group {
             switch authStateManager.currentState {
             case .unauthenticated, .authenticating:
                 LoginView(authStateManager: authStateManager)
+                    .onChange(of: authStateManager.currentState) { _, newState in
+                        // If user just authenticated and there's a pending deep link,
+                        // it will be handled by MainTabView when it appears
+                    }
             case .authenticated:
                 MainTabView(
                     forumViewModel: forumViewModel,
@@ -39,10 +48,13 @@ struct RootView: View {
                     todosViewModel: todosViewModel,
                     profileViewModel: profileViewModel,
                     discourseAuthCoordinator: discourseAuthCoordinator,
+                    notificationSettings: notificationSettings,
+                    deepLinkRouter: deepLinkRouter,
                     topicDetailViewModelFactory: topicDetailViewModelFactory,
                     messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
                     recipientPickerViewModelFactory: recipientPickerViewModelFactory,
-                    composeMessageViewModelFactory: composeMessageViewModelFactory
+                    composeMessageViewModelFactory: composeMessageViewModelFactory,
+                    userProfileViewModelFactory: userProfileViewModelFactory
                 )
                 .provideWindow()
             case .failed(let error):
@@ -129,8 +141,9 @@ struct SessionExpiredView: View {
     let fakeDiscourseRepo = FakeDiscourseRepository()
     let discourseAPIKeyProvider = KeychainDiscourseAPIKeyProvider(credentialStore: credentialStore)
     let recentRecipientsStore = RecentRecipientsStore()
+    let deviceTokenManager = DeviceTokenManager()
 
-    return RootView(
+    RootView(
         authStateManager: AuthStateManager(authRepository: authRepository),
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
         messagesViewModel: MessagesViewModel(
@@ -144,6 +157,8 @@ struct SessionExpiredView: View {
             discourseAPIKeyProvider: discourseAPIKeyProvider,
             credentialStore: credentialStore
         ),
+        notificationSettings: NotificationSettingsManager(deviceTokenManager: deviceTokenManager),
+        deepLinkRouter: DeepLinkRouter(),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
         },

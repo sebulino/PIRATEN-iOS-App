@@ -13,6 +13,8 @@ struct MainTabView: View {
     @ObservedObject var todosViewModel: TodosViewModel
     @ObservedObject var profileViewModel: ProfileViewModel
     @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
+    @ObservedObject var notificationSettings: NotificationSettingsManager
+    @ObservedObject var deepLinkRouter: DeepLinkRouter
 
     /// Factory for creating TopicDetailViewModels
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
@@ -26,6 +28,9 @@ struct MainTabView: View {
     /// Factory for creating ComposeMessageViewModels
     var composeMessageViewModelFactory: (() -> ComposeMessageViewModel)?
 
+    /// Factory for creating UserProfileViewModels
+    var userProfileViewModelFactory: ((String) -> UserProfileViewModel)?
+
     // MARK: - Compose Flow State
 
     /// Whether the recipient picker is being shown
@@ -37,20 +42,32 @@ struct MainTabView: View {
     /// The compose ViewModel (used as item for sheet presentation)
     @State private var composeViewModel: ComposeMessageViewModel?
 
+    /// State for handling deep link navigation to message threads
+    @State private var deepLinkedMessageThread: MessageThread?
+
     var body: some View {
-        TabView {
+        TabView(selection: $deepLinkRouter.selectedTab) {
             ForumView(
                 viewModel: forumViewModel,
                 discourseAuthCoordinator: discourseAuthCoordinator,
-                topicDetailViewModelFactory: topicDetailViewModelFactory
+                topicDetailViewModelFactory: topicDetailViewModelFactory,
+                userProfileViewModelFactory: userProfileViewModelFactory,
+                onSendMessageFromProfile: { profile in
+                    handleSendMessageFromProfile(profile)
+                }
             )
                 .tabItem {
                     Label("Forum", systemImage: "bubble.left.and.bubble.right")
                 }
+                .tag(0)
 
             MessagesView(
                 viewModel: messagesViewModel,
                 messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
+                userProfileViewModelFactory: userProfileViewModelFactory,
+                onSendMessageFromProfile: { profile in
+                    handleSendMessageFromProfile(profile)
+                },
                 onComposeTapped: {
                     showingRecipientPicker = true
                 }
@@ -58,21 +75,25 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Nachrichten", systemImage: "envelope")
                 }
+                .tag(1)
 
             KnowledgeView()
                 .tabItem {
-                    Label("Knowledge", systemImage: "book")
+                    Label("Wissen", systemImage: "book")
                 }
+                .tag(2)
 
             TodosView(viewModel: todosViewModel)
                 .tabItem {
-                    Label("Todos", systemImage: "checklist")
+                    Label("ToDos", systemImage: "checklist")
                 }
+                .tag(3)
 
-            ProfileView(viewModel: profileViewModel)
+            ProfileView(viewModel: profileViewModel, notificationSettings: notificationSettings)
                 .tabItem {
                     Label("Profil", systemImage: "person.circle")
                 }
+                .tag(4)
         }
         .sheet(isPresented: $showingRecipientPicker, onDismiss: {
             // After recipient picker dismisses, show compose if we have a recipient
@@ -138,6 +159,59 @@ struct MainTabView: View {
                 }
             )
         }
+        .sheet(item: $deepLinkedMessageThread) { thread in
+            // Present message thread detail from deep link
+            if let factory = messageThreadDetailViewModelFactory {
+                NavigationStack {
+                    MessageThreadDetailView(viewModel: factory(thread))
+                }
+            }
+        }
+        .onChange(of: deepLinkRouter.pendingDeepLink) { _, pendingDeepLink in
+            guard let deepLink = pendingDeepLink else { return }
+
+            // Handle the deep link based on type
+            switch deepLink {
+            case .messageThread(let topicId):
+                // Fetch thread data and present detail view
+                Task {
+                    messagesViewModel.loadMessages()
+                    // Give a moment for messages to load
+                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                    if let thread = messagesViewModel.messageThreads.first(where: { $0.id == topicId }) {
+                        deepLinkedMessageThread = thread
+                    }
+                    // Clear pending deep link after handling
+                    deepLinkRouter.clearPendingDeepLink()
+                }
+
+            case .todoDetail:
+                // TODO: Implement when todo detail view is available
+                // For now, just switch to the Todos tab (already done by router)
+                deepLinkRouter.clearPendingDeepLink()
+            }
+        }
+    }
+
+    // MARK: - Profile Messaging Helper
+
+    /// Handles "Nachricht senden" from user profile view.
+    /// Creates a UserSearchResult from the profile and pre-fills the compose flow.
+    private func handleSendMessageFromProfile(_ profile: UserProfile) {
+        // Convert UserProfile to UserSearchResult for compose flow
+        let recipient = UserSearchResult(
+            username: profile.username,
+            displayName: profile.displayName,
+            avatarUrl: profile.avatarUrl
+        )
+        selectedRecipient = recipient
+
+        // Create and show compose view with pre-filled recipient
+        if let composeFactory = composeMessageViewModelFactory {
+            let vm = composeFactory()
+            vm.setRecipient(recipient)
+            composeViewModel = vm
+        }
     }
 }
 
@@ -149,8 +223,9 @@ struct MainTabView: View {
     let fakeDiscourseRepo = FakeDiscourseRepository()
     let discourseAPIKeyProvider = KeychainDiscourseAPIKeyProvider(credentialStore: credentialStore)
     let recentRecipientsStore = RecentRecipientsStore()
+    let deviceTokenManager = DeviceTokenManager()
 
-    return MainTabView(
+    MainTabView(
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
         messagesViewModel: MessagesViewModel(
             discourseRepository: fakeDiscourseRepo,
@@ -163,6 +238,8 @@ struct MainTabView: View {
             discourseAPIKeyProvider: discourseAPIKeyProvider,
             credentialStore: credentialStore
         ),
+        notificationSettings: NotificationSettingsManager(deviceTokenManager: deviceTokenManager),
+        deepLinkRouter: DeepLinkRouter(),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
         },
@@ -180,6 +257,9 @@ struct MainTabView: View {
                 discourseRepository: fakeDiscourseRepo,
                 recentRecipientsStorage: recentRecipientsStore
             )
+        },
+        userProfileViewModelFactory: { username in
+            UserProfileViewModel(username: username, discourseRepository: fakeDiscourseRepo)
         }
     )
 }

@@ -542,3 +542,76 @@ struct DiscourseCreatePostResponse: Decodable {
         case topicSlug = "topic_slug"
     }
 }
+
+// MARK: - GET /u/{username}.json Response DTO
+
+/// Root response from Discourse GET /u/{username}.json endpoint.
+/// Contains the full user profile information.
+///
+/// API Reference: GET /u/{username}.json
+struct DiscourseUserProfileResponse: Decodable {
+    let user: DiscourseUserProfileDTO
+}
+
+/// A full user profile from the Discourse API.
+/// Maps to the Domain UserProfile model via toDomainModel().
+///
+/// Note: Some stats fields (post_count, like_count, likes_received) may not be
+/// available for non-staff users. These are optional with defaults of 0.
+struct DiscourseUserProfileDTO: Decodable {
+    let id: Int
+    let username: String
+    let name: String?
+    let avatarTemplate: String?
+    let bioRaw: String?
+    let createdAt: String
+    let postCount: Int?
+    let likeCount: Int?
+    let likesReceived: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case username
+        case name
+        case avatarTemplate = "avatar_template"
+        case bioRaw = "bio_raw"
+        case createdAt = "created_at"
+        case postCount = "post_count"
+        case likeCount = "like_count"
+        case likesReceived = "likes_received"
+    }
+
+    /// Converts this DTO to a domain UserProfile model.
+    /// - Returns: UserProfile if all required fields are valid, nil otherwise
+    func toDomainModel() -> UserProfile? {
+        // Parse the ISO 8601 date
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        guard let joinedAt = formatter.date(from: createdAt) else {
+            return nil
+        }
+
+        // Resolve avatar URL (same pattern as DiscourseUserDTO)
+        var avatarUrl: URL?
+        if let template = avatarTemplate {
+            let resolvedPath = template.replacingOccurrences(of: "{size}", with: "120")
+            if resolvedPath.hasPrefix("http") {
+                avatarUrl = URL(string: resolvedPath)
+            } else {
+                avatarUrl = URL(string: "https://diskussion.piratenpartei.de\(resolvedPath)")
+            }
+        }
+
+        return UserProfile(
+            id: id,
+            username: username,
+            displayName: name,
+            avatarUrl: avatarUrl,
+            bio: bioRaw,
+            joinedAt: joinedAt,
+            postCount: postCount ?? 0,
+            likesGiven: likeCount ?? 0,
+            likesReceived: likesReceived ?? 0
+        )
+    }
+}

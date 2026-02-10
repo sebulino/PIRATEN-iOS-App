@@ -207,6 +207,30 @@ final class RealDiscourseRepository: DiscourseRepository {
         }
     }
 
+    func fetchUserProfile(username: String) async throws -> UserProfile {
+        do {
+            let data = try await apiClient.fetchUserProfile(username: username)
+            let response = try decodeUserProfileResponse(from: data)
+
+            // Map DTO to domain model
+            guard let profile = response.user.toDomainModel() else {
+                throw DiscourseRepositoryError.loadFailed(
+                    message: "Benutzerprofil konnte nicht verarbeitet werden"
+                )
+            }
+
+            return profile
+        } catch let error as DiscourseError {
+            throw mapToRepositoryError(error)
+        } catch let error as DiscourseRepositoryError {
+            throw error
+        } catch {
+            throw DiscourseRepositoryError.loadFailed(
+                message: "Benutzerprofil konnte nicht geladen werden"
+            )
+        }
+    }
+
     // MARK: - Private Helpers
 
     /// Decodes the /latest.json response.
@@ -257,6 +281,16 @@ final class RealDiscourseRepository: DiscourseRepository {
         let decoder = JSONDecoder()
         do {
             return try decoder.decode(DiscourseCreatePostResponse.self, from: data)
+        } catch {
+            throw DiscourseError.decodingError(message: error.localizedDescription)
+        }
+    }
+
+    /// Decodes the GET /u/{username}.json response.
+    private func decodeUserProfileResponse(from data: Data) throws -> DiscourseUserProfileResponse {
+        let decoder = JSONDecoder()
+        do {
+            return try decoder.decode(DiscourseUserProfileResponse.self, from: data)
         } catch {
             throw DiscourseError.decodingError(message: error.localizedDescription)
         }

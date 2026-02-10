@@ -17,6 +17,12 @@ struct ForumView: View {
     /// Factory for creating TopicDetailViewModels
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
 
+    /// Factory for creating UserProfileViewModels
+    var userProfileViewModelFactory: ((String) -> UserProfileViewModel)?
+
+    /// Callback when user taps "Nachricht senden" from a profile
+    var onSendMessageFromProfile: ((UserProfile) -> Void)?
+
     /// The current window for presenting auth session
     @Environment(\.window) private var window: UIWindow?
 
@@ -60,19 +66,35 @@ struct ForumView: View {
 
     // MARK: - State Views
 
+    /// Topics list using ScrollView + LazyVStack instead of List to avoid
+    /// UICollectionView cell dequeue crashes (AttributeGraph cycles).
     @ViewBuilder
     private var topicsList: some View {
-        List(viewModel.topics) { topic in
-            if let factory = topicDetailViewModelFactory {
-                NavigationLink(destination: TopicDetailView(
-                    viewModel: factory(topic),
-                    onLoginTapped: onLoginTapped
-                )) {
-                    TopicRow(topic: topic)
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                ForEach(viewModel.topics) { topic in
+                    if let factory = topicDetailViewModelFactory {
+                        NavigationLink {
+                            TopicDetailView(
+                                viewModel: factory(topic),
+                                onLoginTapped: onLoginTapped,
+                                userProfileViewModelFactory: userProfileViewModelFactory,
+                                onSendMessageFromProfile: onSendMessageFromProfile
+                            )
+                        } label: {
+                            TopicRow(topic: topic)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        TopicRow(topic: topic)
+                    }
+                    Divider()
+                        .padding(.leading, 16)
                 }
-            } else {
-                TopicRow(topic: topic)
             }
+            .padding(.horizontal, 16)
         }
         .refreshable {
             viewModel.refresh()
@@ -217,8 +239,8 @@ private struct TopicRow: View {
 
                 Spacer()
 
-                // Post count
-                Label("\(topic.postsCount)", systemImage: "bubble.left")
+                // Reply count (postsCount includes the original post, so subtract 1)
+                Label("\(max(0, topic.postsCount - 1))", systemImage: "bubble.left")
                     .font(.caption)
                     .foregroundColor(.secondary)
 
