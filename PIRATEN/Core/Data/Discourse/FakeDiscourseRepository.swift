@@ -337,4 +337,23 @@ final class FakeDiscourseRepository: DiscourseRepository {
         // For fake implementation, return a mock topic ID
         return 9999
     }
+
+    func fetchUserProfile(username: String) async throws -> UserProfile {
+        // Simulate network delay (placeholder behavior)
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+
+        // Return a fake profile based on the username
+        let user = fakeUsers.first(where: { $0.username == username }) ?? fakeUsers[0]
+        return UserProfile(
+            id: user.id,
+            username: user.username,
+            displayName: user.displayName,
+            avatarUrl: user.avatarUrl,
+            bio: "Aktives Mitglied der Piratenpartei. Setzt sich ein für digitale Freiheitsrechte, Transparenz und Datenschutz.",
+            joinedAt: Date().addingTimeInterval(-365 * 24 * 60 * 60), // 1 year ago
+            postCount: 142,
+            likesGiven: 89,
+            likesReceived: 203
+        )
+    }
 }

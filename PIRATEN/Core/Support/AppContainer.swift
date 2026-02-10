@@ -147,6 +147,14 @@ final class AppContainer {
         )
     }
 
+    /// Creates a UserProfileViewModel for the given username.
+    /// Used for displaying user profiles when tapping usernames in forum posts and messages.
+    /// - Parameter username: The username to fetch the profile for
+    /// - Returns: A configured UserProfileViewModel
+    func makeUserProfileViewModel(username: String) -> UserProfileViewModel {
+        UserProfileViewModel(username: username, discourseRepository: discourseRepository)
+    }
+
     // MARK: - Initialization
 
     /// Creates the container with default production dependencies.

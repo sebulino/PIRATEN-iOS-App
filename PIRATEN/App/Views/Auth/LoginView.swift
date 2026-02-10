@@ -27,9 +27,9 @@ struct LoginView: View {
                 .fontWeight(.bold)
                 .accessibilityIdentifier("loginTitle")
 
-            Text("Mitglieder-App")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+            // Text("Mitglieder-App")
+            //    .font(.subheadline)
+            //    .foregroundColor(.secondary)
 
             Spacer()
 

@@ -28,6 +28,9 @@ struct MainTabView: View {
     /// Factory for creating ComposeMessageViewModels
     var composeMessageViewModelFactory: (() -> ComposeMessageViewModel)?
 
+    /// Factory for creating UserProfileViewModels
+    var userProfileViewModelFactory: ((String) -> UserProfileViewModel)?
+
     // MARK: - Compose Flow State
 
     /// Whether the recipient picker is being shown
@@ -47,7 +50,11 @@ struct MainTabView: View {
             ForumView(
                 viewModel: forumViewModel,
                 discourseAuthCoordinator: discourseAuthCoordinator,
-                topicDetailViewModelFactory: topicDetailViewModelFactory
+                topicDetailViewModelFactory: topicDetailViewModelFactory,
+                userProfileViewModelFactory: userProfileViewModelFactory,
+                onSendMessageFromProfile: { profile in
+                    handleSendMessageFromProfile(profile)
+                }
             )
                 .tabItem {
                     Label("Forum", systemImage: "bubble.left.and.bubble.right")
@@ -57,6 +64,10 @@ struct MainTabView: View {
             MessagesView(
                 viewModel: messagesViewModel,
                 messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
+                userProfileViewModelFactory: userProfileViewModelFactory,
+                onSendMessageFromProfile: { profile in
+                    handleSendMessageFromProfile(profile)
+                },
                 onComposeTapped: {
                     showingRecipientPicker = true
                 }
@@ -181,6 +192,27 @@ struct MainTabView: View {
             }
         }
     }
+
+    // MARK: - Profile Messaging Helper
+
+    /// Handles "Nachricht senden" from user profile view.
+    /// Creates a UserSearchResult from the profile and pre-fills the compose flow.
+    private func handleSendMessageFromProfile(_ profile: UserProfile) {
+        // Convert UserProfile to UserSearchResult for compose flow
+        let recipient = UserSearchResult(
+            username: profile.username,
+            displayName: profile.displayName,
+            avatarUrl: profile.avatarUrl
+        )
+        selectedRecipient = recipient
+
+        // Create and show compose view with pre-filled recipient
+        if let composeFactory = composeMessageViewModelFactory {
+            let vm = composeFactory()
+            vm.setRecipient(recipient)
+            composeViewModel = vm
+        }
+    }
 }
 
 #Preview {
@@ -225,6 +257,9 @@ struct MainTabView: View {
                 discourseRepository: fakeDiscourseRepo,
                 recentRecipientsStorage: recentRecipientsStore
             )
+        },
+        userProfileViewModelFactory: { username in
+            UserProfileViewModel(username: username, discourseRepository: fakeDiscourseRepo)
         }
     )
 }

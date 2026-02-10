@@ -48,7 +48,7 @@ struct PIRATENApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView(
+            StartupContainerView(
                 authStateManager: container.authStateManager,
                 forumViewModel: container.forumViewModel,
                 messagesViewModel: container.messagesViewModel,
@@ -68,6 +68,9 @@ struct PIRATENApp: App {
                 },
                 composeMessageViewModelFactory: { [container] in
                     container.makeComposeMessageViewModel()
+                },
+                userProfileViewModelFactory: { [container] username in
+                    container.makeUserProfileViewModel(username: username)
                 }
             )
             .onOpenURL { url in

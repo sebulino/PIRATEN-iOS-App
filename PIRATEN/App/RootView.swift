@@ -29,6 +29,9 @@ struct RootView: View {
     /// Factory for creating ComposeMessageViewModels
     var composeMessageViewModelFactory: (() -> ComposeMessageViewModel)?
 
+    /// Factory for creating UserProfileViewModels
+    var userProfileViewModelFactory: ((String) -> UserProfileViewModel)?
+
     var body: some View {
         Group {
             switch authStateManager.currentState {
@@ -50,7 +53,8 @@ struct RootView: View {
                     topicDetailViewModelFactory: topicDetailViewModelFactory,
                     messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
                     recipientPickerViewModelFactory: recipientPickerViewModelFactory,
-                    composeMessageViewModelFactory: composeMessageViewModelFactory
+                    composeMessageViewModelFactory: composeMessageViewModelFactory,
+                    userProfileViewModelFactory: userProfileViewModelFactory
                 )
                 .provideWindow()
             case .failed(let error):

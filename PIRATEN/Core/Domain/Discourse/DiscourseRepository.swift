@@ -80,4 +80,12 @@ protocol DiscourseRepository {
     ///
     /// API Endpoint: POST /posts.json with archetype=private_message
     func createPrivateMessage(recipient: String, title: String, content: String) async throws -> Int
+
+    /// Fetches a full user profile by username.
+    /// - Parameter username: The username to fetch the profile for
+    /// - Returns: The user's full profile information
+    /// - Throws: DiscourseRepositoryError if fetch fails or user not found
+    ///
+    /// API Endpoint: GET /u/{username}.json
+    func fetchUserProfile(username: String) async throws -> UserProfile
 }

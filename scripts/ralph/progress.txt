@@ -397,3 +397,32 @@ Started: Mo.  2 Feb. 2026 12:30:35 CET
   - Unit tests for payload parsing cover all edge cases (missing keys, wrong types, etc.)
   - .sheet(item:) automatically handles dismissal when item becomes nil
 ---
+
+## [2026-02-08 18:50] - M5-004
+- **What was implemented:**
+  - Comprehensive documentation of push notification backend requirements
+  - Two new open questions (Q-014, Q-015) for backend infrastructure
+  - Five new threats (T-014 through T-018) for push notification security
+  - Privacy-first payload content policy with examples
+  - APNs integration requirements and authentication options
+  - Device token registration/deregistration endpoint specifications
+- **Files changed:**
+  - Docs/OPEN_QUESTIONS.md - Added Q-014 (backend infrastructure) and Q-015 (privacy policy)
+  - Docs/THREAT_MODEL.md - Added T-014 through T-018 for push notification threats
+- **Context7 Docs Summary (Apple Developer - APNs):**
+  - APNs payloads transit through Apple servers (not E2E encrypted)
+  - Token-based auth (JWT) recommended over certificates for APNs
+  - Production endpoint: `api.push.apple.com/3/device/<token>`
+  - Sandbox endpoint: `api.sandbox.push.apple.com/3/device/<token>`
+  - Notification service extensions can modify payloads before delivery
+  - Generic notification content recommended for privacy
+- **Learnings for future iterations:**
+  - NEVER include message content or usernames in push payloads
+  - Device tokens are non-sensitive and designed to be stored openly
+  - Actual security risk is unauthorized sending, not token theft
+  - APNs enforces bundle ID matching to prevent cross-app abuse
+  - Badge counts acceptable but per-conversation details should be avoided
+  - Backend must respect user's per-category notification preferences
+  - Token-based APNs auth (JWT with .p8 key) easier to manage than certificates
+  - Notification metadata (timing, frequency) always observable - accept this trade-off
+---
