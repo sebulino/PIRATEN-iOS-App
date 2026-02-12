@@ -52,6 +52,7 @@ struct PIRATENApp: App {
                 authStateManager: container.authStateManager,
                 forumViewModel: container.forumViewModel,
                 messagesViewModel: container.messagesViewModel,
+                knowledgeViewModel: container.knowledgeViewModel,
                 todosViewModel: container.todosViewModel,
                 profileViewModel: container.profileViewModel,
                 discourseAuthCoordinator: container.discourseAuthCoordinator,
@@ -74,6 +75,9 @@ struct PIRATENApp: App {
                 },
                 createTodoViewModelFactory: { [container] in
                     container.makeCreateTodoViewModel()
+                },
+                knowledgeTopicDetailViewModelFactory: { [container] topic in
+                    container.makeKnowledgeTopicDetailViewModel(for: topic)
                 },
                 todoDetailViewModelFactory: { [container] todo in
                     container.makeTodoDetailViewModel(for: todo)

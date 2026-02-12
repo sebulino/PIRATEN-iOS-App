@@ -173,7 +173,7 @@
         "Uses ScrollView + LazyVStack (not List) per project convention",
         "Build passes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M8-013",

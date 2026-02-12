@@ -85,6 +85,9 @@ final class AppContainer {
     /// Todos view model for displaying tasks.
     let todosViewModel: TodosViewModel
 
+    /// Knowledge view model for displaying educational content.
+    let knowledgeViewModel: KnowledgeViewModel
+
     /// Profile view model for displaying user information.
     /// Note: Currently displays PLACEHOLDER DATA until SSO integration.
     let profileViewModel: ProfileViewModel
@@ -98,6 +101,9 @@ final class AppContainer {
     /// Message draft storage for auto-saving in-progress messages.
     /// Stores a single draft that persists across app restarts.
     let messageDraftStore: MessageDraftStore
+
+    /// Reading progress storage for Knowledge Hub topics.
+    let readingProgressStore: ReadingProgressStore
 
     /// Device token manager for APNs registration and storage.
     /// Stores device tokens locally (non-sensitive data).
@@ -161,6 +167,17 @@ final class AppContainer {
         CreateTodoViewModel(todoRepository: todoRepository)
     }
 
+    /// Creates a KnowledgeTopicDetailViewModel for the given topic.
+    /// - Parameter topic: The topic to display in detail
+    /// - Returns: A configured KnowledgeTopicDetailViewModel
+    func makeKnowledgeTopicDetailViewModel(for topic: KnowledgeTopic) -> KnowledgeTopicDetailViewModel {
+        KnowledgeTopicDetailViewModel(
+            topic: topic,
+            repository: FakeKnowledgeRepository(),
+            progressStore: readingProgressStore
+        )
+    }
+
     /// Creates a TodoDetailViewModel for the given todo.
     /// - Parameter todo: The todo to display in detail
     /// - Returns: A configured TodoDetailViewModel
@@ -195,6 +212,7 @@ final class AppContainer {
         // Storage layer
         self.recentRecipientsStore = RecentRecipientsStore()
         self.messageDraftStore = MessageDraftStore()
+        self.readingProgressStore = ReadingProgressStore()
 
         // Push notification layer
         self.deviceTokenManager = DeviceTokenManager()
@@ -264,6 +282,10 @@ final class AppContainer {
             authRepository: authRepository
         )
         self.todosViewModel = TodosViewModel(todoRepository: todoRepository)
+        self.knowledgeViewModel = KnowledgeViewModel(
+            repository: FakeKnowledgeRepository(),
+            progressStore: readingProgressStore
+        )
         self.profileViewModel = ProfileViewModel(authRepository: authRepository)
     }
 
@@ -312,6 +334,7 @@ final class AppContainer {
         // Storage layer (use standard UserDefaults for testing)
         self.recentRecipientsStore = RecentRecipientsStore()
         self.messageDraftStore = MessageDraftStore()
+        self.readingProgressStore = ReadingProgressStore()
 
         // Push notification layer (testing)
         self.deviceTokenManager = DeviceTokenManager()
@@ -328,6 +351,10 @@ final class AppContainer {
             authRepository: self.authRepository
         )
         self.todosViewModel = TodosViewModel(todoRepository: self.todoRepository)
+        self.knowledgeViewModel = KnowledgeViewModel(
+            repository: FakeKnowledgeRepository(),
+            progressStore: readingProgressStore
+        )
         self.profileViewModel = ProfileViewModel(authRepository: self.authRepository)
     }
 }

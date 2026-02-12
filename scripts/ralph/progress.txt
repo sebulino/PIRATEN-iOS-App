@@ -131,3 +131,33 @@ Started: Do. 12 Feb. 2026 15:50:07 CET
   - Completion evaluation runs after every checklist toggle and quiz submit
   - ChecklistItem.id is UUID — stored as uuidString in TopicProgress.checklistCompletions
 ---
+
+## 2026-02-12 22:15 - M8-011
+- Created 7 reusable SwiftUI components in App/Views/Knowledge/Components/
+- Components: SectionCard (accordion), OverviewCard (bullet summary), ChecklistCard (interactive toggles), CalloutView (colored boxes by type), QuizCard (MC questions + feedback + score), NextStepsCard (related topic links), MarkdownTextView (AttributedString with fallback)
+- Files: MarkdownTextView.swift, SectionCard.swift, OverviewCard.swift, ChecklistCard.swift, CalloutView.swift, QuizCard.swift, NextStepsCard.swift
+- **Learnings for future iterations:**
+  - Project uses Xcode 16 file system synchronized root groups — no need to edit project.pbxproj when adding files
+  - All components use callback patterns (closures) rather than direct VM binding — keeps them reusable
+  - SectionCard uses generic Content view builder for flexibility
+  - Brand color orange used for action items and labels; .secondary for metadata
+  - Consistent card styling: secondarySystemGroupedBackground + 12pt cornerRadius + padding
+---
+
+## 2026-02-12 22:30 - M8-012
+- Replaced placeholder KnowledgeView with full home screen
+- NavigationStack with .searchable, sections: Empfohlen (horizontal ScrollView), Weiterlesen (in-progress), Kategorien (2-col LazyVGrid)
+- All 4 states handled: loading, error with retry, loaded, empty
+- Search filters topics across all categories (title + summary + tags, case-insensitive)
+- Pull-to-refresh triggers force reload via .refreshable on ScrollView
+- Uses ScrollView + LazyVStack (not List) per project convention
+- Created stub CategoryDetailView and KnowledgeTopicDetailView (for M8-013 and M8-014)
+- Added TopicProgressProvider protocol for decoupling progress queries
+- Wired KnowledgeViewModel through view hierarchy: AppContainer → PIRATENApp → StartupContainerView → RootView → MainTabView → KnowledgeView
+- Added knowledgeTopicDetailViewModelFactory through the same chain
+- Files changed: KnowledgeView.swift (rewritten), CategoryDetailView.swift (new stub), KnowledgeTopicDetailView.swift (new stub), MainTabView.swift, RootView.swift, StartupContainerView.swift, PIRATENApp.swift, AppContainer.swift
+- **Learnings for future iterations:**
+  - When adding a new ViewModel/factory to a deeply nested view hierarchy (App → Container → Root → Tabs → View), ALL intermediate views must be updated
+  - Swift struct memberwise initializer requires arguments in declaration order — mismatched order causes cryptic errors
+  - Stub views are essential for forward references to views in later milestones
+---
