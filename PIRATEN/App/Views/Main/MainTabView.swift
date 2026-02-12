@@ -273,7 +273,7 @@ struct MainTabView: View {
             progressStore: progressStore
         ),
         todosViewModel: TodosViewModel(todoRepository: FakeTodoRepository()),
-        profileViewModel: ProfileViewModel(authRepository: authRepository),
+        profileViewModel: ProfileViewModel(authRepository: authRepository, discourseRepository: fakeDiscourseRepo),
         discourseAuthCoordinator: DiscourseAuthCoordinator(
             discourseAuthManager: nil,
             discourseAPIKeyProvider: discourseAPIKeyProvider,

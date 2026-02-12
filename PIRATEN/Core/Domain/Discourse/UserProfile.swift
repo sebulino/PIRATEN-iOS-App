@@ -13,8 +13,16 @@ struct UserProfile: Identifiable, Equatable {
     let likesGiven: Int
     let likesReceived: Int
 
-    /// Display text for the user, preferring display name over username
+    /// Display text for the user, preferring display name over username.
+    /// Filters out placeholder values (e.g. "none none") that Discourse may
+    /// store when SSO doesn't provide a real name.
     var displayText: String {
-        displayName ?? username
+        if let name = displayName?.trimmingCharacters(in: .whitespaces),
+           !name.isEmpty,
+           name.lowercased() != "none",
+           name.lowercased() != "none none" {
+            return name
+        }
+        return username
     }
 }

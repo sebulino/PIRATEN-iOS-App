@@ -308,7 +308,7 @@ final class AppContainer {
             repository: realKnowledgeRepository,
             progressStore: readingProgressStore
         )
-        self.profileViewModel = ProfileViewModel(authRepository: authRepository)
+        self.profileViewModel = ProfileViewModel(authRepository: authRepository, discourseRepository: discourseRepository)
     }
 
     /// Creates the container with custom dependencies for testing.
@@ -378,6 +378,6 @@ final class AppContainer {
             repository: knowledgeRepository,
             progressStore: readingProgressStore
         )
-        self.profileViewModel = ProfileViewModel(authRepository: self.authRepository)
+        self.profileViewModel = ProfileViewModel(authRepository: self.authRepository, discourseRepository: self.discourseRepository)
     }
 }
