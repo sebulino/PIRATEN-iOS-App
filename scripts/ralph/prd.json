@@ -216,7 +216,7 @@
         "KnowledgeView receives ViewModel via MainTabView",
         "Build passes, tests pass"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M8-016",
@@ -229,7 +229,7 @@
         "ReadingProgressStore tests use isolated UserDefaults",
         "All tests pass"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M8-017",

@@ -189,3 +189,30 @@ Started: Do. 12 Feb. 2026 15:50:07 CET
   - QuizCard needs selectedAnswers binding + onSelectAnswer + onComplete callbacks
   - ChecklistCard uses closure-based isCompleted/onToggle pattern (not Binding)
 ---
+
+## 2026-02-12 17:00 - M8-015
+- Wired Knowledge Hub into AppContainer with real production dependencies
+- Added KNOWLEDGE_REPO_OWNER, KNOWLEDGE_REPO_NAME, KNOWLEDGE_REPO_BRANCH to Debug.xcconfig, Release.xcconfig, Secrets.sample.xcconfig
+- Added corresponding entries to Info.plist for Bundle.main access
+- Production AppContainer creates GitHubAPIClient → KnowledgeCacheManager → RealKnowledgeRepository
+- Test AppContainer uses FakeKnowledgeRepository
+- makeKnowledgeTopicDetailViewModel factory now uses knowledgeRepository property (not hardcoded fake)
+- KnowledgeViewModel receives real repository in production
+- Files changed: Config/Debug.xcconfig, Config/Release.xcconfig, Config/Secrets.sample.xcconfig, PIRATEN/Info.plist, PIRATEN/Core/Support/AppContainer.swift
+- **Learnings for future iterations:**
+  - Follow existing pattern: read xcconfig values from Bundle.main.infoDictionary with fallback defaults
+  - Keep a `knowledgeRepository` property on AppContainer so factory methods can reference it
+  - Test init should always use Fake repositories for isolation
+---
+
+## 2026-02-12 17:15 - M8-016
+- Created FrontmatterParserTests: valid frontmatter, quoted values, lists, quiz parsing, malformed/missing/empty input, YAML comments/empty lines, parseTopic with defaults/quiz/missing fields
+- Created ContentSectionParserTests: H2 splitting, content before first H2, no H2s, empty body, overview/checklist/nextSteps/mini-quiz sections, TIP/ACHTUNG/MERKSATZ callouts, mixed content, edge cases, section order preservation
+- Created ReadingProgressStoreTests: save/retrieve/clear, checklist completions, quiz results, isolated UserDefaults, corrupted data handling
+- Files created: PIRATENTests/FrontmatterParserTests.swift, PIRATENTests/ContentSectionParserTests.swift, PIRATENTests/ReadingProgressStoreTests.swift
+- **Learnings for future iterations:**
+  - Swift Testing framework (`import Testing`, `@Test`, `#expect`) works with `@testable import PIRATEN`
+  - Must import Foundation explicitly in test files that use UserDefaults, UUID, Date, Data
+  - Use `Issue.record()` for custom failure messages when matching enum cases
+  - Isolated UserDefaults via `UserDefaults(suiteName:)` with unique UUID-based suite names
+---
