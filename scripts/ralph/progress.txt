@@ -216,3 +216,14 @@ Started: Do. 12 Feb. 2026 15:50:07 CET
   - Use `Issue.record()` for custom failure messages when matching enum cases
   - Isolated UserDefaults via `UserDefaults(suiteName:)` with unique UUID-based suite names
 ---
+
+## 2026-02-12 18:00 - M8-017
+- Updated Docs/PROJECT_STATUS.md with M8 milestone section (all 17 stories listed)
+- Updated Docs/DECISIONS.md with 5 new decisions: D-019 (GitHub API), D-020 (file cache), D-021 (UserDefaults progress), D-022 (custom YAML parser), D-023 (native AttributedString)
+- Updated Docs/OPEN_QUESTIONS.md with 3 forward-looking questions: Q-016 (progress sync), Q-017 (preloading), Q-018 (offline bundle)
+- Updated README.md feature table (Knowledge: placeholder → implemented) and architecture tree (Knowledge directories)
+- Files changed: Docs/PROJECT_STATUS.md, Docs/DECISIONS.md, Docs/OPEN_QUESTIONS.md, README.md
+- **Learnings for future iterations:**
+  - Documentation story is the final story in a milestone — update all docs to reflect everything built
+  - Keep decision entries focused on "why" not "what" — the PROJECT_STATUS covers the what
+---
