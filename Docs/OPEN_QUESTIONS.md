@@ -500,7 +500,76 @@ Todo notification:
 
 ---
 
+## Knowledge Hub
+
+### Q-016: Knowledge Progress Sync Across Devices
+
+**Status:** Open
+**Blocking:** Multi-device experience
+**Asked:** 2026-02-12
+
+**Question:**
+Should reading progress (checklist completions, quiz results, read status) sync across devices?
+
+**What we need:**
+- Whether users expect progress to follow them to a new device
+- Server-side storage endpoint for progress data
+- Conflict resolution strategy (last-write-wins vs merge)
+
+**Current implementation:**
+Progress stored locally in UserDefaults. Lost on app reinstall or device change.
+
+---
+
+### Q-017: Knowledge Content Preloading Strategy
+
+**Status:** Open
+**Blocking:** Offline experience improvement
+**Asked:** 2026-02-12
+
+**Question:**
+Should the app preload all knowledge content on first launch or continue with on-demand loading?
+
+**Considerations:**
+- Current approach: Index fetched on Knowledge tab open, topic content fetched on topic open
+- Preloading all content would enable full offline access (~50–100 markdown files)
+- Trade-off: initial download time vs. offline availability
+- GitHub API rate limits (60/hour unauthenticated) may constrain bulk fetching
+
+**Current implementation:**
+On-demand loading with file cache. Cached content available offline after first fetch.
+
+---
+
+### Q-018: Offline Content Bundle for Knowledge Hub
+
+**Status:** Open
+**Blocking:** First-launch experience
+**Asked:** 2026-02-12
+
+**Question:**
+Should a baseline knowledge content bundle be shipped with the app binary?
+
+**Considerations:**
+- First launch currently requires network to see any content
+- Bundling a snapshot of PIRATEN-Kanon ensures content is available immediately
+- Adds to app binary size
+- Bundled content may become stale if not updated
+
+**Current implementation:**
+No bundled content. Empty state shown until first successful fetch.
+
+---
+
 ## Resolved Questions
+
+### Q-019: Create PIRATEN-Kanon GitHub Repository
+
+**Status:** Resolved
+**Asked:** 2026-02-12
+**Resolved:** 2026-02-12
+
+**Answer:** Repository was private, now switched to public. AppContainer uses `RealKnowledgeRepository` pointing at `sebulino/PIRATEN-Kanon`.
 
 (Move questions here once answered)
 

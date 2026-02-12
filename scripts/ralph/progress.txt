@@ -1,428 +1,218 @@
 # Ralph Progress Log
-Started: Mo.  2 Feb. 2026 12:30:35 CET
+Started: Do. 12 Feb. 2026 15:50:07 CET
 ---
 
-## Codebase Patterns
-
-### Message Safety Service Pattern (M4-003)
-- Use a dedicated `MessageSafetyService` for rate limiting and validation
-- Constants in `MessageSafetyConstants` enum for easy auditing
-- Validation returns typed enum (`MessageValidationResult`) with error messages
-- Rate limiting: track `isSendInProgress` and `lastSendTime` for cooldown
-- Never log message content, user identifiers, or any PII in safety code
-- Service is `@MainActor` isolated for UI integration
-- Character count display: show when content exceeds 50% of max length
-
-### Reply Composer UI Pattern (M4-001)
-- Use `@FocusState` for managing text field focus programmatically
-- Place composer at bottom of VStack with main content using `.frame(maxWidth: .infinity, maxHeight: .infinity)`
-- Use `ReplyComposerState` enum to track idle/sending/sent/failed states
-- Disable controls during sending state, show progress indicator on send button
-- Use `TextField` with `axis: .vertical` and `lineLimit(1...6)` for expandable text input
-- Keep error/success banners above the input area with dismiss actions
-
-## [2026-02-02 16:15] - M4-001
-- **What was implemented:**
-  - Reply composer UI for PM thread detail view
-  - Reply button in toolbar and inline "Antworten..." prompt at list bottom
-  - ReplyComposerView with plain text input, send/cancel buttons
-  - Proper handling of unauthenticated state (hides composer)
-  - Send button disabled during sending, shows ProgressView
-  - Success/error banners with dismiss functionality
-  - FocusState integration for keyboard handling
-- **Files changed:**
-  - PIRATEN/App/ViewModels/MessageThreadDetailViewModel.swift - Added ReplyComposerState enum and composer-related properties/methods
-  - PIRATEN/App/Views/Main/MessageThreadDetailView.swift - Added ReplyComposerView and integrated with thread detail
-- **Context7 Docs Summary:**
-  - TextField with `axis: .vertical` enables multiline expandable input
-  - `@FocusState` binding with `.focused()` modifier for programmatic focus control
-  - `onSubmit` modifier triggers action on Return key press
-  - `disabled()` modifier prevents input during sending state
-  - Text binding should be directly bound to ViewModel's `@Published` property
-  - lineLimit with range (1...6) allows dynamic height growth
+## 2026-02-12 19:45 - M8-002
+- Created GitHubAPIClient in Core/Data/Knowledge/
+- Implements fetchDirectoryContents with ETag conditional requests (If-None-Match → 304 .notModified)
+- Implements fetchRawFile for downloading raw content via download_url
+- HTTP 403 with X-RateLimit-Remaining: 0 maps to KnowledgeError.rateLimited
+- GitHubDirectoryResult enum: .modified(items, etag) / .notModified
+- GitHubContentItem DTO for directory listing entries
+- Files changed: PIRATEN/Core/Data/Knowledge/GitHubAPIClient.swift (new)
 - **Learnings for future iterations:**
-  - SwiftUI's TextField now supports multiline via `axis: .vertical` - no need for TextEditor
-  - FocusState binding passed to child views works for programmatic focus
-  - Composer state machine (idle/sending/sent/failed) provides clean UI feedback
-  - Keep send as stub for M4-001, actual API call deferred to M4-002
+  - GitHub Contents API returns ETag header (case varies: "Etag" or "etag"), check both
+  - Public repos don't need auth tokens; the client uses no Authorization header
+  - Rate limit detection: check X-RateLimit-Remaining header on 403 responses
 ---
 
-## [2026-02-02 16:25] - M4-002
-- **What was implemented:**
-  - Discourse API call for replying to PM threads via POST /posts.json
-  - DiscourseAPIClient.replyToMessageThread(topicId:content:) method
-  - DiscourseRepository.replyToThread(topicId:content:) protocol and implementations
-  - Real API integration in MessageThreadDetailViewModel.sendReply()
-  - Proper error mapping to domain errors (unauthorized, forbidden, rateLimited, etc.)
-  - Thread reload after successful reply
-- **Files changed:**
-  - PIRATEN/Core/Data/Discourse/DiscourseAPIClient.swift - Added replyToMessageThread method and CreatePostRequest DTO
-  - PIRATEN/Core/Domain/Discourse/DiscourseRepository.swift - Added replyToThread protocol method
-  - PIRATEN/Core/Data/Discourse/RealDiscourseRepository.swift - Implemented replyToThread
-  - PIRATEN/Core/Data/Discourse/FakeDiscourseRepository.swift - Implemented stub replyToThread
-  - PIRATEN/App/ViewModels/MessageThreadDetailViewModel.swift - Replaced stub with real API call
-  - PIRATENTests/DiscourseReplyTests.swift - Added unit tests for reply functionality
-- **Context7 Docs Summary (Discourse API):**
-  - POST /posts.json endpoint for creating posts/replies
-  - Request body: `topic_id` (required for reply) and `raw` (markdown content)
-  - No category needed for PM replies (only for new topics)
-  - Returns created post with id, topic_id, post_number, cooked (HTML), raw (markdown)
-  - Auth via User-Api-Key header or Bearer token (our implementation uses AuthenticatedHTTPClient)
-  - Error response format: `{"errors": ["message"], "error_type": "..."}`
+## 2026-02-12 20:15 - M8-003
+- Created FrontmatterParser in Core/Data/Knowledge/
+- Parses ---delimited YAML frontmatter from markdown files
+- Handles: scalar key:value, quoted/unquoted strings, simple lists (- item), nested list-of-dicts (for quiz)
+- Returns FrontmatterResult(fields: [String: Any], body: String)? — nil on malformed input
+- Convenience parseTopic() maps fields to KnowledgeTopic domain model
+- Quiz parsing: maps dict with question/options/correct keys to QuizQuestion
+- Files changed: PIRATEN/Core/Data/Knowledge/FrontmatterParser.swift (new)
 - **Learnings for future iterations:**
-  - Discourse PM replies use the same /posts.json endpoint as regular topic replies
-  - Only topic_id and raw are required - no need for archetype or other params
-  - Error parsing extracts messages from Discourse's {"errors": [...]} format
-  - AuthenticatedHTTPClient handles token injection automatically
-  - Test MainActor-isolated classes with @MainActor on test struct
+  - YAML parsing is recursive — list items can contain nested dicts with their own list values
+  - Quiz correct answer comes as string "0", "1" etc. — needs Int conversion
+  - reading_minutes field is string in YAML, needs Int parsing with default fallback
 ---
 
-## [2026-02-02 17:00] - M4-003
-- **What was implemented:**
-  - MessageSafetyService for rate limiting and input validation
-  - Basic rate limiting: one send at a time + 3 second cooldown after success
-  - Input length constraints: max 10,000 characters with validation messages
-  - Character count display in composer UI when approaching limit
-  - Validation error banner in composer
-  - No logging of message content anywhere in safety/composer code
-  - Updated THREAT_MODEL.md with T-009 through T-013 for messaging write actions
-- **Files changed:**
-  - PIRATEN/Core/Support/MessageSafetyService.swift - NEW: Safety service with rate limiting and validation
-  - PIRATEN/App/ViewModels/MessageThreadDetailViewModel.swift - Integrated safety service
-  - PIRATEN/App/Views/Main/MessageThreadDetailView.swift - Added character count and validation UI
-  - Docs/THREAT_MODEL.md - Added messaging write action threats (T-009 to T-013)
-- **Context7 Docs Summary (OWASP MASTG - Mobile Logging/Privacy):**
-  - Never log sensitive data (PII, tokens, message content)
-  - Use typed errors without exposing content in messages
-  - Autocorrection should be disabled for sensitive fields (we use plain TextField)
-  - Client-side rate limiting reduces abuse surface
-  - Validation happens client-side but server is authoritative
-  - Error messages should be generic, not reveal internal state
+## 2026-02-12 21:00 - M8-004
+- Created ContentSectionParser in Core/Data/Knowledge/
+- Splits markdown body by H2 (`## `) headings into typed ContentSection values
+- Special section recognition: Kurzüberblick → .overview, Checkliste → .checklist, Nächste Schritte → .nextSteps, Mini-Quiz → skip
+- Callout detection: blockquotes with TIP:, ACHTUNG:, MERKSATZ: prefixes → .callout
+- Checklist parsing: `- [ ]` and `- [x]` items → ChecklistItem with UUID
+- Bullet list parsing for overview and nextSteps sections
+- Content before first H2 treated as text section with empty heading
+- Files changed: PIRATEN/Core/Data/Knowledge/ContentSectionParser.swift (new)
 - **Learnings for future iterations:**
-  - Default parameter with MainActor init causes compile error - use optional with nil coalescing instead
-  - Character count should use trimmed content length for accurate validation
-  - Keep cooldown short (3s) for good UX while still preventing rapid spam
-  - THREAT_MODEL.md should be updated for each new write action type
-  - Privacy comments in code document the no-logging policy
+  - Callouts are only recognized when the entire section body is a blockquote (no mixed content)
+  - Checklist items get fresh UUIDs on each parse — persistence uses TopicProgress.checklistCompletions keyed by item text/index
+  - Section order is preserved from the original markdown
 ---
 
-## [2026-02-02 21:05] - M4-004
-- **What was implemented:**
-  - Enhanced MessagePostRow with conversational chat-like layout
-  - Avatar circles with user initials and color-coded backgrounds
-  - Improved timestamp formatting: relative for recent (<7 days), date for older
-  - Better visual hierarchy with avatar | content layout
-  - Additional HTML entity decoding (&#39; for apostrophe)
-  - Verified loading/empty/error states consistency with other tabs
-  - Manual refresh already working via .refreshable modifier
-- **Files changed:**
-  - PIRATEN/App/Views/Main/MessageThreadDetailView.swift - Enhanced MessagePostRow styling
-  - PIRATEN/Core/Data/Discourse/DiscourseAuthManager.swift - Added write scope for M4, testable initializer
-  - PIRATENTests/DiscourseAuthManagerTests.swift - Fixed tests for new config, added test helpers
-  - PIRATENUITests/PIRATENUITests.swift - Added -UITestMode flag for clean test state
-  - PIRATEN/App/PIRATENApp.swift - Added UI test mode keychain reset
-- **Context7 Docs Summary (SwiftUI List/Chat Patterns):**
-  - MessageRow pattern: HStack with ZStack (Circle + initials) and content
-  - listRowSpacing(_:) for custom vertical spacing between rows
-  - listRowBackground(_:) for custom row backgrounds
-  - Text.DateStyle: .relative for recent times, .date/.time for absolute
-  - RelativeDateTimeFormatter for localized relative time strings
-  - fixedSize(horizontal: false, vertical: true) for proper text wrapping
+## 2026-02-12 16:06 - M8-005
+- Created KnowledgeCacheManager in Core/Data/Knowledge/
+- File-based cache using <Caches>/Knowledge/ directory
+- Methods: readIndex/writeIndex (index.json), readTopicContent/writeTopicContent (topics/{id}.json), clearCache
+- Atomic writes: write to temp file with UUID name, then moveItem to final destination
+- Graceful nil returns on missing or corrupt files (double-guard: Data + JSONDecoder)
+- Creates cache directory on first write with withIntermediateDirectories: true
+- ISO8601 date encoding for KnowledgeIndex.lastFetched
+- Not @MainActor — synchronous file I/O, called from repository layer
+- Files changed: PIRATEN/Core/Data/Knowledge/KnowledgeCacheManager.swift (new)
 - **Learnings for future iterations:**
-  - Avatar color from username hash provides consistent per-user colors
-  - RelativeDateTimeFormatter with .abbreviated style gives compact output
-  - Hybrid timestamp (relative vs date) improves readability across time ranges
-  - Test fixes: use testable initializers to inject config in unit tests
-  - UI tests need launch arguments to reset app state for clean testing
+  - FileManager.moveItem requires destination to not exist — remove first if present
+  - Using Data.write(to:options:.atomic) for the temp write adds an extra safety layer
+  - Caches directory is system-purgeable — appropriate for re-downloadable content
 ---
 
-## [2026-02-02 22:30] - M4b-001
-- **What was implemented:**
-  - User search API integration for finding message recipients
-  - DiscourseAPIClient.searchUsers(query:) using GET /u/search/users.json
-  - DiscourseUserSearchResponse and DiscourseUserSearchResultDTO for decoding
-  - UserSearchResult domain model with username, displayName, avatarUrl
-  - RealDiscourseRepository.searchUsers with 2-character minimum enforcement
-  - FakeDiscourseRepository.searchUsers for testing/preview
-- **Files changed:**
-  - PIRATEN/Core/Data/Discourse/DiscourseAPIClient.swift - Added searchUsers method
-  - PIRATEN/Core/Data/Discourse/DiscourseDTO.swift - Added user search response DTOs
-  - PIRATEN/Core/Domain/Discourse/UserSearchResult.swift - New domain model
-  - PIRATEN/Core/Domain/Discourse/DiscourseRepository.swift - Added protocol method
-  - PIRATEN/Core/Data/Discourse/RealDiscourseRepository.swift - Implemented search
-  - PIRATEN/Core/Data/Discourse/FakeDiscourseRepository.swift - Fake implementation
-- **Context7 Docs Summary:**
-  - Discourse user search: GET /u/search/users.json?term={query}
-  - Returns users array with username, name, avatar_template fields
-  - avatar_template contains {size} placeholder for resolution
-  - groups array for messageable groups (optional)
+## 2026-02-12 22:30 - M8-006
+- Created RealKnowledgeRepository in Core/Data/Knowledge/
+- Orchestrates GitHubAPIClient, FrontmatterParser, ContentSectionParser, KnowledgeCacheManager
+- fetchIndex: cache-first with 24h TTL, ETag conditional requests, parallel category fetching
+- Parses kanon.json for featured topics and learning paths
+- Parses _category.yml via FrontmatterParser (wrapped in --- delimiters)
+- Parses .md files for topic metadata via FrontmatterParser.parseTopic
+- fetchTopicContent: cache-first, fetches raw markdown, parses sections, appends quiz from frontmatter
+- Graceful fallback to cached data on network failure
+- Ignores _shared and dotfolders when listing categories
+- Files changed: PIRATEN/Core/Data/Knowledge/RealKnowledgeRepository.swift (new)
 - **Learnings for future iterations:**
-  - URL encoding: use URLComponents with queryItems for proper encoding
-  - Minimum query length (2 chars) enforced at repository level returns empty array
-  - UserSearchResult uses username as id since it's unique in Discourse
-  - avatar_template resolution: replace {size} with "120" for standard size
+  - FrontmatterParser can parse _category.yml by wrapping content in --- delimiters
+  - withTaskGroup works well for parallel category fetching; nonisolated methods needed for @MainActor class
+  - kanon.json uses simple JSON structure: {"featured": [...], "paths": [...]}
 ---
 
-## [2026-02-02 22:45] - M4b-002
-- **What was implemented:**
-  - RecentRecipientsStore with UserDefaults backing
-  - RecentRecipientsStorage protocol for testability
-  - Store up to 10 recent recipients, most recent first
-  - Integration with AuthStateManager.logout() to clear on logout
-  - Wired into AppContainer for dependency injection
-- **Files changed:**
-  - PIRATEN/Core/Data/Storage/RecentRecipientsStore.swift - New storage implementation
-  - PIRATEN/Core/Domain/Auth/AuthStateManager.swift - Added storage dependency, clear on logout
-  - PIRATEN/Core/Support/AppContainer.swift - Added storage instantiation and wiring
+## 2026-02-12 23:30 - M8-007
+- Created FakeKnowledgeRepository in Core/Data/Knowledge/
+- Implements full KnowledgeRepository protocol with hardcoded sample data
+- 2 categories (Kommunalpolitik, Digitale Rechte), 4 topics, 1 full TopicContent
+- TopicContent covers all section types: overview, text, checklist, quiz, nextSteps, callout (tip, warning, keyTakeaway)
+- Simulates 100ms async delay for realistic behavior
+- Throws KnowledgeError.notFound for unknown topic IDs
+- Files changed: PIRATEN/Core/Data/Knowledge/FakeKnowledgeRepository.swift (new)
 - **Learnings for future iterations:**
-  - Optional dependency injection: use `RecentRecipientsStorage?` to avoid breaking existing tests
-  - UserDefaults is thread-safe, no additional synchronization needed
-  - Store only usernames (public identifiers), never PII
-  - addRecipient() moves existing username to front (no duplicates)
+  - Use deterministic UUIDs (UUID(uuidString:)!) for stable preview/test data
+  - Follow FakeDiscourseRepository pattern: @MainActor, stored properties for static data, computed or init-built for composed data
 ---
 
-## [2026-02-02 23:00] - M4b-003
-- **What was implemented:**
-  - RecipientPickerViewModel with debounced user search (300ms)
-  - RecipientPickerView with searchable modifier and sections
-  - Recent recipients section showing up to 5 entries
-  - Search results section with loading/error/empty states
-  - RecipientRow with avatar initials and consistent color from username hash
-  - Factory method in AppContainer for ViewModel creation
-- **Files changed:**
-  - PIRATEN/App/ViewModels/RecipientPickerViewModel.swift - New ViewModel
-  - PIRATEN/App/Views/Main/RecipientPickerView.swift - New View
-  - PIRATEN/Core/Support/AppContainer.swift - Added factory method
-- **Context7 Docs Summary (SwiftUI searchable):**
-  - .searchable(text:placement:prompt:) adds search field to NavigationStack
-  - .navigationBarDrawer(displayMode: .always) keeps search always visible
-  - Binding<String> for two-way sync with search text state
-  - .onChange(of:) modifier to trigger search on text changes
-  - Section headers with string literals for grouped lists
+## [2026-02-12 18:45] - M8-008
+- Implemented ReadingProgressStore with ReadingProgressStorage protocol
+- UserDefaults-backed with JSON-encoded [String: TopicProgress] dictionary
+- Methods: getProgress(for:), getAllProgress(), saveProgress(_:), clearAll()
+- Follows RecentRecipientsStore pattern: protocol + constructor-injected UserDefaults
+- Silently clears corrupted data on decode failure
+- Files changed: PIRATEN/Core/Data/Storage/ReadingProgressStore.swift (new)
 - **Learnings for future iterations:**
-  - Debounce via Task.sleep + cancellation for clean async search
-  - Task cancellation check both before and after async work
-  - Avatar color from username.hashValue provides consistent per-user colors
-  - contentShape(Rectangle()) makes entire row tappable, not just text
+  - Project uses PBXFileSystemSynchronizedRootGroup — no manual pbxproj edits needed for new files
+  - Storage pattern is consistent: protocol, UserDefaults key constant, injectable UserDefaults, clearAll for logout
 ---
 
-## [2026-02-02 23:30] - M4b-004
-- **What was implemented:**
-  - ComposeMessageViewModel with recipient, subject, body state
-  - ComposeMessageView with three sections: recipient, subject, body
-  - Reuses MessageSafetyService for body validation and character counting
-  - Cancel confirmation alert when content exists
-  - Character count shown when over 50% of max limit
-  - Recipient section with avatar and tap-to-change action
-  - createPrivateMessage stub added to repository (API in M4b-005)
-- **Files changed:**
-  - PIRATEN/App/ViewModels/ComposeMessageViewModel.swift - New ViewModel
-  - PIRATEN/App/Views/Main/ComposeMessageView.swift - New View
-  - PIRATEN/Core/Domain/Discourse/DiscourseRepository.swift - Added protocol method
-  - PIRATEN/Core/Data/Discourse/RealDiscourseRepository.swift - Added stub
-  - PIRATEN/Core/Data/Discourse/FakeDiscourseRepository.swift - Added stub
-  - PIRATEN/Core/Data/Discourse/DiscourseAPIClient.swift - Added API method + DTO
-  - PIRATEN/Core/Support/AppContainer.swift - Added factory method
+## 2026-02-12 21:15 - M8-009
+- Created KnowledgeViewModel with KnowledgeLoadState enum (idle/loading/loaded/error)
+- @MainActor ObservableObject with @Published loadState, index, searchQuery
+- Computed properties: categories, featuredTopics (from index.featuredTopicIds), inProgressTopics (from progress store, sorted by lastOpenedAt), searchResults (case-insensitive filter on title + summary + tags)
+- Methods: loadIndex(forceRefresh:), topicsForCategory(_:), progress(for:)
+- Constructor-injected KnowledgeRepository and ReadingProgressStorage
+- Files changed: PIRATEN/App/ViewModels/KnowledgeViewModel.swift (new)
 - **Learnings for future iterations:**
-  - FocusState with enum allows keyboard navigation between fields
-  - submitLabel(.next) and onSubmit for field-to-field navigation
-  - TextField with axis: .vertical and lineLimit(5...15) for multiline
-  - Confirmation alert pattern: @State bool + Button role: .destructive
-  - Combine import required for @Published in ObservableObject
+  - Must import Combine alongside Foundation for ObservableObject/@Published to work
+  - ViewModel pattern: enum LoadState per VM, Task {} for async, private(set) on @Published
+  - searchResults returns nil (no search active) vs empty array (no matches) — useful for UI state
 ---
 
-## [2026-02-03 00:15] - M4b-005
-- **What was implemented:**
-  - Full createPrivateMessage API integration with topic ID return for navigation
-  - DiscourseCreatePostResponse DTO to parse the API response
-  - Updated repository protocol to return Int (topic_id) instead of void
-  - ComposeMessageState.sent now includes topicId for navigation to new thread
-  - ComposeMessageView callback passes topic ID to parent for navigation
-- **Files changed:**
-  - PIRATEN/Core/Data/Discourse/DiscourseDTO.swift - Added DiscourseCreatePostResponse DTO
-  - PIRATEN/Core/Domain/Discourse/DiscourseRepository.swift - Updated return type to Int
-  - PIRATEN/Core/Data/Discourse/RealDiscourseRepository.swift - Parse response, return topicId
-  - PIRATEN/Core/Data/Discourse/FakeDiscourseRepository.swift - Return mock topic ID
-  - PIRATEN/App/ViewModels/ComposeMessageViewModel.swift - State includes topicId
-  - PIRATEN/App/Views/Main/ComposeMessageView.swift - Pass topicId in callback
-- **Context7 Docs Summary (Discourse POST /posts.json):**
-  - POST /posts.json creates new topics/posts, same endpoint for PMs
-  - archetype parameter: 'regular' (default) or 'private_message' for PMs
-  - For PMs: target_recipients (username), title, raw (content) are required
-  - Response includes: id (post), topic_id (thread), post_number, username, cooked
-  - topic_id from response is essential for navigating to the newly created thread
+## 2026-02-12 23:55 - M8-010
+- Created KnowledgeTopicDetailViewModel in App/ViewModels/
+- @MainActor ObservableObject managing content loading, section expand/collapse, checklist toggle, quiz submission, progress tracking
+- Progress transitions: unread → started (markAsStarted on appear) → completed (evaluateCompletion rule)
+- Checklist toggle persists immediately via progressStore.saveProgress
+- Quiz submission: calculates correct count, persists quizCorrectCount/quizTotalCount
+- Completion rule: all checklist items checked (if any) AND quiz submitted (if any)
+- Restores persisted progress and quiz state from store on init
+- Section expand/collapse tracked via Set<Int> (expandedSections)
+- Files changed: PIRATEN/App/ViewModels/KnowledgeTopicDetailViewModel.swift (new)
 - **Learnings for future iterations:**
-  - createPrivateMessage must return topic_id for navigation, not void
-  - State enum can carry associated values (sent(topicId:)) for passing data
-  - Callbacks can be parameterized to pass navigation data from child to parent
-  - Discourse uses same /posts.json endpoint for both topics and PMs, differing by archetype
+  - Reuse KnowledgeLoadState enum across VMs — no need to duplicate
+  - Completion evaluation runs after every checklist toggle and quiz submit
+  - ChecklistItem.id is UUID — stored as uuidString in TopicProgress.checklistCompletions
 ---
 
-## [2026-02-03 00:45] - M4b-006
-- **What was implemented:**
-  - MessageDraft model with recipient, subject, body, timestamp
-  - MessageDraftStorage protocol for testable storage abstraction
-  - MessageDraftStore with UserDefaults backing (single draft storage)
-  - ComposeMessageViewModel integration: checkForDraft, saveDraft, restoreFromDraft, discardDraft
-  - Draft auto-save on view disappear (unless sent)
-  - Draft restore prompt on view appear when pending draft exists
-  - Draft cleared after successful send
-- **Files changed:**
-  - PIRATEN/Core/Data/Storage/MessageDraftStore.swift - NEW: Draft model and storage
-  - PIRATEN/App/ViewModels/ComposeMessageViewModel.swift - Added draft management methods
-  - PIRATEN/App/Views/Main/ComposeMessageView.swift - Added restore prompt, onAppear/onDisappear hooks
-  - PIRATEN/Core/Support/AppContainer.swift - Added messageDraftStore dependency
+## 2026-02-12 22:15 - M8-011
+- Created 7 reusable SwiftUI components in App/Views/Knowledge/Components/
+- Components: SectionCard (accordion), OverviewCard (bullet summary), ChecklistCard (interactive toggles), CalloutView (colored boxes by type), QuizCard (MC questions + feedback + score), NextStepsCard (related topic links), MarkdownTextView (AttributedString with fallback)
+- Files: MarkdownTextView.swift, SectionCard.swift, OverviewCard.swift, ChecklistCard.swift, CalloutView.swift, QuizCard.swift, NextStepsCard.swift
 - **Learnings for future iterations:**
-  - Use Codable for UserDefaults storage of complex types (encode/decode as Data)
-  - onAppear/onDisappear in SwiftUI for lifecycle-based save/restore
-  - Alert with if-let in message block for conditional draft info display
-  - Protocol abstraction (MessageDraftStorage) enables easy testing
-  - Single draft storage is simpler than multi-draft - clear on restore or discard
+  - Project uses Xcode 16 file system synchronized root groups — no need to edit project.pbxproj when adding files
+  - All components use callback patterns (closures) rather than direct VM binding — keeps them reusable
+  - SectionCard uses generic Content view builder for flexibility
+  - Brand color orange used for action items and labels; .secondary for metadata
+  - Consistent card styling: secondarySystemGroupedBackground + 12pt cornerRadius + padding
 ---
 
-## [2026-02-03 01:30] - M4b-007
-- **What was implemented:**
-  - Floating Action Button (FAB) on Messages tab for creating new messages
-  - FAB uses orange tint matching app theme with square.and.pencil icon
-  - FAB only visible when authenticated (loaded, loading, error states)
-  - FAB positioned bottom-right with safe area handling
-  - Complete compose flow: FAB -> Recipient Picker -> Compose View
-  - Sheet presentations for both picker and compose screens
-  - Message list refresh after successful send
-- **Files changed:**
-  - PIRATEN/App/Views/Main/MessagesView.swift - Added FAB with ZStack overlay
-  - PIRATEN/App/Views/Main/MainTabView.swift - Added compose flow state and sheets
-  - PIRATEN/App/RootView.swift - Added compose factory parameters
-  - PIRATEN/App/PIRATENApp.swift - Wired compose factories from AppContainer
+## 2026-02-12 22:30 - M8-012
+- Replaced placeholder KnowledgeView with full home screen
+- NavigationStack with .searchable, sections: Empfohlen (horizontal ScrollView), Weiterlesen (in-progress), Kategorien (2-col LazyVGrid)
+- All 4 states handled: loading, error with retry, loaded, empty
+- Search filters topics across all categories (title + summary + tags, case-insensitive)
+- Pull-to-refresh triggers force reload via .refreshable on ScrollView
+- Uses ScrollView + LazyVStack (not List) per project convention
+- Created stub CategoryDetailView and KnowledgeTopicDetailView (for M8-013 and M8-014)
+- Added TopicProgressProvider protocol for decoupling progress queries
+- Wired KnowledgeViewModel through view hierarchy: AppContainer → PIRATENApp → StartupContainerView → RootView → MainTabView → KnowledgeView
+- Added knowledgeTopicDetailViewModelFactory through the same chain
+- Files changed: KnowledgeView.swift (rewritten), CategoryDetailView.swift (new stub), KnowledgeTopicDetailView.swift (new stub), MainTabView.swift, RootView.swift, StartupContainerView.swift, PIRATENApp.swift, AppContainer.swift
 - **Learnings for future iterations:**
-  - ZStack with alignment: .bottomTrailing for FAB positioning
-  - Conditional rendering based on auth state for authenticated-only UI
-  - Chain multiple sheets: dismiss first, then present second via state
-  - Factory closures capture container reference with [container] for DI
-  - accessibilityLabel for FAB buttons improves VoiceOver support
+  - When adding a new ViewModel/factory to a deeply nested view hierarchy (App → Container → Root → Tabs → View), ALL intermediate views must be updated
+  - Swift struct memberwise initializer requires arguments in declaration order — mismatched order causes cryptic errors
+  - Stub views are essential for forward references to views in later milestones
 ---
 
-## [2026-02-03 14:30] - M5-001
-- **What was implemented:**
-  - NotificationSettingsManager for handling UNUserNotificationCenter
-  - Notification settings section in ProfileView with toggles for Messages and Todos
-  - Both toggles default to off (privacy-first)
-  - Permission requested only when user explicitly enables a toggle
-  - Clear German copy explaining what's sent and no tracking
-  - System settings link when permissions are denied
-- **Files changed:**
-  - PIRATEN/Core/Support/NotificationSettingsManager.swift - NEW: Notification preferences manager
-  - PIRATEN/App/Views/Main/ProfileView.swift - Added notification settings section
-  - PIRATEN/App/Views/Main/MainTabView.swift - Pass notificationSettings to ProfileView
-  - PIRATEN/App/RootView.swift - Pass notificationSettings to MainTabView
-  - PIRATEN/App/PIRATENApp.swift - Wire notificationSettingsManager from container
-  - PIRATEN/Core/Support/AppContainer.swift - Added notificationSettingsManager
-- **Context7 Docs Summary (Apple Developer - UNUserNotificationCenter):**
-  - Use `UNUserNotificationCenter.current().requestAuthorization(options:)` for permission
-  - Options: `.alert`, `.sound`, `.badge` for standard notifications
-  - Use `notificationSettings()` to check current authorization status
-  - Status can be: `.notDetermined`, `.authorized`, `.denied`, `.provisional`
-  - Always check status before scheduling notifications
+## [2026-02-12 14:30] - M8-013
+- Replaced CategoryDetailView stub with full implementation
+- Category header with icon, title, description
+- ScrollView + LazyVStack topic list with title, summary (2 lines), reading time, level badge, status icon
+- NavigationLink to KnowledgeTopicDetailView via factory
+- Empty state for categories with no topics
+- Files changed: PIRATEN/App/Views/Main/CategoryDetailView.swift
 - **Learnings for future iterations:**
-  - UNUserNotificationCenter requires UIKit import for UIApplication.openSettingsURLString
-  - UserDefaults for simple notification preferences (non-sensitive)
-  - Toggle binding directly to @Published property for automatic persistence
-  - Privacy-first: request permission only on explicit user action, not on app launch
+  - TopicProgressProvider protocol decouples progress queries from KnowledgeViewModel — reuse this pattern for any view needing progress
+  - Existing TopicListRow in KnowledgeView is private; CategoryDetailView replicates the pattern inline since extracting would require a separate story
+  - Preview uses a private PreviewProgressProvider conformance to avoid dependency on full ViewModel
 ---
 
-## [2026-02-08 16:42] - M5-002
-- **What was implemented:**
-  - DeviceTokenManager for APNs device token storage and management
-  - AppDelegate integrated via @UIApplicationDelegateAdaptor for APNs callbacks
-  - NotificationSettingsManager triggers registerForRemoteNotifications when permission granted
-  - Device token stored in UserDefaults (non-sensitive data) for backend registration
-  - Privacy: device token never logged in full (only first 2 bytes in debug builds)
-  - Device token cleared on logout to respect privacy
-- **Files changed:**
-  - PIRATEN/Core/Support/DeviceTokenManager.swift - NEW: Manages APNs token storage
-  - PIRATEN/App/AppDelegate.swift - NEW: Handles APNs lifecycle callbacks
-  - PIRATEN/Core/Support/NotificationSettingsManager.swift - Added deviceTokenManager dependency, triggers registration
-  - PIRATEN/App/PIRATENApp.swift - Integrated AppDelegate via @UIApplicationDelegateAdaptor
-  - PIRATEN/Core/Support/AppContainer.swift - Added deviceTokenManager to DI container
-  - PIRATEN/App/Views/Main/MainTabView.swift - Fixed preview with deviceTokenManager
-  - PIRATEN/App/Views/Main/ProfileView.swift - Fixed preview with deviceTokenManager
-  - PIRATEN/App/RootView.swift - Fixed preview with deviceTokenManager
-- **Context7 Docs Summary (Apple Developer - APNs Registration):**
-  - `UIApplication.shared.registerForRemoteNotifications()` initiates APNs registration
-  - Callbacks: `didRegisterForRemoteNotificationsWithDeviceToken` (success) and `didFailToRegisterForRemoteNotificationsWithError` (failure)
-  - `@UIApplicationDelegateAdaptor` integrates UIKit AppDelegate in SwiftUI apps
-  - Device token is Data type, convert to hex string for backend transmission
-  - Registration should be called after user grants notification permission
+## 2026-02-12 16:52 - M8-014
+- Implemented full KnowledgeTopicDetailView (lesson view) replacing the stub
+- Header with title, tags (chips), level badge, reading time
+- ScrollView + LazyVStack rendering all section types: overview, text, checklist, callout, quiz, nextSteps
+- Loading/error/loaded states with retry button
+- Calls markAsStarted on appear, loadContent on appear (only if content not already loaded)
+- Offline: cached content shown via repository's cache-first strategy
+- Files changed: PIRATEN/App/Views/Main/KnowledgeTopicDetailView.swift
 - **Learnings for future iterations:**
-  - AppDelegate needs Combine import for @Published properties in DeviceTokenManager
-  - UIKit import required for UIApplication.shared.registerForRemoteNotifications()
-  - @UIApplicationDelegateAdaptor allows wiring dependencies after init via property assignment
-  - Device token hex conversion: `token.map { String(format: "%02x", $0) }.joined()`
-  - Privacy: log only token prefix (2 bytes) in debug, never full token
-  - SwiftUI previews need explicit return removal in modern SwiftUI
+  - All Knowledge components are in Views/Knowledge/Components/ and have clean interfaces
+  - SectionCard is generic with @ViewBuilder content closure
+  - QuizCard needs selectedAnswers binding + onSelectAnswer + onComplete callbacks
+  - ChecklistCard uses closure-based isCompleted/onToggle pattern (not Binding)
 ---
 
-## [2026-02-08 18:32] - M5-003
-- **What was implemented:**
-  - DeepLink enum for representing notification destinations (message thread, todo detail)
-  - DeepLinkRouter to manage navigation state and tab switching
-  - AppDelegate.userNotificationCenter(_:didReceive:) for handling notification taps
-  - MainTabView programmatic tab selection via binding to selectedTab
-  - Deep link navigation handler with .onChange to consume pending deep links
-  - Sheet presentation for deep-linked message threads
-  - Pending deep link persists through unauthenticated state (handled on login)
-  - DeepLinkTests with 8 test cases covering payload parsing edge cases
-- **Files changed:**
-  - PIRATEN/Core/Domain/DeepLink/DeepLink.swift - NEW: Deep link model with payload parsing
-  - PIRATEN/Core/Domain/DeepLink/DeepLinkRouter.swift - NEW: Navigation state manager
-  - PIRATEN/App/AppDelegate.swift - Added UNUserNotificationCenterDelegate, notification tap handling
-  - PIRATEN/Core/Support/AppContainer.swift - Added deepLinkRouter dependency
-  - PIRATEN/App/PIRATENApp.swift - Wired deepLinkRouter to AppDelegate and RootView
-  - PIRATEN/App/RootView.swift - Pass deepLinkRouter to MainTabView, preserve pending deep link during login
-  - PIRATEN/App/Views/Main/MainTabView.swift - Added tab tags, selection binding, deep link handler
-  - PIRATENTests/DeepLinkTests.swift - NEW: Unit tests for deep link parsing
-- **Context7 Docs Summary (Apple Developer - Notifications & Navigation):**
-  - UNUserNotificationCenterDelegate must be set before app finishes launching
-  - `userNotificationCenter(_:didReceive:withCompletionHandler:)` called when user taps notification
-  - NavigationStack supports programmatic navigation via path binding
-  - TabView selection binding allows programmatic tab switching
-  - .onChange(of:) modifier watches for state changes and triggers navigation
-  - Sheet presentation with `item:` binding for presenting detail views
+## 2026-02-12 17:00 - M8-015
+- Wired Knowledge Hub into AppContainer with real production dependencies
+- Added KNOWLEDGE_REPO_OWNER, KNOWLEDGE_REPO_NAME, KNOWLEDGE_REPO_BRANCH to Debug.xcconfig, Release.xcconfig, Secrets.sample.xcconfig
+- Added corresponding entries to Info.plist for Bundle.main access
+- Production AppContainer creates GitHubAPIClient → KnowledgeCacheManager → RealKnowledgeRepository
+- Test AppContainer uses FakeKnowledgeRepository
+- makeKnowledgeTopicDetailViewModel factory now uses knowledgeRepository property (not hardcoded fake)
+- KnowledgeViewModel receives real repository in production
+- Files changed: Config/Debug.xcconfig, Config/Release.xcconfig, Config/Secrets.sample.xcconfig, PIRATEN/Info.plist, PIRATEN/Core/Support/AppContainer.swift
 - **Learnings for future iterations:**
-  - Deep link payload parsing should return Optional for safe handling of malformed data
-  - DeepLinkRouter holds pending deep link until consumed by UI layer
-  - Programmatic tab switching: bind TabView selection to @Published property
-  - Pending deep links preserved across auth state changes (login/logout)
-  - Message thread ID is `id`, not `topicId` - domain model uses Identifiable
-  - Unit tests for payload parsing cover all edge cases (missing keys, wrong types, etc.)
-  - .sheet(item:) automatically handles dismissal when item becomes nil
+  - Follow existing pattern: read xcconfig values from Bundle.main.infoDictionary with fallback defaults
+  - Keep a `knowledgeRepository` property on AppContainer so factory methods can reference it
+  - Test init should always use Fake repositories for isolation
 ---
 
-## [2026-02-08 18:50] - M5-004
-- **What was implemented:**
-  - Comprehensive documentation of push notification backend requirements
-  - Two new open questions (Q-014, Q-015) for backend infrastructure
-  - Five new threats (T-014 through T-018) for push notification security
-  - Privacy-first payload content policy with examples
-  - APNs integration requirements and authentication options
-  - Device token registration/deregistration endpoint specifications
-- **Files changed:**
-  - Docs/OPEN_QUESTIONS.md - Added Q-014 (backend infrastructure) and Q-015 (privacy policy)
-  - Docs/THREAT_MODEL.md - Added T-014 through T-018 for push notification threats
-- **Context7 Docs Summary (Apple Developer - APNs):**
-  - APNs payloads transit through Apple servers (not E2E encrypted)
-  - Token-based auth (JWT) recommended over certificates for APNs
-  - Production endpoint: `api.push.apple.com/3/device/<token>`
-  - Sandbox endpoint: `api.sandbox.push.apple.com/3/device/<token>`
-  - Notification service extensions can modify payloads before delivery
-  - Generic notification content recommended for privacy
+## 2026-02-12 17:15 - M8-016
+- Created FrontmatterParserTests: valid frontmatter, quoted values, lists, quiz parsing, malformed/missing/empty input, YAML comments/empty lines, parseTopic with defaults/quiz/missing fields
+- Created ContentSectionParserTests: H2 splitting, content before first H2, no H2s, empty body, overview/checklist/nextSteps/mini-quiz sections, TIP/ACHTUNG/MERKSATZ callouts, mixed content, edge cases, section order preservation
+- Created ReadingProgressStoreTests: save/retrieve/clear, checklist completions, quiz results, isolated UserDefaults, corrupted data handling
+- Files created: PIRATENTests/FrontmatterParserTests.swift, PIRATENTests/ContentSectionParserTests.swift, PIRATENTests/ReadingProgressStoreTests.swift
 - **Learnings for future iterations:**
-  - NEVER include message content or usernames in push payloads
-  - Device tokens are non-sensitive and designed to be stored openly
-  - Actual security risk is unauthorized sending, not token theft
-  - APNs enforces bundle ID matching to prevent cross-app abuse
-  - Badge counts acceptable but per-conversation details should be avoided
-  - Backend must respect user's per-category notification preferences
-  - Token-based APNs auth (JWT with .p8 key) easier to manage than certificates
-  - Notification metadata (timing, frequency) always observable - accept this trade-off
+  - Swift Testing framework (`import Testing`, `@Test`, `#expect`) works with `@testable import PIRATEN`
+  - Must import Foundation explicitly in test files that use UserDefaults, UUID, Date, Data
+  - Use `Issue.record()` for custom failure messages when matching enum cases
+  - Isolated UserDefaults via `UserDefaults(suiteName:)` with unique UUID-based suite names
 ---

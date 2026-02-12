@@ -17,3 +17,8 @@ DISCOURSE_CLIENT_ID = de.meine-piraten.ios-app
 DISCOURSE_AUTH_REDIRECT_SCHEME = piratenapp
 DISCOURSE_AUTH_REDIRECT_HOST = discourse_auth
 DISCOURSE_APP_NAME = PIRATEN iOS App
+
+// Knowledge Hub GitHub Repository Configuration
+KNOWLEDGE_REPO_OWNER = sebulino
+KNOWLEDGE_REPO_NAME = PIRATEN-Kanon
+KNOWLEDGE_REPO_BRANCH = main

@@ -1,62 +1,103 @@
 # Project Status
 
-Last updated: 2026-02-10 (M7 — Real Todo API Integration)
+Last updated: 2026-02-12 (M8 — Knowledge Hub)
 
 ## Current Milestone
 
-**Milestone 7: Real Todo API Integration** — Complete
+**Milestone 8: Knowledge Hub (Wissen)** — Complete
 
-Goal: Replace the fake in-memory Todo implementation with a real REST API client connected to the meine-piraten.de Rails server.
+Goal: Fetch educational content from the public GitHub repo sebulino/PIRATEN-Kanon, cache it locally, and present interactive lessons with progress tracking, quizzes, and checklists.
 
-## Milestone 7 Progress
+## Milestone 8 Progress
 
 | Story ID | Title | Status |
 |----------|-------|--------|
-| M7-001 | Document the meine-piraten.de API | Complete |
-| M7-002 | Add status and assignee to tasks (server) | Complete |
-| M7-003 | Add comments model and REST API (server) | Complete |
-| M7-004 | Align iOS domain model to server schema | Complete |
-| M7-005 | Create DTOs and TodoAPIClient | Complete |
-| M7-006 | Create RealTodoRepository | Complete |
-| M7-007 | Wire RealTodoRepository in AppContainer | Complete |
+| M8-001 | Domain models and repository protocol | Complete |
+| M8-002 | GitHub API client | Complete |
+| M8-003 | YAML frontmatter parser | Complete |
+| M8-004 | Markdown content parser | Complete |
+| M8-005 | File cache manager | Complete |
+| M8-006 | RealKnowledgeRepository | Complete |
+| M8-007 | FakeKnowledgeRepository | Complete |
+| M8-008 | ReadingProgressStore | Complete |
+| M8-009 | KnowledgeViewModel (home screen) | Complete |
+| M8-010 | KnowledgeTopicDetailViewModel | Complete |
+| M8-011 | Reusable Knowledge UI components | Complete |
+| M8-012 | KnowledgeView (home screen) | Complete |
+| M8-013 | CategoryDetailView | Complete |
+| M8-014 | KnowledgeTopicDetailView (lesson view) | Complete |
+| M8-015 | Configuration and AppContainer wiring | Complete |
+| M8-016 | Unit tests | Complete |
+| M8-017 | Update project documentation | Complete |
 
 ## Completed Work
 
-### M7-001–003: Server Extensions (meine-piraten-server)
-- Documented all API endpoints in `docs/API_OVERVIEW.md`
-- Added `status` (string, default "open") and `assignee` (string, nullable) to tasks table
-- Model validation: status must be one of "open", "claimed", "done"
-- Created Comments model (belongs_to :task) with nested REST endpoints
-- Routes: `GET/POST /tasks/:task_id/comments.json`, `DELETE /tasks/:task_id/comments/:id.json`
+### M8-001: Domain Models
+- `KnowledgeCategory`, `KnowledgeTopic`, `QuizQuestion`, `TopicContent`, `ContentSection`, `ChecklistItem`, `CalloutType` (with custom Codable)
+- `ReadingProgress` with `ReadingStatus` and `TopicProgress`
+- `KnowledgeIndex` with `LearningPath`
+- `KnowledgeRepository` protocol (`@MainActor`) with `KnowledgeError` enum
 
-### M7-004: iOS Domain Model Alignment
-- Removed `OwnerType` and `Priority` enums
-- `Todo` struct now uses `entityId`, `categoryId`, `urgent`, `activityPoints`, `timeNeededInHours`, `creatorName`
-- Created `Entity` and `TodoCategory` domain models
-- Added `fetchEntities()` and `fetchCategories()` to `TodoRepository` protocol
-- Updated `createTodo` signature to take `entityId`/`categoryId`/`urgent`
-- Updated all views: entity/category pickers in CreateTodoView, urgent display in detail/row
-- Updated FakeTodoRepository with fake entities and categories
+### M8-002: GitHub API Client
+- `GitHubAPIClient` with HTTPClient injection, supports ETag conditional requests (If-None-Match → 304)
+- Raw file fetching via download_url
+- Rate limit detection from 403 + X-RateLimit headers → `KnowledgeError.rateLimited`
 
-### M7-005: DTOs and API Client
-- `TaskDTO`, `EntityDTO`, `CategoryDTO`, `CommentDTO` with snake_case CodingKeys
-- Each DTO has `toDomainModel()` mapping to domain structs
-- `TodoAPIClient` follows `DiscourseAPIClient` pattern (HTTPClient injection, returns Data)
-- `TodoAPIError` enum with German localized descriptions
-- Base URL configurable via `MEINE_PIRATEN_BASE_URL` xcconfig
+### M8-003–004: Content Parsing
+- `FrontmatterParser`: Parses YAML frontmatter (--- delimited), handles quoted values, lists, nested quiz dicts
+- `ContentSectionParser`: Splits markdown by H2 headings into typed `ContentSection` values
+- Recognizes special sections: Kurzüberblick → `.overview`, Checkliste → `.checklist`, Nächste Schritte → `.nextSteps`
+- Detects callout blockquotes (TIP, ACHTUNG, MERKSATZ)
 
-### M7-006: RealTodoRepository
-- Implements all `TodoRepository` methods using `TodoAPIClient`
-- Decodes DTOs and maps to domain models
-- Error mapping from `TodoAPIError` to `TodoError`
+### M8-005: File Cache
+- `KnowledgeCacheManager` for `<Caches>/Knowledge/` directory
+- Atomic writes (temp file + rename), graceful nil on read errors
 
-### M7-007: Wiring
-- Production `AppContainer` uses `RealTodoRepository` with `TodoAPIClient`
-- Base URL read from Info.plist (set via xcconfig)
-- Test `AppContainer` still uses `FakeTodoRepository`
-- Q-003 resolved in OPEN_QUESTIONS.md
+### M8-006: RealKnowledgeRepository
+- Orchestrates GitHubAPIClient, parsers, and cache manager
+- Cache-first with 24h TTL, ETag conditional requests
+- Parallel category fetching, graceful fallback to cached data on network failure
+- Ignores `_shared` and dotfolders
+
+### M8-007: FakeKnowledgeRepository
+- Hardcoded 2 categories, 4 topics, 1 sample TopicContent with all section types
+- Simulates 100ms delay for previews and tests
+
+### M8-008: ReadingProgressStore
+- `ReadingProgressStorage` protocol backed by UserDefaults
+- JSON-encoded `[String: TopicProgress]`, constructor-injected UserDefaults for test isolation
+
+### M8-009–010: ViewModels
+- `KnowledgeViewModel`: Loading states, client-side search, featured/in-progress topics
+- `KnowledgeTopicDetailViewModel`: Content loading, checklist toggle persistence, quiz submission, progress tracking (unread → started → completed)
+
+### M8-011: Reusable UI Components
+- SectionCard (accordion), OverviewCard, ChecklistCard (interactive), CalloutView, QuizCard, NextStepsCard, MarkdownTextView
+- Dynamic Type support, VoiceOver labels on interactive elements
+
+### M8-012–014: Views
+- `KnowledgeView`: Home screen with search, featured section, in-progress topics, category grid (ScrollView + LazyVStack)
+- `CategoryDetailView`: Category header with topic cards showing progress status
+- `KnowledgeTopicDetailView`: Lesson view rendering all section types with expand/collapse
+
+### M8-015: Wiring
+- `KNOWLEDGE_REPO_OWNER`, `KNOWLEDGE_REPO_NAME`, `KNOWLEDGE_REPO_BRANCH` in xcconfig + Info.plist
+- Production AppContainer uses RealKnowledgeRepository, test uses FakeKnowledgeRepository
+- Factory `makeKnowledgeTopicDetailViewModel` wired through MainTabView
+
+### M8-016: Unit Tests
+- FrontmatterParserTests, ContentSectionParserTests, ReadingProgressStoreTests
+- Swift Testing framework (@Test, @testable import)
+
+### M8-017: Documentation
+- PROJECT_STATUS.md, DECISIONS.md, OPEN_QUESTIONS.md, README.md updated
 
 ## Previous Milestones
+
+### Milestone 7: Real Todo API Integration
+- REST client for meine-piraten.de Rails server
+- DTOs, TodoAPIClient, RealTodoRepository
+- Domain model aligned to server schema (entities, categories, comments)
 
 ### Milestone 6: Actionable Todos (Write Operations)
 - Create, claim, complete, unclaim, comment, delete (hidden) for Todos

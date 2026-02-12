@@ -71,6 +71,10 @@ final class AppContainer {
     /// Production uses RealTodoRepository (meine-piraten.de API); tests use FakeTodoRepository.
     let todoRepository: TodoRepository
 
+    /// Knowledge repository implementation.
+    /// Production uses RealKnowledgeRepository (GitHub API); tests use FakeKnowledgeRepository.
+    let knowledgeRepository: KnowledgeRepository
+
     // MARK: - Presentation Layer (ViewModels)
 
     /// Authentication state manager (ViewModel for auth flow).
@@ -85,6 +89,9 @@ final class AppContainer {
     /// Todos view model for displaying tasks.
     let todosViewModel: TodosViewModel
 
+    /// Knowledge view model for displaying educational content.
+    let knowledgeViewModel: KnowledgeViewModel
+
     /// Profile view model for displaying user information.
     /// Note: Currently displays PLACEHOLDER DATA until SSO integration.
     let profileViewModel: ProfileViewModel
@@ -98,6 +105,9 @@ final class AppContainer {
     /// Message draft storage for auto-saving in-progress messages.
     /// Stores a single draft that persists across app restarts.
     let messageDraftStore: MessageDraftStore
+
+    /// Reading progress storage for Knowledge Hub topics.
+    let readingProgressStore: ReadingProgressStore
 
     /// Device token manager for APNs registration and storage.
     /// Stores device tokens locally (non-sensitive data).
@@ -161,6 +171,17 @@ final class AppContainer {
         CreateTodoViewModel(todoRepository: todoRepository)
     }
 
+    /// Creates a KnowledgeTopicDetailViewModel for the given topic.
+    /// - Parameter topic: The topic to display in detail
+    /// - Returns: A configured KnowledgeTopicDetailViewModel
+    func makeKnowledgeTopicDetailViewModel(for topic: KnowledgeTopic) -> KnowledgeTopicDetailViewModel {
+        KnowledgeTopicDetailViewModel(
+            topic: topic,
+            repository: knowledgeRepository,
+            progressStore: readingProgressStore
+        )
+    }
+
     /// Creates a TodoDetailViewModel for the given todo.
     /// - Parameter todo: The todo to display in detail
     /// - Returns: A configured TodoDetailViewModel
@@ -195,6 +216,7 @@ final class AppContainer {
         // Storage layer
         self.recentRecipientsStore = RecentRecipientsStore()
         self.messageDraftStore = MessageDraftStore()
+        self.readingProgressStore = ReadingProgressStore()
 
         // Push notification layer
         self.deviceTokenManager = DeviceTokenManager()
@@ -257,6 +279,24 @@ final class AppContainer {
         let todoAPIClient = TodoAPIClient(httpClient: baseHTTPClient, baseURL: meinePiratenBaseURL)
         self.todoRepository = RealTodoRepository(apiClient: todoAPIClient)
 
+        // Knowledge Hub - GitHub API client and repository
+        // Repo config read from Info.plist (set via xcconfig)
+        let knowledgeRepoOwner = Bundle.main.infoDictionary?["KNOWLEDGE_REPO_OWNER"] as? String ?? "sebulino"
+        let knowledgeRepoName = Bundle.main.infoDictionary?["KNOWLEDGE_REPO_NAME"] as? String ?? "PIRATEN-Kanon"
+        let knowledgeRepoBranch = Bundle.main.infoDictionary?["KNOWLEDGE_REPO_BRANCH"] as? String ?? "main"
+        let gitHubAPIClient = GitHubAPIClient(
+            httpClient: baseHTTPClient,
+            repoOwner: knowledgeRepoOwner,
+            repoName: knowledgeRepoName,
+            branch: knowledgeRepoBranch
+        )
+        let knowledgeCacheManager = KnowledgeCacheManager()
+        let realKnowledgeRepository = RealKnowledgeRepository(
+            apiClient: gitHubAPIClient,
+            cacheManager: knowledgeCacheManager
+        )
+        self.knowledgeRepository = realKnowledgeRepository
+
         // Remaining presentation layer
         self.forumViewModel = ForumViewModel(discourseRepository: discourseRepository)
         self.messagesViewModel = MessagesViewModel(
@@ -264,6 +304,10 @@ final class AppContainer {
             authRepository: authRepository
         )
         self.todosViewModel = TodosViewModel(todoRepository: todoRepository)
+        self.knowledgeViewModel = KnowledgeViewModel(
+            repository: realKnowledgeRepository,
+            progressStore: readingProgressStore
+        )
         self.profileViewModel = ProfileViewModel(authRepository: authRepository)
     }
 
@@ -308,10 +352,12 @@ final class AppContainer {
 
         self.discourseRepository = discourseRepository ?? FakeDiscourseRepository()
         self.todoRepository = todoRepository ?? FakeTodoRepository()
+        self.knowledgeRepository = FakeKnowledgeRepository()
 
         // Storage layer (use standard UserDefaults for testing)
         self.recentRecipientsStore = RecentRecipientsStore()
         self.messageDraftStore = MessageDraftStore()
+        self.readingProgressStore = ReadingProgressStore()
 
         // Push notification layer (testing)
         self.deviceTokenManager = DeviceTokenManager()
@@ -328,6 +374,10 @@ final class AppContainer {
             authRepository: self.authRepository
         )
         self.todosViewModel = TodosViewModel(todoRepository: self.todoRepository)
+        self.knowledgeViewModel = KnowledgeViewModel(
+            repository: knowledgeRepository,
+            progressStore: readingProgressStore
+        )
         self.profileViewModel = ProfileViewModel(authRepository: self.authRepository)
     }
 }

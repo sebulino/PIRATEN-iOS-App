@@ -11,6 +11,7 @@ struct RootView: View {
     @ObservedObject var authStateManager: AuthStateManager
     @ObservedObject var forumViewModel: ForumViewModel
     @ObservedObject var messagesViewModel: MessagesViewModel
+    @ObservedObject var knowledgeViewModel: KnowledgeViewModel
     @ObservedObject var todosViewModel: TodosViewModel
     @ObservedObject var profileViewModel: ProfileViewModel
     @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
@@ -35,6 +36,9 @@ struct RootView: View {
     /// Factory for creating CreateTodoViewModels
     var createTodoViewModelFactory: (() -> CreateTodoViewModel)?
 
+    /// Factory for creating KnowledgeTopicDetailViewModels
+    var knowledgeTopicDetailViewModelFactory: ((KnowledgeTopic) -> KnowledgeTopicDetailViewModel)?
+
     /// Factory for creating TodoDetailViewModels
     var todoDetailViewModelFactory: ((Todo) -> TodoDetailViewModel)?
 
@@ -51,6 +55,7 @@ struct RootView: View {
                 MainTabView(
                     forumViewModel: forumViewModel,
                     messagesViewModel: messagesViewModel,
+                    knowledgeViewModel: knowledgeViewModel,
                     todosViewModel: todosViewModel,
                     profileViewModel: profileViewModel,
                     discourseAuthCoordinator: discourseAuthCoordinator,
@@ -62,6 +67,7 @@ struct RootView: View {
                     composeMessageViewModelFactory: composeMessageViewModelFactory,
                     userProfileViewModelFactory: userProfileViewModelFactory,
                     createTodoViewModelFactory: createTodoViewModelFactory,
+                    knowledgeTopicDetailViewModelFactory: knowledgeTopicDetailViewModelFactory,
                     todoDetailViewModelFactory: todoDetailViewModelFactory
                 )
                 .provideWindow()
@@ -151,12 +157,19 @@ struct SessionExpiredView: View {
     let recentRecipientsStore = RecentRecipientsStore()
     let deviceTokenManager = DeviceTokenManager()
 
+    let fakeKnowledgeRepo = FakeKnowledgeRepository()
+    let progressStore = ReadingProgressStore()
+
     RootView(
         authStateManager: AuthStateManager(authRepository: authRepository),
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
         messagesViewModel: MessagesViewModel(
             discourseRepository: fakeDiscourseRepo,
             authRepository: authRepository
+        ),
+        knowledgeViewModel: KnowledgeViewModel(
+            repository: fakeKnowledgeRepo,
+            progressStore: progressStore
         ),
         todosViewModel: TodosViewModel(todoRepository: FakeTodoRepository()),
         profileViewModel: ProfileViewModel(authRepository: authRepository),

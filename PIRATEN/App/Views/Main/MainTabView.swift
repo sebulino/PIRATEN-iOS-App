@@ -10,6 +10,7 @@ import SwiftUI
 struct MainTabView: View {
     @ObservedObject var forumViewModel: ForumViewModel
     @ObservedObject var messagesViewModel: MessagesViewModel
+    @ObservedObject var knowledgeViewModel: KnowledgeViewModel
     @ObservedObject var todosViewModel: TodosViewModel
     @ObservedObject var profileViewModel: ProfileViewModel
     @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
@@ -33,6 +34,9 @@ struct MainTabView: View {
 
     /// Factory for creating CreateTodoViewModels
     var createTodoViewModelFactory: (() -> CreateTodoViewModel)?
+
+    /// Factory for creating KnowledgeTopicDetailViewModels
+    var knowledgeTopicDetailViewModelFactory: ((KnowledgeTopic) -> KnowledgeTopicDetailViewModel)?
 
     /// Factory for creating TodoDetailViewModels
     var todoDetailViewModelFactory: ((Todo) -> TodoDetailViewModel)?
@@ -86,7 +90,10 @@ struct MainTabView: View {
                 }
                 .tag(1)
 
-            KnowledgeView()
+            KnowledgeView(
+                viewModel: knowledgeViewModel,
+                topicDetailViewModelFactory: knowledgeTopicDetailViewModelFactory
+            )
                 .tabItem {
                     Label("Wissen", systemImage: "book")
                 }
@@ -252,11 +259,18 @@ struct MainTabView: View {
     let recentRecipientsStore = RecentRecipientsStore()
     let deviceTokenManager = DeviceTokenManager()
 
+    let fakeKnowledgeRepo = FakeKnowledgeRepository()
+    let progressStore = ReadingProgressStore()
+
     MainTabView(
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
         messagesViewModel: MessagesViewModel(
             discourseRepository: fakeDiscourseRepo,
             authRepository: authRepository
+        ),
+        knowledgeViewModel: KnowledgeViewModel(
+            repository: fakeKnowledgeRepo,
+            progressStore: progressStore
         ),
         todosViewModel: TodosViewModel(todoRepository: FakeTodoRepository()),
         profileViewModel: ProfileViewModel(authRepository: authRepository),

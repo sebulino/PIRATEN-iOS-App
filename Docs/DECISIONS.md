@@ -589,8 +589,141 @@ The meine-piraten.de server is a Rails 8 app with a standard REST API (JSON/jbui
 
 ---
 
+## D-019: GitHub API for Knowledge Content (Public Repo, No Auth)
+
+**Date:** 2026-02-12
+**Status:** Accepted
+
+### Context
+The Knowledge Hub needs to fetch educational content. The content lives in a public GitHub repository (sebulino/PIRATEN-Kanon). Options:
+1. Bundle content in the app binary
+2. Fetch from GitHub API at runtime
+3. Self-hosted content server
+
+### Decision
+Fetch content from the public GitHub Contents API (`api.github.com/repos/{owner}/{repo}/contents/`). No authentication required for public repos.
+
+### Rationale
+1. **No infrastructure**: No server to maintain; GitHub provides reliable CDN
+2. **Content versioned in Git**: Updates to the repo are immediately available to app users
+3. **ETag support**: Conditional requests (If-None-Match) avoid re-downloading unchanged content
+4. **Rate limits acceptable**: Unauthenticated GitHub API allows 60 requests/hour per IP, sufficient for occasional content fetches with local caching
+5. **No bundling overhead**: App stays small; content loaded on demand
+
+### Consequences
+- Subject to GitHub API rate limits (60/hour unauthenticated)
+- First launch requires network access to load content
+- Cache mitigates rate limit concerns for normal usage
+
+---
+
+## D-020: File-Based Cache with 24h TTL for Knowledge Content
+
+**Date:** 2026-02-12
+**Status:** Accepted
+
+### Context
+Knowledge content should be available offline and avoid excessive API calls. Options:
+1. Core Data / SQLite
+2. File-based JSON cache in Caches directory
+3. In-memory only
+
+### Decision
+Use file-based JSON cache in `<Caches>/Knowledge/` with 24-hour TTL. Atomic writes (temp file + rename) prevent corruption.
+
+### Rationale
+1. **Simplicity**: JSON files match the Codable models directly
+2. **System-managed**: iOS can reclaim Caches directory under storage pressure
+3. **Atomic writes**: Prevents partial/corrupt cache files
+4. **24h TTL**: Balances freshness with API rate limits; ETag conditional requests further reduce bandwidth
+5. **No schema migration**: Unlike Core Data, no migration needed when models change
+
+---
+
+## D-021: UserDefaults for Reading Progress
+
+**Date:** 2026-02-12
+**Status:** Accepted
+
+### Context
+Reading progress (checklist completions, quiz results, read status) needs persistence. Options:
+1. Core Data
+2. UserDefaults with JSON encoding
+3. File-based storage
+
+### Decision
+Use UserDefaults with JSON-encoded `[String: TopicProgress]` dictionary under key `piraten_knowledge_progress`.
+
+### Rationale
+1. **Small data volume**: Progress data is lightweight (topic IDs + booleans + scores)
+2. **Matches existing pattern**: `RecentRecipientsStore` uses the same approach
+3. **Test-friendly**: Constructor-injected UserDefaults enables test isolation
+4. **No migration complexity**: Simple JSON encoding, no schema to manage
+5. **Survives cache clearing**: UserDefaults is not in Caches, so progress persists even if content cache is cleared
+
+### When to revisit
+- If progress needs to sync across devices (would need server-side storage)
+- If data volume grows significantly (unlikely for reading progress)
+
+---
+
+## D-022: Custom YAML Frontmatter Parser (No External Dependencies)
+
+**Date:** 2026-02-12
+**Status:** Accepted
+
+### Context
+Knowledge content files use YAML frontmatter (--- delimited) for metadata. Options:
+1. Full YAML parsing library (Yams)
+2. Custom subset parser
+3. JSON-only metadata format
+
+### Decision
+Implement a custom YAML subset parser that handles the known frontmatter fields: simple key-value pairs, quoted strings, lists, and nested list-of-dicts (for quiz questions).
+
+### Rationale
+1. **No external dependency**: Avoids adding Yams or similar library for a limited use case
+2. **Controlled scope**: Only needs to parse the specific YAML subset used in PIRATEN-Kanon files
+3. **Predictable behavior**: Custom parser handles exactly what we need, nothing more
+4. **Nil on malformed**: Returns nil instead of crashing on unexpected input
+
+### Consequences
+- Cannot parse full YAML spec (anchors, multi-line strings, complex nesting)
+- If content format evolves significantly, parser may need updates
+
+---
+
+## D-023: Native AttributedString for Markdown Rendering
+
+**Date:** 2026-02-12
+**Status:** Accepted
+
+### Context
+Knowledge lessons contain markdown content that needs rendering. Options:
+1. WebView with markdown-to-HTML conversion
+2. Third-party markdown library (e.g., MarkdownUI)
+3. Native `AttributedString(markdown:)` (iOS 15+)
+
+### Decision
+Use native `AttributedString(markdown:)` with plain-text fallback on parsing failure.
+
+### Rationale
+1. **Zero dependencies**: Uses Foundation's built-in markdown parser
+2. **Native look and feel**: Renders with system fonts and Dynamic Type
+3. **Performance**: No WebView overhead
+4. **Graceful fallback**: If markdown parsing fails, content still displays as plain text
+5. **iOS 18+ target**: All modern AttributedString features available
+
+### Consequences
+- Limited to CommonMark subset supported by Foundation
+- Complex HTML-style markdown (tables, footnotes) won't render styled
+- Sufficient for the educational content format used in PIRATEN-Kanon
+
+---
+
 ## Future Decisions
 
 Decisions pending external input:
 - meine-piraten.de authentication integration (when server adds auth)
 - Todo pagination strategy (when data volume requires it)
+- Knowledge progress sync across devices (if needed)
