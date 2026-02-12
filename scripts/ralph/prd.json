@@ -1,74 +1,249 @@
 {
-  "project": "piraten-ios-m6-todos-write",
-  "branchName": "ralph/m6-todos-write",
-  "description": "Milestone 5: Actionable Todos. Users can create, claim, complete, and comment on Todos. Todos belong to an owning organization type (Kreisverband/Landesverband/Bundesverband/Arbeitsgemeinschaft). Deletion is supported but not exposed in the UI (soft/hidden).",
+  "project": "piraten-ios-m8-knowledge-hub",
+  "branchName": "ralph/m8-knowledge-hub",
+  "description": "Milestone 8: Knowledge Hub (Wissen). Fetches educational content from the public GitHub repo sebulino/PIRATEN-Kanon, caches it locally, and presents interactive lessons with progress tracking, quizzes, and checklists. Replaces the placeholder KnowledgeView.",
   "userStories": [
     {
-      "id": "M6-001",
-      "category": "todos-domain",
-      "title": "Extend Todo domain model with ownership and lifecycle fields",
-      "description": "Introduce explicit ownership types and lifecycle/assignment fields for Todos.",
+      "id": "M8-001",
+      "category": "models",
+      "title": "Domain models and repository protocol",
+      "description": "Create all Knowledge Hub domain models in Core/Domain/Knowledge/: KnowledgeCategory, KnowledgeTopic, QuizQuestion, TopicContent (ContentSection/ChecklistItem/CalloutType with custom Codable), ReadingProgress (ReadingStatus/TopicProgress), KnowledgeIndex (LearningPath), and the KnowledgeRepository protocol with KnowledgeError enum.",
       "acceptanceCriteria": [
-        "Todo has ownerType enum: Kreisverband, Landesverband, Bundesverband, Arbeitsgemeinschaft",
-        "Todo has ownerId/ownerName (string) and fields for status (open/claimed/done) and assignee (optional)",
-        "Domain model changes do not leak transport-layer JSON into UI",
-        "Context7 consulted for Swift modeling best practices (Codable/Identifiable) where applicable; summary added to progress.txt"
+        "All structs are Identifiable, Equatable, immutable (let properties)",
+        "Codable where needed for cache serialization (ContentSection has custom encode/decode)",
+        "KnowledgeRepository protocol follows @MainActor pattern like TodoRepository",
+        "KnowledgeError enum covers networkError, parsingError, notFound, rateLimited",
+        "Build passes"
       ],
       "passes": true
     },
     {
-      "id": "M6-002",
-      "category": "todos-create",
-      "title": "Create Todo UI and repository method (POST)",
-      "description": "Allow authenticated users to create Todos with required ownership fields.",
+      "id": "M8-002",
+      "category": "services",
+      "title": "GitHub API client",
+      "description": "Create GitHubAPIClient in Core/Data/Knowledge/ with HTTPClient injection. Supports conditional ETag requests (If-None-Match → 304 handling), raw file fetching via download_url, and rate limit detection from 403 + X-RateLimit headers. Returns GitHubDirectoryResult enum (.modified/.notModified). Follows DiscourseAPIClient pattern.",
       "acceptanceCriteria": [
-        "Todos tab includes a Create button opening a form (title, description, ownerType, ownerName/ownerId)",
-        "Validation ensures required fields and reasonable length limits",
-        "TodoRepository includes createTodo(...) API; FakeTodoRepository updated; Real implementation can be stubbed if API write not yet available",
-        "Creation success inserts the Todo into list; failure shows clear error",
-        "Context7 consulted for SwiftUI form patterns and safe validation; summary added to progress.txt"
+        "GitHubAPIClient injected with HTTPClient, repoOwner, repoName, branch",
+        "fetchDirectoryContents supports ETag conditional requests, returns .modified or .notModified",
+        "fetchRawFile fetches raw content via download URL",
+        "HTTP 403 with rate-limit headers maps to KnowledgeError.rateLimited",
+        "Build passes"
       ],
       "passes": true
     },
     {
-      "id": "M6-003",
-      "category": "todos-claim-complete",
-      "title": "Claim and complete Todo actions",
-      "description": "Enable low-risk participation by claiming and completing Todos.",
+      "id": "M8-003",
+      "category": "services",
+      "title": "YAML frontmatter parser",
+      "description": "Create FrontmatterParser in Core/Data/Knowledge/. Detects --- delimited YAML block at start of markdown. Parses simple YAML subset: key: value, key: \"quoted value\", lists (- item), nested list-of-dicts (for quiz). Returns (fields: [String: Any], body: String)? — nil on malformed input. No external dependencies.",
       "acceptanceCriteria": [
-        "Todo detail shows actions based on status: Claim / Mark Done / Unclaim (if applicable)",
-        "TodoRepository exposes claimTodo and completeTodo methods (and unclaim if supported)",
-        "UI updates state immediately on success; handles failure with revert and message",
-        "No deletion control shown in UI",
-        "Context7 consulted for state-driven SwiftUI action patterns; summary added to progress.txt"
+        "Parses all known frontmatter fields (id, title, summary, tags, level, reading_minutes, quiz, related)",
+        "Handles quoted and unquoted string values",
+        "Handles list fields (tags, related, quiz options)",
+        "Returns nil (not crash) on malformed input",
+        "Build passes"
       ],
-      "passes": true
+      "passes": false
     },
     {
-      "id": "M6-004",
-      "category": "todos-comments",
-      "title": "Todo comments (lightweight)",
-      "description": "Allow adding short comments/updates to a Todo (if backend supports; otherwise keep as local-only stub with clear label).",
+      "id": "M8-004",
+      "category": "services",
+      "title": "Markdown content parser",
+      "description": "Create ContentSectionParser in Core/Data/Knowledge/. Splits markdown body by H2 (## ) headings into typed ContentSection values. Recognizes special sections: Kurzüberblick → .overview (bullets), Checkliste → .checklist (- [ ] items), Nächste Schritte → .nextSteps, Mini-Quiz → skip. Detects callout blockquotes (> TIP:, > ACHTUNG:, > MERKSATZ:). Preserves section order.",
       "acceptanceCriteria": [
-        "Todo detail supports viewing a list of comments and adding a comment",
-        "TodoRepository includes addComment(todoId, text) method; fake implementation works end-to-end",
-        "Comment content is not logged; identifiers scrubbed",
-        "Context7 consulted for list + input composition patterns; summary added to progress.txt"
+        "Correctly splits on H2 boundaries",
+        "Identifies all special section types (overview, checklist, nextSteps)",
+        "Parses checklist items with - [ ] / - [x] syntax",
+        "Detects callouts within sections (TIP, ACHTUNG, MERKSATZ)",
+        "Handles edge cases: empty sections, no H2s (whole body = single text section)",
+        "Build passes"
       ],
-      "passes": true
+      "passes": false
     },
     {
-      "id": "M6-005",
-      "category": "todos-delete-hidden",
-      "title": "Implement Todo deletion capability but keep it hidden from UI",
-      "description": "Deletion is supported at repository level for admins/maintenance but not shown in the view.",
+      "id": "M8-005",
+      "category": "services",
+      "title": "File cache manager",
+      "description": "Create KnowledgeCacheManager in Core/Data/Knowledge/. Uses FileManager to manage <Caches>/Knowledge/ directory. Methods: readIndex/writeIndex (index.json), readTopicContent/writeTopicContent (topics/{id}.json), clearCache. Atomic writes (temp + rename). Returns nil on read errors. Not @MainActor.",
       "acceptanceCriteria": [
-        "TodoRepository includes deleteTodo(todoId) method",
-        "No UI element exposes delete; deletion may be callable via debug-only path or internal admin flag that defaults off",
-        "Deletion behavior documented in Docs/DECISIONS.md (why hidden)",
-        "Context7 consulted for safe feature-flag patterns; summary added to progress.txt"
+        "Creates cache directory on first write",
+        "Atomic file writes (write to temp then rename)",
+        "Graceful nil returns on corrupt or missing files",
+        "clearCache removes all cached files",
+        "Build passes"
       ],
-      "passes": true
+      "passes": false
+    },
+    {
+      "id": "M8-006",
+      "category": "services",
+      "title": "RealKnowledgeRepository",
+      "description": "Create RealKnowledgeRepository in Core/Data/Knowledge/. Orchestrates GitHubAPIClient, FrontmatterParser, ContentSectionParser, and KnowledgeCacheManager. fetchIndex: cache-first with 24h TTL, ETag conditional requests, parallel category fetching, parses kanon.json + _category.yml + .md frontmatter. fetchTopicContent: cache-first, fetch and parse on miss. Graceful fallback to cached data on network failure.",
+      "acceptanceCriteria": [
+        "Cache-first strategy with 24h TTL for index",
+        "ETag conditional requests avoid re-downloading unchanged content",
+        "Parallel category fetching where possible",
+        "Graceful fallback to cached data on network failure",
+        "Ignores _shared and dotfolders when listing categories",
+        "Error mapping from GitHub/parsing errors to KnowledgeError",
+        "Build passes"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M8-007",
+      "category": "services",
+      "title": "FakeKnowledgeRepository",
+      "description": "Create FakeKnowledgeRepository in Core/Data/Knowledge/. Hardcoded 2 categories, 4 topics, 1 sample TopicContent with all section types (overview, text, checklist, quiz, nextSteps, callout). Simulates 100ms delay. Used for previews and tests.",
+      "acceptanceCriteria": [
+        "Implements full KnowledgeRepository protocol",
+        "Provides representative sample data for all UI states and section types",
+        "Simulates realistic delay",
+        "Build passes"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M8-008",
+      "category": "storage",
+      "title": "ReadingProgressStore",
+      "description": "Create ReadingProgressStore in Core/Data/Storage/. Protocol ReadingProgressStorage with getProgress/getAllProgress/saveProgress/clearAll. Implementation backed by UserDefaults (key piraten_knowledge_progress), JSON-encoded [String: TopicProgress]. Constructor-injected UserDefaults for test isolation. Follows RecentRecipientsStore pattern.",
+      "acceptanceCriteria": [
+        "Save/retrieve/clear works correctly",
+        "Handles checklist completions and quiz results within TopicProgress",
+        "Injectable UserDefaults for test isolation",
+        "Build passes"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M8-009",
+      "category": "viewmodels",
+      "title": "KnowledgeViewModel (home screen)",
+      "description": "Create KnowledgeViewModel in App/ViewModels/. Enum KnowledgeLoadState (idle/loading/loaded/error). @MainActor ObservableObject with @Published loadState, index, searchQuery. Computed properties: categories, featuredTopics, inProgressTopics (from progress store), searchResults (filtered by query on title+summary+tags). Methods: loadIndex(forceRefresh:), topicsForCategory. Injected: KnowledgeRepository, ReadingProgressStorage.",
+      "acceptanceCriteria": [
+        "Loading/loaded/error state management with enum LoadState",
+        "Client-side search filtering (title + summary + tags, case-insensitive)",
+        "Featured topics derived from index.featuredTopicIds",
+        "In-progress topics derived from progress store",
+        "Build passes"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M8-010",
+      "category": "viewmodels",
+      "title": "KnowledgeTopicDetailViewModel",
+      "description": "Create KnowledgeTopicDetailViewModel in App/ViewModels/. Manages content loading, section expand/collapse, checklist toggle persistence, quiz submission, and progress tracking (unread → started on appear → completed on rule). Injected: KnowledgeTopic, KnowledgeRepository, ReadingProgressStorage.",
+      "acceptanceCriteria": [
+        "Loads content and restores persisted progress from store",
+        "Checklist toggle persists immediately via progress store",
+        "Quiz result persists on completion",
+        "Progress transitions: unread → started (on appear) → completed (on completion rule)",
+        "Build passes"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M8-011",
+      "category": "rendering",
+      "title": "Reusable Knowledge UI components",
+      "description": "Create components in App/Views/Knowledge/Components/: SectionCard (accordion expand/collapse with spring animation), OverviewCard (always-visible bullet card), ChecklistCard (interactive toggles with onToggle callback and progress label), CalloutView (colored box by type: tip/warning/keyTakeaway), QuizCard (question + options + feedback + score + onComplete), NextStepsCard (related topic links), MarkdownTextView (AttributedString rendering with fallback).",
+      "acceptanceCriteria": [
+        "All components support Dynamic Type",
+        "VoiceOver labels on interactive elements (checklist toggles, quiz buttons, expand/collapse)",
+        "Consistent styling with rest of app",
+        "SectionCard default state is collapsed",
+        "MarkdownTextView uses AttributedString(markdown:) with plain-text fallback",
+        "Build passes"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M8-012",
+      "category": "views",
+      "title": "KnowledgeView (home screen, replaces placeholder)",
+      "description": "Replace placeholder KnowledgeView.swift with full home screen. NavigationStack with .searchable modifier, sections: Empfohlen (horizontal ScrollView, hidden if empty), Weiterlesen (in-progress topics, hidden if empty), Kategorien (LazyVGrid 2-col with category cards → NavigationLink to CategoryDetailView). States: loading/error/loaded/empty. Pull-to-refresh. Uses ScrollView + LazyVStack (not List).",
+      "acceptanceCriteria": [
+        "All 4 states handled (loading, error with retry, loaded, empty)",
+        "Search filters topics across all categories",
+        "Featured section hidden when kanon.json has no featured",
+        "Weiterlesen populated from progress store",
+        "Pull-to-refresh triggers force reload",
+        "Uses ScrollView + LazyVStack (not List) per project convention",
+        "Build passes"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M8-013",
+      "category": "views",
+      "title": "CategoryDetailView",
+      "description": "Create CategoryDetailView in App/Views/Main/. Shows category header (icon + title + description) and ScrollView + LazyVStack of topic cards with title, summary (2 lines), reading time, level badge, status icon (unread/started/completed). NavigationLink to KnowledgeTopicDetailView.",
+      "acceptanceCriteria": [
+        "Shows all topics in category",
+        "Status badges reflect persisted progress (unread/started/completed)",
+        "Level displayed as badge",
+        "NavigationLink to topic detail view",
+        "Build passes"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M8-014",
+      "category": "views",
+      "title": "KnowledgeTopicDetailView (lesson view)",
+      "description": "Create KnowledgeTopicDetailView in App/Views/Main/. Header with title, tags (chips), level, reading time. ScrollView rendering sections: .overview → OverviewCard, .text → SectionCard (collapsed), .checklist → ChecklistCard (interactive), .callout → CalloutView, .quiz → QuizCard, .nextSteps → NextStepsCard. Calls markAsStarted on appear and loadContent on appear. Loading/error states. Offline: shows cached content.",
+      "acceptanceCriteria": [
+        "All section types render correctly",
+        "Checklist toggles persist via viewModel",
+        "Quiz completion triggers progress update",
+        "Sections expand/collapse with animation",
+        "Offline shows cached content if available",
+        "Build passes"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M8-015",
+      "category": "wiring",
+      "title": "Configuration and AppContainer wiring",
+      "description": "Add KNOWLEDGE_REPO_OWNER, KNOWLEDGE_REPO_NAME, KNOWLEDGE_REPO_BRANCH to Debug.xcconfig, Release.xcconfig, Secrets.sample.xcconfig, and Info.plist. Wire in AppContainer: create GitHubAPIClient, KnowledgeCacheManager, RealKnowledgeRepository (production) / FakeKnowledgeRepository (test), ReadingProgressStore, KnowledgeViewModel. Add factory makeKnowledgeTopicDetailViewModel. Update MainTabView to pass viewModel and factories to KnowledgeView.",
+      "acceptanceCriteria": [
+        "Production AppContainer uses RealKnowledgeRepository",
+        "Test AppContainer uses FakeKnowledgeRepository",
+        "Repo config from xcconfig (not hardcoded)",
+        "KnowledgeView receives ViewModel via MainTabView",
+        "Build passes, tests pass"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M8-016",
+      "category": "tests",
+      "title": "Unit tests",
+      "description": "Create tests in PIRATENTests/: FrontmatterParserTests (valid/malformed/missing frontmatter, quiz parsing, quoted values), ContentSectionParserTests (H2 splitting, special sections, callouts, edge cases), ReadingProgressStoreTests (save/retrieve/clear with injected UserDefaults). Swift Testing framework.",
+      "acceptanceCriteria": [
+        "All parsing edge cases covered (valid, malformed, missing, empty)",
+        "Tests use Swift Testing framework (@Test, @testable import PIRATEN)",
+        "ReadingProgressStore tests use isolated UserDefaults",
+        "All tests pass"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M8-017",
+      "category": "docs",
+      "title": "Update project documentation",
+      "description": "Update Docs/PROJECT_STATUS.md with M8 section, Docs/DECISIONS.md with decisions (GitHub API, file cache, UserDefaults progress, custom YAML parser, native AttributedString), Docs/OPEN_QUESTIONS.md with new questions (progress sync, preload, offline bundle), README.md feature table.",
+      "acceptanceCriteria": [
+        "PROJECT_STATUS.md reflects M8 completion",
+        "DECISIONS.md has entries for all key architectural choices",
+        "OPEN_QUESTIONS.md has forward-looking questions",
+        "README.md feature table updated",
+        "Build passes"
+      ],
+      "passes": false
     }
   ]
 }
