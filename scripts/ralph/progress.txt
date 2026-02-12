@@ -161,3 +161,16 @@ Started: Do. 12 Feb. 2026 15:50:07 CET
   - Swift struct memberwise initializer requires arguments in declaration order — mismatched order causes cryptic errors
   - Stub views are essential for forward references to views in later milestones
 ---
+
+## [2026-02-12 14:30] - M8-013
+- Replaced CategoryDetailView stub with full implementation
+- Category header with icon, title, description
+- ScrollView + LazyVStack topic list with title, summary (2 lines), reading time, level badge, status icon
+- NavigationLink to KnowledgeTopicDetailView via factory
+- Empty state for categories with no topics
+- Files changed: PIRATEN/App/Views/Main/CategoryDetailView.swift
+- **Learnings for future iterations:**
+  - TopicProgressProvider protocol decouples progress queries from KnowledgeViewModel — reuse this pattern for any view needing progress
+  - Existing TopicListRow in KnowledgeView is private; CategoryDetailView replicates the pattern inline since extracting would require a separate story
+  - Preview uses a private PreviewProgressProvider conformance to avoid dependency on full ViewModel
+---
