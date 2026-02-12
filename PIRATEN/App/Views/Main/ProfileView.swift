@@ -8,9 +8,7 @@
 import SwiftUI
 
 /// View displaying the user's profile information and notification settings.
-///
-/// Note: Currently displays PLACEHOLDER DATA for development.
-/// Real user information will come from Piratenlogin SSO once integrated.
+/// Merges SSO data (identity) with Discourse data (avatar, bio, forum stats).
 struct ProfileView: View {
     @ObservedObject var viewModel: ProfileViewModel
     @ObservedObject var notificationSettings: NotificationSettingsManager
@@ -57,18 +55,14 @@ struct ProfileView: View {
     }
 
     /// Builds the main profile content view.
-    /// - Parameter user: The user data to display (PLACEHOLDER DATA)
+    /// - Parameter user: The SSO user data to display
     @ViewBuilder
     private func profileContent(for user: User) -> some View {
         List {
-            // Avatar and name section (placeholder data)
+            // Avatar and name section
             Section {
                 HStack(spacing: 16) {
-                    // Avatar placeholder
-                    Image(systemName: "person.circle.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.orange)
-
+                    avatarView
                     VStack(alignment: .leading, spacing: 4) {
                         Text(user.displayName)
                             .font(.title2)
@@ -81,7 +75,15 @@ struct ProfileView: View {
                 .padding(.vertical, 8)
             }
 
-            // Contact information section (placeholder data)
+            // Bio section (from Discourse)
+            if let bio = viewModel.discourseProfile?.bio, !bio.isEmpty {
+                Section("Über mich") {
+                    Text(bio)
+                        .font(.body)
+                }
+            }
+
+            // Contact information section (SSO)
             Section("Kontakt") {
                 ProfileRow(
                     icon: "envelope",
@@ -90,7 +92,7 @@ struct ProfileView: View {
                 )
             }
 
-            // Party membership section (placeholder data)
+            // Party membership section (SSO)
             Section("Mitgliedschaft") {
                 if let memberSince = user.memberSince {
                     ProfileRow(
@@ -117,23 +119,82 @@ struct ProfileView: View {
                 }
             }
 
+            // Discourse stats section
+            if let profile = viewModel.discourseProfile {
+                Section("Aktivität") {
+                    ProfileRow(
+                        icon: "calendar.badge.clock",
+                        label: "Im Forum seit",
+                        value: profile.joinedAt.formatted(date: .long, time: .omitted)
+                    )
+                    ProfileRow(
+                        icon: "text.bubble",
+                        label: "Beiträge",
+                        value: "\(profile.postCount)"
+                    )
+                    ProfileRow(
+                        icon: "heart",
+                        label: "Likes vergeben",
+                        value: "\(profile.likesGiven)"
+                    )
+                    ProfileRow(
+                        icon: "heart.fill",
+                        label: "Likes erhalten",
+                        value: "\(profile.likesReceived)"
+                    )
+                }
+            }
+
             // Notification settings section
             notificationSettingsSection
 
-            // Note about placeholder data
-            Section {
-                HStack {
-                    Image(systemName: "info.circle")
-                        .foregroundColor(.blue)
-                    Text("Dies sind Testdaten. Nach der SSO-Integration werden hier Ihre echten Daten angezeigt.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+            // Discourse load failure note (non-blocking)
+            if viewModel.discourseLoadFailed {
+                Section {
+                    HStack {
+                        Image(systemName: "info.circle")
+                            .foregroundColor(.blue)
+                        Text("Forum-Statistiken konnten nicht geladen werden.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
         }
         .refreshable {
             viewModel.refresh()
         }
+    }
+
+    // MARK: - Avatar
+
+    @ViewBuilder
+    private var avatarView: some View {
+        if let avatarUrl = viewModel.discourseProfile?.avatarUrl {
+            AsyncImage(url: avatarUrl) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 60, height: 60)
+                        .clipShape(Circle())
+                case .failure:
+                    avatarPlaceholder
+                default:
+                    ProgressView()
+                        .frame(width: 60, height: 60)
+                }
+            }
+        } else {
+            avatarPlaceholder
+        }
+    }
+
+    private var avatarPlaceholder: some View {
+        Image(systemName: "person.circle.fill")
+            .font(.system(size: 60))
+            .foregroundColor(.orange)
     }
 
     // MARK: - Notification Settings
@@ -225,12 +286,11 @@ private struct ProfileRow: View {
 }
 
 #Preview {
-    // Preview with fake data - uses FakeAuthRepository via KeychainCredentialStore
-    // Note: Requires an authenticated session for user data to display
     let deviceTokenManager = DeviceTokenManager()
     ProfileView(
         viewModel: ProfileViewModel(
-            authRepository: FakeAuthRepository(credentialStore: KeychainCredentialStore())
+            authRepository: FakeAuthRepository(credentialStore: KeychainCredentialStore()),
+            discourseRepository: FakeDiscourseRepository()
         ),
         notificationSettings: NotificationSettingsManager(deviceTokenManager: deviceTokenManager)
     )
