@@ -72,7 +72,7 @@
         "clearCache removes all cached files",
         "Build passes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M8-006",
@@ -88,7 +88,7 @@
         "Error mapping from GitHub/parsing errors to KnowledgeError",
         "Build passes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M8-007",
