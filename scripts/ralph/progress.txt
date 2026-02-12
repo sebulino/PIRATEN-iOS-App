@@ -44,3 +44,49 @@ Started: Do. 12 Feb. 2026 15:50:07 CET
   - Checklist items get fresh UUIDs on each parse — persistence uses TopicProgress.checklistCompletions keyed by item text/index
   - Section order is preserved from the original markdown
 ---
+
+## 2026-02-12 16:06 - M8-005
+- Created KnowledgeCacheManager in Core/Data/Knowledge/
+- File-based cache using <Caches>/Knowledge/ directory
+- Methods: readIndex/writeIndex (index.json), readTopicContent/writeTopicContent (topics/{id}.json), clearCache
+- Atomic writes: write to temp file with UUID name, then moveItem to final destination
+- Graceful nil returns on missing or corrupt files (double-guard: Data + JSONDecoder)
+- Creates cache directory on first write with withIntermediateDirectories: true
+- ISO8601 date encoding for KnowledgeIndex.lastFetched
+- Not @MainActor — synchronous file I/O, called from repository layer
+- Files changed: PIRATEN/Core/Data/Knowledge/KnowledgeCacheManager.swift (new)
+- **Learnings for future iterations:**
+  - FileManager.moveItem requires destination to not exist — remove first if present
+  - Using Data.write(to:options:.atomic) for the temp write adds an extra safety layer
+  - Caches directory is system-purgeable — appropriate for re-downloadable content
+---
+
+## 2026-02-12 22:30 - M8-006
+- Created RealKnowledgeRepository in Core/Data/Knowledge/
+- Orchestrates GitHubAPIClient, FrontmatterParser, ContentSectionParser, KnowledgeCacheManager
+- fetchIndex: cache-first with 24h TTL, ETag conditional requests, parallel category fetching
+- Parses kanon.json for featured topics and learning paths
+- Parses _category.yml via FrontmatterParser (wrapped in --- delimiters)
+- Parses .md files for topic metadata via FrontmatterParser.parseTopic
+- fetchTopicContent: cache-first, fetches raw markdown, parses sections, appends quiz from frontmatter
+- Graceful fallback to cached data on network failure
+- Ignores _shared and dotfolders when listing categories
+- Files changed: PIRATEN/Core/Data/Knowledge/RealKnowledgeRepository.swift (new)
+- **Learnings for future iterations:**
+  - FrontmatterParser can parse _category.yml by wrapping content in --- delimiters
+  - withTaskGroup works well for parallel category fetching; nonisolated methods needed for @MainActor class
+  - kanon.json uses simple JSON structure: {"featured": [...], "paths": [...]}
+---
+
+## 2026-02-12 23:30 - M8-007
+- Created FakeKnowledgeRepository in Core/Data/Knowledge/
+- Implements full KnowledgeRepository protocol with hardcoded sample data
+- 2 categories (Kommunalpolitik, Digitale Rechte), 4 topics, 1 full TopicContent
+- TopicContent covers all section types: overview, text, checklist, quiz, nextSteps, callout (tip, warning, keyTakeaway)
+- Simulates 100ms async delay for realistic behavior
+- Throws KnowledgeError.notFound for unknown topic IDs
+- Files changed: PIRATEN/Core/Data/Knowledge/FakeKnowledgeRepository.swift (new)
+- **Learnings for future iterations:**
+  - Use deterministic UUIDs (UUID(uuidString:)!) for stable preview/test data
+  - Follow FakeDiscourseRepository pattern: @MainActor, stored properties for static data, computed or init-built for composed data
+---

@@ -101,7 +101,7 @@
         "Simulates realistic delay",
         "Build passes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M8-008",
