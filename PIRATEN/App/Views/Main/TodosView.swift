@@ -10,6 +10,14 @@ import SwiftUI
 struct TodosView: View {
     @ObservedObject var viewModel: TodosViewModel
 
+    /// Factory for creating CreateTodoViewModels
+    var createTodoViewModelFactory: (() -> CreateTodoViewModel)?
+
+    /// Factory for creating TodoDetailViewModels
+    var todoDetailViewModelFactory: ((Todo) -> TodoDetailViewModel)?
+
+    @State private var showingCreateSheet = false
+
     var body: some View {
         NavigationStack {
             Group {
@@ -33,6 +41,24 @@ struct TodosView: View {
                 }
             }
             .navigationTitle("Todos")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showingCreateSheet = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
+            .sheet(isPresented: $showingCreateSheet, onDismiss: {
+                viewModel.refresh()
+            }) {
+                if let factory = createTodoViewModelFactory {
+                    CreateTodoView(viewModel: factory(), onDismiss: {
+                        showingCreateSheet = false
+                    })
+                }
+            }
             .onAppear {
                 if viewModel.todos.isEmpty {
                     viewModel.loadTodos()
@@ -44,20 +70,18 @@ struct TodosView: View {
     @ViewBuilder
     private var todosList: some View {
         List {
-            // Pending tasks section
             if !viewModel.pendingTodos.isEmpty {
                 Section("Offen") {
                     ForEach(viewModel.pendingTodos) { todo in
-                        TodoRow(todo: todo)
+                        todoNavigationLink(for: todo)
                     }
                 }
             }
 
-            // Completed tasks section
             if !viewModel.completedTodos.isEmpty {
                 Section("Erledigt") {
                     ForEach(viewModel.completedTodos) { todo in
-                        TodoRow(todo: todo)
+                        todoNavigationLink(for: todo)
                     }
                 }
             }
@@ -66,36 +90,51 @@ struct TodosView: View {
             viewModel.refresh()
         }
     }
+
+    @ViewBuilder
+    private func todoNavigationLink(for todo: Todo) -> some View {
+        if let factory = todoDetailViewModelFactory {
+            NavigationLink {
+                TodoDetailView(viewModel: factory(todo))
+            } label: {
+                TodoRow(todo: todo)
+            }
+        } else {
+            TodoRow(todo: todo)
+        }
+    }
 }
 
 /// Row view for displaying a single todo in the list.
-/// Shows task title, group name, and due date.
-private struct TodoRow: View {
+struct TodoRow: View {
     let todo: Todo
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                // Completion indicator
-                Image(systemName: todo.isCompleted ? "checkmark.circle.fill" : priorityIcon)
-                    .foregroundColor(todo.isCompleted ? .green : priorityColor)
+                Image(systemName: statusIcon)
+                    .foregroundColor(statusColor)
                     .font(.title3)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(todo.title)
                         .font(.headline)
                         .lineLimit(2)
-                        .strikethrough(todo.isCompleted)
-                        .foregroundColor(todo.isCompleted ? .secondary : .primary)
+                        .strikethrough(todo.status == .done)
+                        .foregroundColor(todo.status == .done ? .secondary : .primary)
 
-                    // Group name (placeholder data)
-                    Text(todo.groupName)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    if let creatorName = todo.creatorName {
+                        Text(creatorName)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                 }
+
+                Spacer()
+
+                statusBadge
             }
 
-            // Due date if present
             if let dueDate = todo.dueDate {
                 HStack {
                     Spacer()
@@ -106,34 +145,43 @@ private struct TodoRow: View {
         .padding(.vertical, 4)
     }
 
-    /// Returns the appropriate icon based on priority
-    private var priorityIcon: String {
-        switch todo.priority {
-        case .high:
-            return "exclamationmark.circle"
-        case .medium:
-            return "circle"
-        case .low:
-            return "circle"
+    private var statusIcon: String {
+        switch todo.status {
+        case .done:
+            return "checkmark.circle.fill"
+        case .claimed:
+            return "person.circle"
+        case .open:
+            return todo.urgent ? "exclamationmark.circle" : "circle"
         }
     }
 
-    /// Returns the appropriate color based on priority
-    private var priorityColor: Color {
-        switch todo.priority {
-        case .high:
-            return .red
-        case .medium:
-            return .orange
-        case .low:
+    private var statusColor: Color {
+        switch todo.status {
+        case .done:
+            return .green
+        case .claimed:
             return .blue
+        case .open:
+            return todo.urgent ? .red : .orange
         }
     }
 
-    /// Creates a due date label with appropriate styling for overdue items
+    @ViewBuilder
+    private var statusBadge: some View {
+        Text(todo.status.displayName)
+            .font(.caption2)
+            .fontWeight(.medium)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(statusColor.opacity(0.15))
+            .foregroundColor(statusColor)
+            .clipShape(Capsule())
+    }
+
     @ViewBuilder
     private func dueDateLabel(_ date: Date) -> some View {
-        let isOverdue = date < Date() && !todo.isCompleted
+        let isOverdue = date < Date() && todo.status != .done
 
         HStack(spacing: 4) {
             Image(systemName: isOverdue ? "clock.badge.exclamationmark" : "calendar")
@@ -145,6 +193,5 @@ private struct TodoRow: View {
 }
 
 #Preview {
-    // Preview with fake data - uses FakeTodoRepository
     TodosView(viewModel: TodosViewModel(todoRepository: FakeTodoRepository()))
 }

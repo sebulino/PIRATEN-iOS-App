@@ -41,5 +41,7 @@
 	<string>$(DISCOURSE_BASE_URL)</string>
 	<key>DISCOURSE_CLIENT_ID</key>
 	<string>$(DISCOURSE_CLIENT_ID)</string>
+	<key>MEINE_PIRATEN_BASE_URL</key>
+	<string>$(MEINE_PIRATEN_BASE_URL)</string>
 </dict>
 </plist>

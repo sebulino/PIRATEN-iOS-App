@@ -14,7 +14,7 @@
         "Domain model changes do not leak transport-layer JSON into UI",
         "Context7 consulted for Swift modeling best practices (Codable/Identifiable) where applicable; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-002",
@@ -28,7 +28,7 @@
         "Creation success inserts the Todo into list; failure shows clear error",
         "Context7 consulted for SwiftUI form patterns and safe validation; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-003",
@@ -42,7 +42,7 @@
         "No deletion control shown in UI",
         "Context7 consulted for state-driven SwiftUI action patterns; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-004",
@@ -55,7 +55,7 @@
         "Comment content is not logged; identifiers scrubbed",
         "Context7 consulted for list + input composition patterns; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M6-005",
@@ -68,7 +68,7 @@
         "Deletion behavior documented in Docs/DECISIONS.md (why hidden)",
         "Context7 consulted for safe feature-flag patterns; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

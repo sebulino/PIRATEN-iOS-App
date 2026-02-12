@@ -1,0 +1,105 @@
+{
+  "project": "piraten-ios-m7-real-todo-api",
+  "branchName": "ralph/m7-real-todo-api",
+  "description": "Milestone 7: Real Todo API Integration. Extends the meine-piraten.de Rails server with status/assignee fields and comments, documents the API, aligns the iOS domain model to the real server schema, builds the real API client and repository, and wires everything together replacing the fake implementation.",
+  "userStories": [
+    {
+      "id": "M7-001",
+      "category": "server-docs",
+      "title": "Document the meine-piraten.de API",
+      "description": "Create docs/API_OVERVIEW.md in the server repo documenting all existing endpoints, request/response formats, and the schema.",
+      "acceptanceCriteria": [
+        "All 3 resources (Tasks, Entities, Categories) documented with endpoints, HTTP methods, request params, and response JSON shapes",
+        "Schema tables listed with all columns and types",
+        "Document notes 'no authentication' as current state"
+      ],
+      "passes": true
+    },
+    {
+      "id": "M7-002",
+      "category": "server-migration",
+      "title": "Add status and assignee to tasks",
+      "description": "Add status (string, default 'open') and assignee (string, nullable) columns to the tasks table. Update controller permitted params, jbuilder template, and model validations.",
+      "acceptanceCriteria": [
+        "Migration adds status (string, default 'open') and assignee (string, nullable) to tasks",
+        "task_params permits :status and :assignee",
+        "Jbuilder includes both fields in JSON output",
+        "Model validates status inclusion in ['open', 'claimed', 'done']",
+        "docs/API_OVERVIEW.md updated with new fields"
+      ],
+      "passes": true
+    },
+    {
+      "id": "M7-003",
+      "category": "server-feature",
+      "title": "Add comments model and REST API",
+      "description": "Create a Comment model (belongs_to :task) with nested REST endpoints under tasks.",
+      "acceptanceCriteria": [
+        "Migration creates comments table with task_id (foreign key), author_name, text, timestamps",
+        "Comments are nested under tasks in routes",
+        "Task has_many :comments, dependent: :destroy",
+        "CRUD works via JSON endpoints (index, create, destroy)",
+        "API_OVERVIEW.md updated with comment endpoints"
+      ],
+      "passes": true
+    },
+    {
+      "id": "M7-004",
+      "category": "ios-domain",
+      "title": "Align iOS domain model to server schema",
+      "description": "Restructure the iOS Todo domain model to match the real server schema. Remove OwnerType/Priority enums, add entityId/categoryId/urgent/activityPoints/timeNeededInHours/creatorName. Create Entity and TodoCategory domain models. Update TodoRepository protocol, FakeTodoRepository, and all views/viewmodels.",
+      "acceptanceCriteria": [
+        "OwnerType and Priority enums removed",
+        "Todo struct has entityId, categoryId, urgent, activityPoints, timeNeededInHours, creatorName",
+        "Entity and TodoCategory domain models exist",
+        "TodoRepository has fetchEntities() and fetchCategories() methods",
+        "createTodo takes entityId/categoryId instead of ownerType/ownerName",
+        "FakeTodoRepository updated with fake entities/categories",
+        "All views compile and display correctly with fake data",
+        "Build passes, tests pass"
+      ],
+      "passes": true
+    },
+    {
+      "id": "M7-005",
+      "category": "ios-api-client",
+      "title": "Create DTOs and TodoAPIClient",
+      "description": "Create data transfer objects matching the Rails JSON responses and an API client following the DiscourseAPIClient pattern.",
+      "acceptanceCriteria": [
+        "TaskDTO, EntityDTO, CategoryDTO, CommentDTO — all Decodable with CodingKeys for snake_case",
+        "Each DTO has a toDomainModel() method returning the domain struct",
+        "TodoAPIClient follows DiscourseAPIClient pattern (HTTPClient injection, returns Data, error mapping)",
+        "Base URL configurable via xcconfig",
+        "Build passes"
+      ],
+      "passes": true
+    },
+    {
+      "id": "M7-006",
+      "category": "ios-repository",
+      "title": "Create RealTodoRepository",
+      "description": "Implement RealTodoRepository that satisfies the TodoRepository protocol using TodoAPIClient.",
+      "acceptanceCriteria": [
+        "RealTodoRepository implements all TodoRepository methods",
+        "Uses TodoAPIClient for HTTP, decodes DTOs, maps to domain",
+        "Error mapping from API errors to TodoError",
+        "Build passes"
+      ],
+      "passes": true
+    },
+    {
+      "id": "M7-007",
+      "category": "ios-wiring",
+      "title": "Wire RealTodoRepository in AppContainer",
+      "description": "Replace FakeTodoRepository with RealTodoRepository in AppContainer production init. Keep fake available for previews and tests.",
+      "acceptanceCriteria": [
+        "Production AppContainer uses RealTodoRepository",
+        "Test AppContainer still uses FakeTodoRepository",
+        "Base URL read from Info.plist (set via xcconfig)",
+        "Build passes, tests pass",
+        "Q-003 resolved in OPEN_QUESTIONS.md"
+      ],
+      "passes": true
+    }
+  ]
+}

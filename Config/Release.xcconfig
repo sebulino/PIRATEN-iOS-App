@@ -7,7 +7,7 @@
 // API Base URLs (can be overridden in Secrets.xcconfig)
 API_BASE_URL = https:/$()/api.piratenpartei.de
 DISCOURSE_BASE_URL = https:/$()/diskussion.piratenpartei.de
-MEINE_PIRATEN_BASE_URL = https:/$()/meine.piratenpartei.de
+MEINE_PIRATEN_BASE_URL = https:/$()/meine-piraten.de
 
 // App Configuration
 PRODUCT_BUNDLE_IDENTIFIER = de.piratenpartei.app

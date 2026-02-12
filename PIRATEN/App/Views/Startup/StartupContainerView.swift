@@ -39,6 +39,12 @@ struct StartupContainerView: View {
     /// Factory for creating UserProfileViewModels
     var userProfileViewModelFactory: ((String) -> UserProfileViewModel)?
 
+    /// Factory for creating CreateTodoViewModels
+    var createTodoViewModelFactory: (() -> CreateTodoViewModel)?
+
+    /// Factory for creating TodoDetailViewModels
+    var todoDetailViewModelFactory: ((Todo) -> TodoDetailViewModel)?
+
     // MARK: - Splash Screen State
 
     /// Whether to show the startup splash screen
@@ -62,7 +68,9 @@ struct StartupContainerView: View {
                 messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
                 recipientPickerViewModelFactory: recipientPickerViewModelFactory,
                 composeMessageViewModelFactory: composeMessageViewModelFactory,
-                userProfileViewModelFactory: userProfileViewModelFactory
+                userProfileViewModelFactory: userProfileViewModelFactory,
+                createTodoViewModelFactory: createTodoViewModelFactory,
+                todoDetailViewModelFactory: todoDetailViewModelFactory
             )
 
             // Startup splash screen overlay (dismisses after delay)
@@ -125,6 +133,12 @@ struct StartupContainerView: View {
                 discourseRepository: fakeDiscourseRepo,
                 recentRecipientsStorage: recentRecipientsStore
             )
+        },
+        createTodoViewModelFactory: {
+            CreateTodoViewModel(todoRepository: FakeTodoRepository())
+        },
+        todoDetailViewModelFactory: { todo in
+            TodoDetailViewModel(todo: todo, todoRepository: FakeTodoRepository())
         }
     )
 }

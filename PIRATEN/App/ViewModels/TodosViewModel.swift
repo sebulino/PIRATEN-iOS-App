@@ -59,13 +59,13 @@ final class TodosViewModel: ObservableObject {
 
     // MARK: - Computed Properties
 
-    /// Returns only pending (not completed) todos
+    /// Returns todos that are open or claimed (not done)
     var pendingTodos: [Todo] {
-        todos.filter { !$0.isCompleted }
+        todos.filter { $0.status != .done }
     }
 
-    /// Returns only completed todos
+    /// Returns only completed (done) todos
     var completedTodos: [Todo] {
-        todos.filter { $0.isCompleted }
+        todos.filter { $0.status == .done }
     }
 }

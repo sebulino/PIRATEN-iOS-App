@@ -7,24 +7,59 @@
 
 import Foundation
 
+/// Typed errors for Todo operations.
+enum TodoError: Error, Equatable {
+    case titleRequired
+    case titleTooLong
+    case descriptionTooLong
+    case todoNotFound
+    case invalidTransition
+    case operationFailed(String)
+}
+
 /// Protocol defining the Todo repository interface for meine-piraten.de tasks.
 /// This abstraction allows swapping implementations (fake/real) without UI changes.
-///
-/// All methods are async to support both in-memory fakes and future network implementations.
-/// No HTTP calls are made by implementations until real integration with meine-piraten.de.
 @MainActor
 protocol TodoRepository {
-    /// Fetches all todos for the current user.
-    /// - Returns: Array of todos, or empty array if fetch fails
+    /// Fetches all todos.
     func fetchTodos() async -> [Todo]
 
     /// Fetches todos filtered by completion status.
-    /// - Parameter completed: If true, returns completed todos; if false, returns pending todos
-    /// - Returns: Filtered array of todos
     func fetchTodos(completed: Bool) async -> [Todo]
 
     /// Fetches a single todo by ID.
-    /// - Parameter id: The todo ID
-    /// - Returns: The todo if found, nil otherwise
     func fetchTodo(byId id: Int) async -> Todo?
+
+    /// Creates a new todo.
+    func createTodo(title: String, description: String?, entityId: Int, categoryId: Int, urgent: Bool) async throws -> Todo
+
+    /// Claims an open todo for the current user.
+    func claimTodo(id: Int) async throws -> Todo
+
+    /// Marks a claimed todo as done.
+    func completeTodo(id: Int) async throws -> Todo
+
+    /// Unclaims a claimed todo, returning it to open status.
+    func unclaimTodo(id: Int) async throws -> Todo
+
+    // MARK: - Comments
+
+    /// Fetches comments for a todo.
+    func fetchComments(todoId: Int) async -> [TodoComment]
+
+    /// Adds a comment to a todo.
+    func addComment(todoId: Int, text: String) async throws -> TodoComment
+
+    // MARK: - Deletion (hidden from UI, see D-017)
+
+    /// Deletes a todo by ID.
+    func deleteTodo(id: Int) async throws
+
+    // MARK: - Reference Data
+
+    /// Fetches all available entities.
+    func fetchEntities() async -> [Entity]
+
+    /// Fetches all available categories.
+    func fetchCategories() async -> [TodoCategory]
 }

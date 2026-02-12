@@ -7,40 +7,36 @@
 
 import Foundation
 
-/// Domain model representing a task from meine-piraten.de.
-/// This is independent of the actual API JSON shape - DTOs will handle mapping.
-///
-/// The model is intentionally minimal until the meine-piraten.de API schema is confirmed.
-/// See: Docs/OPEN_QUESTIONS.md for API unknowns.
-struct Todo: Identifiable, Equatable {
-    /// Unique identifier for the todo item
-    let id: Int
+/// Lifecycle status of a Todo.
+enum TodoStatus: String, CaseIterable {
+    case open
+    case claimed
+    case done
 
-    /// Title or summary of the task
-    let title: String
-
-    /// Detailed description of the task, if available
-    let description: String?
-
-    /// The group/organization this task belongs to
-    let groupName: String
-
-    /// When the task was created
-    let createdAt: Date
-
-    /// Due date for the task, if set
-    let dueDate: Date?
-
-    /// Whether the task has been completed
-    let isCompleted: Bool
-
-    /// Priority level of the task (placeholder until API confirms structure)
-    let priority: Priority
-
-    /// Task priority levels
-    enum Priority: String, CaseIterable {
-        case low
-        case medium
-        case high
+    /// German display name for the status
+    var displayName: String {
+        switch self {
+        case .open: return "Offen"
+        case .claimed: return "Übernommen"
+        case .done: return "Erledigt"
+        }
     }
+}
+
+/// Domain model representing a task from meine-piraten.de.
+/// Aligned to the Rails server schema (tasks table).
+struct Todo: Identifiable, Equatable {
+    let id: Int
+    let title: String
+    let description: String?
+    let entityId: Int
+    let categoryId: Int
+    let createdAt: Date
+    let dueDate: Date?
+    let status: TodoStatus
+    let assignee: String?
+    let urgent: Bool
+    let activityPoints: Int?
+    let timeNeededInHours: Int?
+    let creatorName: String?
 }

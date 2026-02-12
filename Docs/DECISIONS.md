@@ -538,7 +538,59 @@ Data(base64Encoded: payload, options: .ignoreUnknownCharacters)
 
 ---
 
+## D-017: Todo Deletion Hidden from UI
+
+**Date:** 2026-02-10
+**Status:** Accepted
+
+### Context
+The Todo system supports create, claim, complete, and unclaim operations. Deletion is a destructive action that could lead to accidental data loss, especially in a collaborative environment where multiple members interact with shared tasks.
+
+### Decision
+Implement `deleteTodo(id:)` at the repository level but do **not** expose any UI element (button, swipe action, context menu) for deletion. The method is callable only through debug/internal paths.
+
+### Rationale
+1. **Prevent accidental data loss**: In a party organization context, deleting a todo that others may reference causes confusion
+2. **Admin-only capability**: Deletion should be reserved for administrators or maintenance tasks, not regular users
+3. **Soft approach**: The method exists in the protocol so real backend implementations can support it when admin tools are built
+4. **Minimal risk**: Since the meine-piraten.de API is still unknown (Q-003), we avoid committing to a destructive user-facing flow that may not match the backend's model
+
+### When to revisit
+- When the meine-piraten.de API schema is confirmed and includes delete semantics
+- When an admin/moderation interface is designed
+- If user research indicates a need for user-initiated archiving or deletion
+
+---
+
+## D-018: meine-piraten.de API Integration Approach
+
+**Date:** 2026-02-10
+**Status:** Accepted
+
+### Context
+The meine-piraten.de server is a Rails 8 app with a standard REST API (JSON/jbuilder, SQLite3, no authentication). The iOS app needs to consume this API for Todo functionality.
+
+### Decision
+1. **Direct REST client** — follow the same pattern as DiscourseAPIClient: dedicated TodoAPIClient with HTTPClient injection, raw Data return, error mapping.
+2. **No authentication wrapper** — the server has no auth layer. Use plain URLSessionHTTPClient (no DiscourseHTTPClient-style wrapper needed).
+3. **Domain model alignment** — restructure iOS domain models to match the server schema rather than maintaining a separate abstraction. This reduces mapping complexity.
+4. **Server extensions first** — add missing fields (status, assignee) and comments model to the server before building the iOS client.
+5. **FakeTodoRepository preserved** — keep for tests and SwiftUI previews; production uses RealTodoRepository.
+
+### Rationale
+- Matching the server schema avoids unnecessary impedance mismatch
+- No auth simplifies the client (no token injection needed)
+- Following the Discourse pattern keeps the codebase consistent
+- Server-first ensures the iOS client targets a stable API
+
+### Consequences
+- If the server adds authentication later, we'll need a TodoHTTPClient wrapper (similar to DiscourseHTTPClient)
+- The `completed` boolean field on the server is now redundant with `status` — could be removed in a future migration
+
+---
+
 ## Future Decisions
 
 Decisions pending external input:
-- meine-piraten.de API integration approach
+- meine-piraten.de authentication integration (when server adds auth)
+- Todo pagination strategy (when data volume requires it)
