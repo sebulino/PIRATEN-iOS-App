@@ -202,7 +202,7 @@
         "Offline shows cached content if available",
         "Build passes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M8-015",

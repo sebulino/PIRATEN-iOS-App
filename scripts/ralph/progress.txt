@@ -174,3 +174,18 @@ Started: Do. 12 Feb. 2026 15:50:07 CET
   - Existing TopicListRow in KnowledgeView is private; CategoryDetailView replicates the pattern inline since extracting would require a separate story
   - Preview uses a private PreviewProgressProvider conformance to avoid dependency on full ViewModel
 ---
+
+## 2026-02-12 16:52 - M8-014
+- Implemented full KnowledgeTopicDetailView (lesson view) replacing the stub
+- Header with title, tags (chips), level badge, reading time
+- ScrollView + LazyVStack rendering all section types: overview, text, checklist, callout, quiz, nextSteps
+- Loading/error/loaded states with retry button
+- Calls markAsStarted on appear, loadContent on appear (only if content not already loaded)
+- Offline: cached content shown via repository's cache-first strategy
+- Files changed: PIRATEN/App/Views/Main/KnowledgeTopicDetailView.swift
+- **Learnings for future iterations:**
+  - All Knowledge components are in Views/Knowledge/Components/ and have clean interfaces
+  - SectionCard is generic with @ViewBuilder content closure
+  - QuizCard needs selectedAnswers binding + onSelectAnswer + onComplete callbacks
+  - ChecklistCard uses closure-based isCompleted/onToggle pattern (not Binding)
+---
