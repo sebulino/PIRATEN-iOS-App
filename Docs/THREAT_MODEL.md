@@ -2,8 +2,8 @@
 
 This document identifies security threats and mitigations for the PIRATEN iOS app.
 
-Last updated: 2026-02-02
-Current milestone: M4 (Messaging MVP)
+Last updated: 2026-02-12
+Current milestone: M9 (Hardening & Governance)
 
 ---
 
@@ -589,6 +589,51 @@ If a security issue is discovered:
 2. Assess severity and exploitability
 3. Implement fix before next release
 4. Consider disclosure timeline
+
+---
+
+## M9 Security Hardening (2026-02-12)
+
+### Logging Audit Results
+
+A full audit of all 117 Swift source files was conducted. Two sensitive logging issues were found and remediated:
+
+1. **DiscourseAuthManager: Public key PEM logged at DEBUG level** (Medium risk)
+   - Full RSA public key was logged via `discourseAuthLog.debug()`
+   - Fix: Removed PEM logging; only key length is logged
+
+2. **DiscourseAuthManager: Decrypted auth payload logged at DEBUG level** (High risk)
+   - The full decrypted JSON including the Discourse User API Key was logged
+   - Fix: Removed payload logging; only byte count is logged
+
+3. **DiscourseAuthManager: Callback URL logged with full query/fragment** (Medium risk)
+   - The full callback URL including encrypted payload data was logged
+   - Fix: URL logged via `LogRedactor.redactURL()` (scheme + host + path only)
+   - Query item values replaced with name-only listing
+
+### Centralized Redaction
+
+`LogRedactor` utility added (`Core/Support/LogRedactor.swift`) providing:
+- `redactSecret(_:)` — shows only a configurable prefix + total length
+- `redactURL(_:)` — strips query parameters and fragments
+- `redactData(_:)` — logs byte count only
+
+All future logging of sensitive values MUST use these helpers.
+
+### Security Assumptions Documented
+
+- Apple `os.log` Logger DEBUG/INFO levels are **not** privacy-redacted by default
+- DEBUG-level logs persist in unified log and are readable via Console.app
+- Even public keys should not be fully logged (fingerprinting risk)
+- Encrypted payloads must not be logged (may be replayed or decrypted offline)
+
+### Remaining Safe Logging Patterns
+
+The following patterns were reviewed and confirmed safe:
+- `#if DEBUG`-guarded `print()` statements (5 instances across AppDelegate, DeviceTokenManager)
+- Nonce prefix logging (`nonce.prefix(16)`) — safe partial disclosure
+- URL length logging — safe metadata only
+- Token prefix logging in DeviceTokenManager — safe, DEBUG-only
 
 ---
 
