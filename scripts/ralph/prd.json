@@ -157,7 +157,7 @@
         "MarkdownTextView uses AttributedString(markdown:) with plain-text fallback",
         "Build passes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M8-012",

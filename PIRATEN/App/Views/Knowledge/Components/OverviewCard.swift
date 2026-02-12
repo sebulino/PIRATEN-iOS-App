@@ -1,0 +1,41 @@
+//
+//  OverviewCard.swift
+//  PIRATEN
+//
+
+import SwiftUI
+
+/// Always-visible card showing overview bullets (Kurzüberblick).
+struct OverviewCard: View {
+    let bullets: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Kurzüberblick", systemImage: "list.bullet")
+                .font(.headline)
+                .foregroundColor(.orange)
+
+            ForEach(Array(bullets.enumerated()), id: \.offset) { _, bullet in
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                        .foregroundColor(.orange)
+                    MarkdownTextView(markdown: bullet)
+                        .font(.subheadline)
+                }
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground))
+        .cornerRadius(12)
+    }
+}
+
+#Preview {
+    OverviewCard(bullets: [
+        "Erster Punkt mit **wichtigem** Inhalt",
+        "Zweiter Punkt zum Thema",
+        "Dritter Punkt mit Details"
+    ])
+    .padding()
+}
