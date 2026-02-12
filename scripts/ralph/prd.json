@@ -114,7 +114,7 @@
         "Injectable UserDefaults for test isolation",
         "Build passes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M8-009",
@@ -128,7 +128,7 @@
         "In-progress topics derived from progress store",
         "Build passes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M8-010",
@@ -142,7 +142,7 @@
         "Progress transitions: unread → started (on appear) → completed (on completion rule)",
         "Build passes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M8-011",

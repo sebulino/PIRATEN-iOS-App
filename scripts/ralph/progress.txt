@@ -90,3 +90,44 @@ Started: Do. 12 Feb. 2026 15:50:07 CET
   - Use deterministic UUIDs (UUID(uuidString:)!) for stable preview/test data
   - Follow FakeDiscourseRepository pattern: @MainActor, stored properties for static data, computed or init-built for composed data
 ---
+
+## [2026-02-12 18:45] - M8-008
+- Implemented ReadingProgressStore with ReadingProgressStorage protocol
+- UserDefaults-backed with JSON-encoded [String: TopicProgress] dictionary
+- Methods: getProgress(for:), getAllProgress(), saveProgress(_:), clearAll()
+- Follows RecentRecipientsStore pattern: protocol + constructor-injected UserDefaults
+- Silently clears corrupted data on decode failure
+- Files changed: PIRATEN/Core/Data/Storage/ReadingProgressStore.swift (new)
+- **Learnings for future iterations:**
+  - Project uses PBXFileSystemSynchronizedRootGroup — no manual pbxproj edits needed for new files
+  - Storage pattern is consistent: protocol, UserDefaults key constant, injectable UserDefaults, clearAll for logout
+---
+
+## 2026-02-12 21:15 - M8-009
+- Created KnowledgeViewModel with KnowledgeLoadState enum (idle/loading/loaded/error)
+- @MainActor ObservableObject with @Published loadState, index, searchQuery
+- Computed properties: categories, featuredTopics (from index.featuredTopicIds), inProgressTopics (from progress store, sorted by lastOpenedAt), searchResults (case-insensitive filter on title + summary + tags)
+- Methods: loadIndex(forceRefresh:), topicsForCategory(_:), progress(for:)
+- Constructor-injected KnowledgeRepository and ReadingProgressStorage
+- Files changed: PIRATEN/App/ViewModels/KnowledgeViewModel.swift (new)
+- **Learnings for future iterations:**
+  - Must import Combine alongside Foundation for ObservableObject/@Published to work
+  - ViewModel pattern: enum LoadState per VM, Task {} for async, private(set) on @Published
+  - searchResults returns nil (no search active) vs empty array (no matches) — useful for UI state
+---
+
+## 2026-02-12 23:55 - M8-010
+- Created KnowledgeTopicDetailViewModel in App/ViewModels/
+- @MainActor ObservableObject managing content loading, section expand/collapse, checklist toggle, quiz submission, progress tracking
+- Progress transitions: unread → started (markAsStarted on appear) → completed (evaluateCompletion rule)
+- Checklist toggle persists immediately via progressStore.saveProgress
+- Quiz submission: calculates correct count, persists quizCorrectCount/quizTotalCount
+- Completion rule: all checklist items checked (if any) AND quiz submitted (if any)
+- Restores persisted progress and quiz state from store on init
+- Section expand/collapse tracked via Set<Int> (expandedSections)
+- Files changed: PIRATEN/App/ViewModels/KnowledgeTopicDetailViewModel.swift (new)
+- **Learnings for future iterations:**
+  - Reuse KnowledgeLoadState enum across VMs — no need to duplicate
+  - Completion evaluation runs after every checklist toggle and quiz submit
+  - ChecklistItem.id is UUID — stored as uuidString in TopicProgress.checklistCompletions
+---
