@@ -21,7 +21,7 @@
       "id": "M8-002",
       "category": "services",
       "title": "GitHub API client",
-      "description": "Create GitHubAPIClient in Core/Data/Knowledge/ with HTTPClient injection. Supports conditional ETag requests (If-None-Match → 304 handling), raw file fetching via download_url, and rate limit detection from 403 + X-RateLimit headers. Returns GitHubDirectoryResult enum (.modified/.notModified). Follows DiscourseAPIClient pattern.",
+      "description": "Create GitHubAPIClient in Core/Data/Knowledge/ with HTTPClient injection. Supports conditional ETag requests (If-None-Match -> 304 handling), raw file fetching via download_url, and rate limit detection from 403 + X-RateLimit headers. Returns GitHubDirectoryResult enum (.modified/.notModified). Follows DiscourseAPIClient pattern.",
       "acceptanceCriteria": [
         "GitHubAPIClient injected with HTTPClient, repoOwner, repoName, branch",
         "fetchDirectoryContents supports ETag conditional requests, returns .modified or .notModified",
@@ -35,7 +35,7 @@
       "id": "M8-003",
       "category": "services",
       "title": "YAML frontmatter parser",
-      "description": "Create FrontmatterParser in Core/Data/Knowledge/. Detects --- delimited YAML block at start of markdown. Parses simple YAML subset: key: value, key: \"quoted value\", lists (- item), nested list-of-dicts (for quiz). Returns (fields: [String: Any], body: String)? — nil on malformed input. No external dependencies.",
+      "description": "Create FrontmatterParser in Core/Data/Knowledge/. Detects --- delimited YAML block at start of markdown. Parses simple YAML subset: key: value, key: \"quoted value\", lists (- item), nested list-of-dicts (for quiz). Returns (fields: [String: Any], body: String)? -- nil on malformed input. No external dependencies.",
       "acceptanceCriteria": [
         "Parses all known frontmatter fields (id, title, summary, tags, level, reading_minutes, quiz, related)",
         "Handles quoted and unquoted string values",
@@ -49,7 +49,7 @@
       "id": "M8-004",
       "category": "services",
       "title": "Markdown content parser",
-      "description": "Create ContentSectionParser in Core/Data/Knowledge/. Splits markdown body by H2 (## ) headings into typed ContentSection values. Recognizes special sections: Kurzüberblick → .overview (bullets), Checkliste → .checklist (- [ ] items), Nächste Schritte → .nextSteps, Mini-Quiz → skip. Detects callout blockquotes (> TIP:, > ACHTUNG:, > MERKSATZ:). Preserves section order.",
+      "description": "Create ContentSectionParser in Core/Data/Knowledge/. Splits markdown body by H2 (## ) headings into typed ContentSection values. Recognizes special sections: Kurzueberblick -> .overview (bullets), Checkliste -> .checklist (- [ ] items), Naechste Schritte -> .nextSteps, Mini-Quiz -> skip. Detects callout blockquotes (> TIP:, > ACHTUNG:, > MERKSATZ:). Preserves section order.",
       "acceptanceCriteria": [
         "Correctly splits on H2 boundaries",
         "Identifies all special section types (overview, checklist, nextSteps)",
@@ -134,12 +134,12 @@
       "id": "M8-010",
       "category": "viewmodels",
       "title": "KnowledgeTopicDetailViewModel",
-      "description": "Create KnowledgeTopicDetailViewModel in App/ViewModels/. Manages content loading, section expand/collapse, checklist toggle persistence, quiz submission, and progress tracking (unread → started on appear → completed on rule). Injected: KnowledgeTopic, KnowledgeRepository, ReadingProgressStorage.",
+      "description": "Create KnowledgeTopicDetailViewModel in App/ViewModels/. Manages content loading, section expand/collapse, checklist toggle persistence, quiz submission, and progress tracking (unread -> started on appear -> completed on rule). Injected: KnowledgeTopic, KnowledgeRepository, ReadingProgressStorage.",
       "acceptanceCriteria": [
         "Loads content and restores persisted progress from store",
         "Checklist toggle persists immediately via progress store",
         "Quiz result persists on completion",
-        "Progress transitions: unread → started (on appear) → completed (on completion rule)",
+        "Progress transitions: unread -> started (on appear) -> completed (on completion rule)",
         "Build passes"
       ],
       "passes": true
@@ -163,7 +163,7 @@
       "id": "M8-012",
       "category": "views",
       "title": "KnowledgeView (home screen, replaces placeholder)",
-      "description": "Replace placeholder KnowledgeView.swift with full home screen. NavigationStack with .searchable modifier, sections: Empfohlen (horizontal ScrollView, hidden if empty), Weiterlesen (in-progress topics, hidden if empty), Kategorien (LazyVGrid 2-col with category cards → NavigationLink to CategoryDetailView). States: loading/error/loaded/empty. Pull-to-refresh. Uses ScrollView + LazyVStack (not List).",
+      "description": "Replace placeholder KnowledgeView.swift with full home screen. NavigationStack with .searchable modifier, sections: Empfohlen (horizontal ScrollView, hidden if empty), Weiterlesen (in-progress topics, hidden if empty), Kategorien (LazyVGrid 2-col with category cards -> NavigationLink to CategoryDetailView). States: loading/error/loaded/empty. Pull-to-refresh. Uses ScrollView + LazyVStack (not List).",
       "acceptanceCriteria": [
         "All 4 states handled (loading, error with retry, loaded, empty)",
         "Search filters topics across all categories",
@@ -193,7 +193,7 @@
       "id": "M8-014",
       "category": "views",
       "title": "KnowledgeTopicDetailView (lesson view)",
-      "description": "Create KnowledgeTopicDetailView in App/Views/Main/. Header with title, tags (chips), level, reading time. ScrollView rendering sections: .overview → OverviewCard, .text → SectionCard (collapsed), .checklist → ChecklistCard (interactive), .callout → CalloutView, .quiz → QuizCard, .nextSteps → NextStepsCard. Calls markAsStarted on appear and loadContent on appear. Loading/error states. Offline: shows cached content.",
+      "description": "Create KnowledgeTopicDetailView in App/Views/Main/. Header with title, tags (chips), level, reading time. ScrollView rendering sections: .overview -> OverviewCard, .text -> SectionCard (collapsed), .checklist -> ChecklistCard (interactive), .callout -> CalloutView, .quiz -> QuizCard, .nextSteps -> NextStepsCard. Calls markAsStarted on appear and loadContent on appear. Loading/error states. Offline: shows cached content.",
       "acceptanceCriteria": [
         "All section types render correctly",
         "Checklist toggles persist via viewModel",

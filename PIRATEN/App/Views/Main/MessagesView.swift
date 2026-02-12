@@ -27,31 +27,39 @@ struct MessagesView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                switch viewModel.loadState {
-                case .idle, .loading:
-                    if viewModel.messageThreads.isEmpty {
-                        ProgressView("Lade Nachrichten...")
-                    } else {
-                        // Show existing threads while refreshing
-                        messageThreadsList
+            ZStack(alignment: .bottomTrailing) {
+                Group {
+                    switch viewModel.loadState {
+                    case .idle, .loading:
+                        if viewModel.messageThreads.isEmpty {
+                            ProgressView("Lade Nachrichten...")
+                        } else {
+                            // Show existing threads while refreshing
+                            messageThreadsList
+                        }
+
+                    case .loaded:
+                        if viewModel.messageThreads.isEmpty {
+                            emptyState
+                        } else {
+                            messageThreadsList
+                        }
+
+                    case .notAuthenticated:
+                        notAuthenticatedState
+
+                    case .authenticationFailed(let message):
+                        authenticationFailedState(message: message)
+
+                    case .error(let message):
+                        errorState(message: message)
                     }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                case .loaded:
-                    if viewModel.messageThreads.isEmpty {
-                        emptyState
-                    } else {
-                        messageThreadsList
-                    }
-
-                case .notAuthenticated:
-                    notAuthenticatedState
-
-                case .authenticationFailed(let message):
-                    authenticationFailedState(message: message)
-
-                case .error(let message):
-                    errorState(message: message)
+                // Floating Action Button - only visible when authenticated
+                if isAuthenticated {
+                    composeButton
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
