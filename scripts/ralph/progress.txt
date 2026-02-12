@@ -15,3 +15,17 @@ Started: Do. 12 Feb. 2026 15:50:07 CET
   - Public repos don't need auth tokens; the client uses no Authorization header
   - Rate limit detection: check X-RateLimit-Remaining header on 403 responses
 ---
+
+## 2026-02-12 20:15 - M8-003
+- Created FrontmatterParser in Core/Data/Knowledge/
+- Parses ---delimited YAML frontmatter from markdown files
+- Handles: scalar key:value, quoted/unquoted strings, simple lists (- item), nested list-of-dicts (for quiz)
+- Returns FrontmatterResult(fields: [String: Any], body: String)? — nil on malformed input
+- Convenience parseTopic() maps fields to KnowledgeTopic domain model
+- Quiz parsing: maps dict with question/options/correct keys to QuizQuestion
+- Files changed: PIRATEN/Core/Data/Knowledge/FrontmatterParser.swift (new)
+- **Learnings for future iterations:**
+  - YAML parsing is recursive — list items can contain nested dicts with their own list values
+  - Quiz correct answer comes as string "0", "1" etc. — needs Int conversion
+  - reading_minutes field is string in YAML, needs Int parsing with default fallback
+---

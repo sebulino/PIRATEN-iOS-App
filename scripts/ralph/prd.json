@@ -43,7 +43,7 @@
         "Returns nil (not crash) on malformed input",
         "Build passes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M8-004",
