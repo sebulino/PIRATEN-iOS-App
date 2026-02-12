@@ -19,15 +19,16 @@ The app follows a **privacy-first** approach with no analytics or tracking.
 |---------|--------|-------|
 | **SSO Login** | ✅ Implemented | Keycloak OAuth2/OIDC via AppAuth |
 | **Token Management** | ✅ Implemented | Secure Keychain storage, auto-refresh |
-| **Forum (Topics)** | ✅ Read-only | Fetches from Discourse API |
-| **Forum (Posts)** | ✅ Read-only | Topic detail with posts |
-| **Private Messages** | ✅ Read-only | Inbox and thread detail |
 | **Discourse Auth** | ✅ Implemented | User API Key flow (RSA encrypted) |
-| **Todos** | 🚧 Placeholder | Awaiting meine-piraten.de API |
+| **Forum (Topics)** | ✅ Read-only | Fetches from Discourse API |
+| **Forum (Posts)** | ✅ Read-only | Topic detail with posts, tappable usernames |
+| **Private Messages** | ✅ Read + Compose | Inbox, thread detail, compose with recipient picker |
+| **User Profiles** | ✅ Implemented | Tappable usernames, direct messaging from profile |
+| **Todos** | ✅ Stubbed (write) | Create, claim, complete, comment, detail view (fake data, awaiting meine-piraten.de API) |
+| **Push Notifications** | ✅ Scaffolded | APNs token registration, deep links, backend contract documented |
+| **Profile** | ✅ Implemented | SSO user info, notification preferences |
 | **Knowledge** | 🚧 Placeholder | Not yet specified |
-| **Profile** | 🚧 Placeholder | Shows SSO user info |
 | **Posting/Replies** | ❌ Not started | Future milestone |
-| **Push Notifications** | ❌ Not started | Future milestone |
 
 See [PROJECT_STATUS.md](Docs/PROJECT_STATUS.md) for detailed milestone progress.
 
@@ -184,15 +185,16 @@ PIRATEN/
 ├── Core/
 │   ├── Domain/             # Business logic layer
 │   │   ├── Auth/           # Auth entities, protocols, state machine
+│   │   ├── DeepLink/       # Deep link routing from notifications
 │   │   ├── Discourse/      # Forum/message entities, API key models
 │   │   ├── HTTP/           # HTTP client protocol, request/response types
-│   │   └── Todos/          # Todo entities and protocols
+│   │   └── Todos/          # Todo entities, comments, and repository protocol
 │   ├── Data/               # Data layer implementations
 │   │   ├── Auth/           # OIDC auth repository
 │   │   ├── Discourse/      # Discourse API client, auth manager
 │   │   ├── HTTP/           # URLSession client, authenticated clients
 │   │   ├── OIDC/           # AppAuth integration services
-│   │   └── Todos/          # Todo repository (fake for now)
+│   │   └── Todos/          # Todo repository (fake/in-memory)
 │   └── Support/            # System wrappers
 │       ├── AppContainer.swift    # Dependency injection root
 │       ├── KeychainService.swift # Secure credential storage

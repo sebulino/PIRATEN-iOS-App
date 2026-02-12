@@ -14,7 +14,7 @@
         "Clear copy explains what will be sent and what will not be tracked",
         "Context7 consulted for UNUserNotificationCenter best practices and permission UX; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M5-002",
@@ -27,7 +27,7 @@
         "No device token is logged in full (mask or avoid logging)",
         "Context7 consulted for APNs registration flow and iOS lifecycle concerns; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M5-003",
@@ -40,7 +40,7 @@
         "Routing logic is covered by unit tests where feasible",
         "Context7 consulted for deep link routing patterns in SwiftUI apps; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M5-004",
@@ -53,7 +53,7 @@
         "No tracking/analytics added",
         "Context7 consulted for minimal payload and privacy guidance; summary added to progress.txt"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }
