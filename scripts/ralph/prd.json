@@ -58,7 +58,7 @@
         "Handles edge cases: empty sections, no H2s (whole body = single text section)",
         "Build passes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "M8-005",

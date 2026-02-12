@@ -29,3 +29,18 @@ Started: Do. 12 Feb. 2026 15:50:07 CET
   - Quiz correct answer comes as string "0", "1" etc. — needs Int conversion
   - reading_minutes field is string in YAML, needs Int parsing with default fallback
 ---
+
+## 2026-02-12 21:00 - M8-004
+- Created ContentSectionParser in Core/Data/Knowledge/
+- Splits markdown body by H2 (`## `) headings into typed ContentSection values
+- Special section recognition: Kurzüberblick → .overview, Checkliste → .checklist, Nächste Schritte → .nextSteps, Mini-Quiz → skip
+- Callout detection: blockquotes with TIP:, ACHTUNG:, MERKSATZ: prefixes → .callout
+- Checklist parsing: `- [ ]` and `- [x]` items → ChecklistItem with UUID
+- Bullet list parsing for overview and nextSteps sections
+- Content before first H2 treated as text section with empty heading
+- Files changed: PIRATEN/Core/Data/Knowledge/ContentSectionParser.swift (new)
+- **Learnings for future iterations:**
+  - Callouts are only recognized when the entire section body is a blockquote (no mixed content)
+  - Checklist items get fresh UUIDs on each parse — persistence uses TopicProgress.checklistCompletions keyed by item text/index
+  - Section order is preserved from the original markdown
+---
