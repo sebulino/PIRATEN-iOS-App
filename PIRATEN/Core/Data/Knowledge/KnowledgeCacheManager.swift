@@ -10,10 +10,14 @@ import Foundation
 /// Returns nil on read errors — never throws.
 final class KnowledgeCacheManager {
 
+    /// Bump this version when the parser changes to invalidate stale cached content.
+    private static let cacheVersion = 2
+
     private let fileManager: FileManager
     private let cacheDirectoryURL: URL
     private let topicsDirectoryURL: URL
     private let indexFileURL: URL
+    private let versionFileURL: URL
 
     private let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
@@ -33,6 +37,18 @@ final class KnowledgeCacheManager {
         self.cacheDirectoryURL = cachesURL.appendingPathComponent("Knowledge", isDirectory: true)
         self.topicsDirectoryURL = cacheDirectoryURL.appendingPathComponent("topics", isDirectory: true)
         self.indexFileURL = cacheDirectoryURL.appendingPathComponent("index.json")
+        self.versionFileURL = cacheDirectoryURL.appendingPathComponent("cache_version")
+        migrateIfNeeded()
+    }
+
+    /// Clears all cached data when the cache version has changed (e.g. parser update).
+    private func migrateIfNeeded() {
+        let storedVersion = (try? String(contentsOf: versionFileURL, encoding: .utf8))
+            .flatMap { Int($0) } ?? 0
+        guard storedVersion < Self.cacheVersion else { return }
+        clearCache()
+        ensureDirectoryExists(cacheDirectoryURL)
+        try? String(Self.cacheVersion).write(to: versionFileURL, atomically: true, encoding: .utf8)
     }
 
     // MARK: - Index

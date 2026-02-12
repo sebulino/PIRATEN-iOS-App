@@ -6,7 +6,7 @@
 import Foundation
 
 /// Result of parsing a markdown file's YAML frontmatter block.
-struct FrontmatterResult {
+nonisolated struct FrontmatterResult {
     /// Parsed key-value fields from the YAML block
     let fields: [String: Any]
     /// Remaining markdown body after the frontmatter
@@ -16,7 +16,7 @@ struct FrontmatterResult {
 /// Parses YAML frontmatter from markdown files.
 /// Handles a simple YAML subset: scalar values, lists, and nested list-of-dicts (for quiz).
 /// No external dependencies.
-enum FrontmatterParser {
+nonisolated enum FrontmatterParser {
 
     // MARK: - Public
 

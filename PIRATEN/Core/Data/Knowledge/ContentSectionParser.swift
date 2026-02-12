@@ -43,8 +43,8 @@ enum ContentSectionParser {
         let body: String
     }
 
-    /// Splits the markdown body into sections by `## ` headings.
-    /// Content before the first H2 becomes a section with `heading: nil`.
+    /// Splits the markdown body into sections by `# ` or `## ` headings.
+    /// Content before the first heading becomes a section with `heading: nil`.
     private static func splitByH2(_ body: String) -> [RawSection] {
         let lines = body.components(separatedBy: "\n")
         var sections: [RawSection] = []
@@ -52,13 +52,16 @@ enum ContentSectionParser {
         var currentLines: [String] = []
 
         for line in lines {
-            if line.hasPrefix("## ") {
+            let isH1 = line.hasPrefix("# ") && !line.hasPrefix("## ")
+            let isH2 = line.hasPrefix("## ") && !line.hasPrefix("### ")
+            if isH1 || isH2 {
                 // Flush previous section
                 let content = currentLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
                 if currentHeading != nil || !content.isEmpty {
                     sections.append(RawSection(heading: currentHeading, body: content))
                 }
-                currentHeading = String(line.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+                let prefixLen = isH1 ? 2 : 3
+                currentHeading = String(line.dropFirst(prefixLen)).trimmingCharacters(in: .whitespaces)
                 currentLines = []
             } else {
                 currentLines.append(line)
@@ -93,13 +96,13 @@ enum ContentSectionParser {
 
         let headingLower = heading.lowercased()
 
-        if overviewHeadings.contains(headingLower) {
+        if overviewHeadings.contains(where: { headingLower.hasPrefix($0) }) {
             return parseOverview(raw.body)
-        } else if checklistHeadings.contains(headingLower) {
+        } else if checklistHeadings.contains(where: { headingLower.hasPrefix($0) }) {
             return parseChecklist(raw.body)
-        } else if nextStepsHeadings.contains(headingLower) {
+        } else if nextStepsHeadings.contains(where: { headingLower.hasPrefix($0) }) {
             return parseNextSteps(raw.body)
-        } else if quizHeadings.contains(headingLower) {
+        } else if quizHeadings.contains(where: { headingLower.hasPrefix($0) }) {
             return nil // Quiz comes from frontmatter
         } else {
             return parseTextBody(heading: heading, body: raw.body)

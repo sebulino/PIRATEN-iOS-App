@@ -563,6 +563,14 @@ No bundled content. Empty state shown until first successful fetch.
 
 ## Resolved Questions
 
+### Q-019: Create PIRATEN-Kanon GitHub Repository
+
+**Status:** Resolved
+**Asked:** 2026-02-12
+**Resolved:** 2026-02-12
+
+**Answer:** Repository was private, now switched to public. AppContainer uses `RealKnowledgeRepository` pointing at `sebulino/PIRATEN-Kanon`.
+
 (Move questions here once answered)
 
 ---
