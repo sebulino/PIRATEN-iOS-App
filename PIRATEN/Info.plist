@@ -43,5 +43,11 @@
 	<string>$(DISCOURSE_CLIENT_ID)</string>
 	<key>MEINE_PIRATEN_BASE_URL</key>
 	<string>$(MEINE_PIRATEN_BASE_URL)</string>
+	<key>KNOWLEDGE_REPO_OWNER</key>
+	<string>$(KNOWLEDGE_REPO_OWNER)</string>
+	<key>KNOWLEDGE_REPO_NAME</key>
+	<string>$(KNOWLEDGE_REPO_NAME)</string>
+	<key>KNOWLEDGE_REPO_BRANCH</key>
+	<string>$(KNOWLEDGE_REPO_BRANCH)</string>
 </dict>
 </plist>

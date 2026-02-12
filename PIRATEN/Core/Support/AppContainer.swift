@@ -71,6 +71,10 @@ final class AppContainer {
     /// Production uses RealTodoRepository (meine-piraten.de API); tests use FakeTodoRepository.
     let todoRepository: TodoRepository
 
+    /// Knowledge repository implementation.
+    /// Production uses RealKnowledgeRepository (GitHub API); tests use FakeKnowledgeRepository.
+    let knowledgeRepository: KnowledgeRepository
+
     // MARK: - Presentation Layer (ViewModels)
 
     /// Authentication state manager (ViewModel for auth flow).
@@ -173,7 +177,7 @@ final class AppContainer {
     func makeKnowledgeTopicDetailViewModel(for topic: KnowledgeTopic) -> KnowledgeTopicDetailViewModel {
         KnowledgeTopicDetailViewModel(
             topic: topic,
-            repository: FakeKnowledgeRepository(),
+            repository: knowledgeRepository,
             progressStore: readingProgressStore
         )
     }
@@ -275,6 +279,24 @@ final class AppContainer {
         let todoAPIClient = TodoAPIClient(httpClient: baseHTTPClient, baseURL: meinePiratenBaseURL)
         self.todoRepository = RealTodoRepository(apiClient: todoAPIClient)
 
+        // Knowledge Hub - GitHub API client and repository
+        // Repo config read from Info.plist (set via xcconfig)
+        let knowledgeRepoOwner = Bundle.main.infoDictionary?["KNOWLEDGE_REPO_OWNER"] as? String ?? "sebulino"
+        let knowledgeRepoName = Bundle.main.infoDictionary?["KNOWLEDGE_REPO_NAME"] as? String ?? "PIRATEN-Kanon"
+        let knowledgeRepoBranch = Bundle.main.infoDictionary?["KNOWLEDGE_REPO_BRANCH"] as? String ?? "main"
+        let gitHubAPIClient = GitHubAPIClient(
+            httpClient: baseHTTPClient,
+            repoOwner: knowledgeRepoOwner,
+            repoName: knowledgeRepoName,
+            branch: knowledgeRepoBranch
+        )
+        let knowledgeCacheManager = KnowledgeCacheManager()
+        let realKnowledgeRepository = RealKnowledgeRepository(
+            apiClient: gitHubAPIClient,
+            cacheManager: knowledgeCacheManager
+        )
+        self.knowledgeRepository = realKnowledgeRepository
+
         // Remaining presentation layer
         self.forumViewModel = ForumViewModel(discourseRepository: discourseRepository)
         self.messagesViewModel = MessagesViewModel(
@@ -283,7 +305,7 @@ final class AppContainer {
         )
         self.todosViewModel = TodosViewModel(todoRepository: todoRepository)
         self.knowledgeViewModel = KnowledgeViewModel(
-            repository: FakeKnowledgeRepository(),
+            repository: realKnowledgeRepository,
             progressStore: readingProgressStore
         )
         self.profileViewModel = ProfileViewModel(authRepository: authRepository)
@@ -330,6 +352,7 @@ final class AppContainer {
 
         self.discourseRepository = discourseRepository ?? FakeDiscourseRepository()
         self.todoRepository = todoRepository ?? FakeTodoRepository()
+        self.knowledgeRepository = FakeKnowledgeRepository()
 
         // Storage layer (use standard UserDefaults for testing)
         self.recentRecipientsStore = RecentRecipientsStore()
@@ -352,7 +375,7 @@ final class AppContainer {
         )
         self.todosViewModel = TodosViewModel(todoRepository: self.todoRepository)
         self.knowledgeViewModel = KnowledgeViewModel(
-            repository: FakeKnowledgeRepository(),
+            repository: knowledgeRepository,
             progressStore: readingProgressStore
         )
         self.profileViewModel = ProfileViewModel(authRepository: self.authRepository)
