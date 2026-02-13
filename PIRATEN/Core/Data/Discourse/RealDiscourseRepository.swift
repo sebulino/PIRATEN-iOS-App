@@ -50,11 +50,11 @@ final class RealDiscourseRepository: DiscourseRepository {
 
     func fetchPosts(forTopicId topicId: Int) async throws -> [Post] {
         do {
-            let data = try await apiClient.fetchTopic(id: topicId)
+            // Fetch topic with print=true to get all posts (not just first 20)
+            let data = try await apiClient.fetchTopic(id: topicId, includeAllPosts: true)
             let response = try decodeTopicDetailResponse(from: data)
 
             // Map post DTOs to domain models
-            // Discourse /t/{id}.json returns posts in post_stream.posts (first 20)
             let posts = response.postStream.posts.compactMap { dto in
                 dto.toDomainModel()
             }

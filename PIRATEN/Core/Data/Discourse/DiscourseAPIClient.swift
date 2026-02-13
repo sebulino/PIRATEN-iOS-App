@@ -88,11 +88,27 @@ final class DiscourseAPIClient {
 
     /// Fetches a single topic with its posts.
     /// Endpoint: GET /t/{topic_id}.json
-    /// - Parameter topicId: The ID of the topic to fetch
+    /// - Parameters:
+    ///   - topicId: The ID of the topic to fetch
+    ///   - includeAllPosts: If true, uses print=true to fetch all posts (default: false)
     /// - Returns: Raw response data for decoding by the caller
     /// - Throws: DiscourseError if the request fails
-    func fetchTopic(id topicId: Int) async throws -> Data {
-        let request = HTTPRequest.get(url(for: "/t/\(topicId).json"), headers: commonHeaders())
+    ///
+    /// Note: By default, Discourse returns only the first ~20 posts.
+    /// Set includeAllPosts to true to fetch all posts using the print parameter.
+    func fetchTopic(id topicId: Int, includeAllPosts: Bool = false) async throws -> Data {
+        var urlComponents = URLComponents(url: url(for: "/t/\(topicId).json"), resolvingAgainstBaseURL: false)!
+
+        // Add print=true to fetch all posts
+        if includeAllPosts {
+            urlComponents.queryItems = [URLQueryItem(name: "print", value: "true")]
+        }
+
+        guard let finalURL = urlComponents.url else {
+            throw DiscourseError.unknown(statusCode: nil, message: "Failed to construct URL")
+        }
+
+        let request = HTTPRequest.get(finalURL, headers: commonHeaders())
         do {
             let response = try await httpClient.execute(request)
             guard response.isSuccess else {
