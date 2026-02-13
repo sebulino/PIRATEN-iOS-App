@@ -22,3 +22,35 @@ Started: 2026-02-12
   - Always redact callback URLs — they may carry encrypted payloads or tokens as query/fragment params
   - Context7 did not have specific os.log privacy docs; Apple's own OSLogPrivacy API docs are the authoritative source
 ---
+
+## [2026-02-13 10:00] - M9-003
+- Comprehensive accessibility pass across all core views (Forum, Messages, Todos, Knowledge, Profile, UserProfile, Compose, RecipientPicker)
+- **VoiceOver labels added:**
+  - TopicRow: reply count + view count labels ("X Antworten", "X Aufrufe"), combined accessibility element
+  - MessageThreadRow: unread indicator label, reply count label, combined accessibility element
+  - TodoRow: status badge label ("Status: ..."), due date label ("Überfällig:/Fällig:"), status icon hidden from VoiceOver
+  - PostRow (TopicDetail): reply count + like count labels
+  - ReplyComposerView: cancel and send button labels
+  - ComposeMessageView: subject + body field labels, avatar hidden
+  - RecipientPickerView: avatar hidden from VoiceOver
+  - Todos toolbar: "Neue Aufgabe erstellen" label on plus button
+  - All state view decorative icons marked accessibilityHidden(true)
+- **Dynamic Type improvements:**
+  - Avatar initials changed from hardcoded px sizes to semantic fonts (.subheadline, .caption, .title)
+  - MessagePostRow: 14pt → .subheadline; ComposeMessageView: 13pt → .caption; RecipientPickerView: 16pt → .subheadline; UserProfileView: 32pt → .title
+- **Contrast improvements:**
+  - Avatar background opacity increased from 0.2 to 0.3 (MessagePostRow, UserProfileView)
+  - Level/status badge backgrounds increased from 0.15 to 0.2 (KnowledgeView, CategoryDetailView, TodosView)
+  - Migrated most `.foregroundColor()` to `.foregroundStyle()` for modern API consistency
+- Files changed: ForumView, MessagesView, TodosView, TopicDetailView, MessageThreadDetailView, ComposeMessageView, RecipientPickerView, ProfileView, UserProfileView, KnowledgeView, CategoryDetailView, prd.json, progress.txt
+- **Context7 summary:**
+  - Use `accessibilityLabel(_:)` (not deprecated `accessibility(label:)`) for VoiceOver descriptions
+  - Use `accessibilityHidden(true)` for purely decorative icons that duplicate adjacent text
+  - Use `accessibilityElement(children: .combine)` to merge related info (title + metadata) into single VoiceOver elements
+  - Use semantic font styles (.headline, .subheadline, .caption) instead of hardcoded point sizes for Dynamic Type
+  - `.foregroundStyle()` is the modern replacement for `.foregroundColor()` but `.accentColor` is not a valid ShapeStyle — use `.foregroundColor(.accentColor)` for accent colors
+- **Learnings for future iterations:**
+  - `.foregroundStyle(.accentColor)` does NOT compile — `.accentColor` is a `Color`, not a `ShapeStyle`. Use `.foregroundColor(.accentColor)` or `Color.accentColor` via `.foregroundStyle(Color.accentColor)` is also invalid. Stick with `.foregroundColor()` for accentColor specifically.
+  - Decorative state icons (error, empty, auth states) should always be `accessibilityHidden(true)` — the heading text already conveys meaning
+  - Combined accessibility elements (`.accessibilityElement(children: .combine)`) are better than individual labels for list rows with multiple metadata items
+---

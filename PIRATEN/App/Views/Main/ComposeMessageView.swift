@@ -136,9 +136,10 @@ struct ComposeMessageView: View {
                             .frame(width: 32, height: 32)
 
                         Text(initials(for: recipient))
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.white)
+                            .font(.system(.caption, weight: .medium))
+                            .foregroundStyle(.white)
                     }
+                    .accessibilityHidden(true)
 
                     // Name
                     Text(recipient.displayText)
@@ -178,6 +179,7 @@ struct ComposeMessageView: View {
                 .onSubmit {
                     focusedField = .body
                 }
+                .accessibilityLabel("Betreff")
         }
         .padding()
     }
@@ -191,6 +193,7 @@ struct ComposeMessageView: View {
                 .onChange(of: viewModel.bodyText) { _, _ in
                     viewModel.validateBody()
                 }
+                .accessibilityLabel("Nachrichtentext")
 
             // Error message
             if let error = viewModel.validationErrorMessage {

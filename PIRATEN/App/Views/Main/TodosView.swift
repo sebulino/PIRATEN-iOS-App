@@ -48,6 +48,7 @@ struct TodosView: View {
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Neue Aufgabe erstellen")
                 }
             }
             .sheet(isPresented: $showingCreateSheet, onDismiss: {
@@ -113,20 +114,21 @@ struct TodoRow: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Image(systemName: statusIcon)
-                    .foregroundColor(statusColor)
+                    .foregroundStyle(statusColor)
                     .font(.title3)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(todo.title)
                         .font(.headline)
                         .lineLimit(2)
                         .strikethrough(todo.status == .done)
-                        .foregroundColor(todo.status == .done ? .secondary : .primary)
+                        .foregroundStyle(todo.status == .done ? .secondary : .primary)
 
                     if let creatorName = todo.creatorName {
                         Text(creatorName)
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
 
@@ -174,9 +176,10 @@ struct TodoRow: View {
             .fontWeight(.medium)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
-            .background(statusColor.opacity(0.15))
-            .foregroundColor(statusColor)
+            .background(statusColor.opacity(0.2))
+            .foregroundStyle(statusColor)
             .clipShape(Capsule())
+            .accessibilityLabel("Status: \(todo.status.displayName)")
     }
 
     @ViewBuilder
@@ -185,10 +188,12 @@ struct TodoRow: View {
 
         HStack(spacing: 4) {
             Image(systemName: isOverdue ? "clock.badge.exclamationmark" : "calendar")
+                .accessibilityHidden(true)
             Text(date, style: .date)
         }
         .font(.caption)
-        .foregroundColor(isOverdue ? .red : .secondary)
+        .foregroundStyle(isOverdue ? .red : .secondary)
+        .accessibilityLabel(isOverdue ? "Überfällig: \(date.formatted(date: .long, time: .omitted))" : "Fällig: \(date.formatted(date: .long, time: .omitted))")
     }
 }
 

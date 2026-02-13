@@ -157,7 +157,8 @@ struct MessagesView: View {
         VStack(spacing: 16) {
             Image(systemName: "envelope")
                 .font(.system(size: 48))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text("Keine Nachrichten")
                 .font(.headline)
             Text("Du hast noch keine privaten Nachrichten.")
@@ -177,7 +178,8 @@ struct MessagesView: View {
         VStack(spacing: 16) {
             Image(systemName: "person.crop.circle.badge.questionmark")
                 .font(.system(size: 48))
-                .foregroundColor(.blue)
+                .foregroundStyle(.blue)
+                .accessibilityHidden(true)
             Text("Anmeldung erforderlich")
                 .font(.headline)
             Text("Bitte melde dich an, um deine Nachrichten zu sehen.")
@@ -197,7 +199,8 @@ struct MessagesView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.lock")
                 .font(.system(size: 48))
-                .foregroundColor(.orange)
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
             Text("Nachrichten nicht verfügbar")
                 .font(.headline)
             Text("Die Verbindung zu den Nachrichten konnte nicht hergestellt werden. Die Nachrichten-Authentifizierung wird noch konfiguriert.")
@@ -217,12 +220,13 @@ struct MessagesView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 48))
-                .foregroundColor(.orange)
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
             Text("Fehler beim Laden")
                 .font(.headline)
             Text(message)
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Erneut versuchen") {
                 viewModel.loadMessages()
@@ -244,7 +248,7 @@ private struct MessageThreadRow: View {
                 Text(thread.title)
                     .font(.headline)
                     .lineLimit(2)
-                    .foregroundColor(thread.isRead ? .primary : .blue)
+                    .foregroundStyle(thread.isRead ? .primary : Color.blue)
 
                 Spacer()
 
@@ -252,30 +256,33 @@ private struct MessageThreadRow: View {
                     Circle()
                         .fill(.blue)
                         .frame(width: 8, height: 8)
+                        .accessibilityLabel("Ungelesen")
                 }
             }
 
             // Participants
             Text(participantsText)
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .lineLimit(1)
 
             HStack {
                 // Reply count (postsCount includes the original post, so subtract 1)
                 Label("\(max(0, thread.postsCount - 1))", systemImage: "bubble.left")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("\(max(0, thread.postsCount - 1)) Antworten")
 
                 Spacer()
 
                 // Last activity time
                 Text(thread.lastActivityAt, style: .relative)
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
     }
 
     /// Formatted string of participant names

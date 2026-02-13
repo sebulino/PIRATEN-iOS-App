@@ -106,7 +106,8 @@ struct TopicDetailView: View {
         VStack(spacing: 16) {
             Image(systemName: "doc.text")
                 .font(.system(size: 48))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text("Keine Beiträge")
                 .font(.headline)
             Text("Dieses Thema enthält noch keine Beiträge.")
@@ -126,7 +127,8 @@ struct TopicDetailView: View {
         VStack(spacing: 16) {
             Image(systemName: "person.crop.circle.badge.questionmark")
                 .font(.system(size: 48))
-                .foregroundColor(.blue)
+                .foregroundStyle(.blue)
+                .accessibilityHidden(true)
             Text("Anmeldung erforderlich")
                 .font(.headline)
             Text("Bitte melde dich an, um die Beiträge zu sehen.")
@@ -146,7 +148,8 @@ struct TopicDetailView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.lock")
                 .font(.system(size: 48))
-                .foregroundColor(.orange)
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
             Text("Sitzung abgelaufen")
                 .font(.headline)
             Text(message)
@@ -166,12 +169,13 @@ struct TopicDetailView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 48))
-                .foregroundColor(.orange)
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
             Text("Fehler beim Laden")
                 .font(.headline)
             Text(message)
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Erneut versuchen") {
                 viewModel.retry()
@@ -261,7 +265,7 @@ private struct PostRow: View {
                 // Time
                 Text(post.createdAt, style: .relative)
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
 
                 Spacer()
 
@@ -269,14 +273,16 @@ private struct PostRow: View {
                 if post.replyCount > 0 {
                     Label("\(post.replyCount)", systemImage: "arrowshape.turn.up.left")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel("\(post.replyCount) Antworten")
                 }
 
                 // Like count
                 if post.likeCount > 0 {
                     Label("\(post.likeCount)", systemImage: "heart")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel("\(post.likeCount) Likes")
                 }
             }
         }

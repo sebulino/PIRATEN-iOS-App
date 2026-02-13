@@ -122,9 +122,10 @@ private struct RecipientRow: View {
                     .frame(width: 40, height: 40)
 
                 Text(initials)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.white)
+                    .font(.system(.subheadline, weight: .medium))
+                    .foregroundStyle(.white)
             }
+            .accessibilityHidden(true)
 
             // Name and username
             VStack(alignment: .leading, spacing: 2) {

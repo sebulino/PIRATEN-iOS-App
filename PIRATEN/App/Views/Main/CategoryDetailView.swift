@@ -103,7 +103,7 @@ struct CategoryDetailView: View {
                         .fontWeight(.medium)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 1)
-                        .background(Color.accentColor.opacity(0.15))
+                        .background(Color.accentColor.opacity(0.2))
                         .foregroundColor(.accentColor)
                         .clipShape(Capsule())
                 }

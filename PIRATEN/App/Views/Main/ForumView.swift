@@ -106,7 +106,8 @@ struct ForumView: View {
         VStack(spacing: 16) {
             Image(systemName: "bubble.left.and.bubble.right")
                 .font(.system(size: 48))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text("Keine Themen")
                 .font(.headline)
             Text("Es wurden noch keine Themen gepostet.")
@@ -128,7 +129,8 @@ struct ForumView: View {
             case .idle, .failed:
                 Image(systemName: "bubble.left.and.bubble.right.fill")
                     .font(.system(size: 48))
-                    .foregroundColor(.orange)
+                    .foregroundStyle(.orange)
+                    .accessibilityHidden(true)
                 Text("Forum verbinden")
                     .font(.headline)
                 Text("Um das Forum zu nutzen, muss die App mit dem Discourse-Forum verbunden werden.")
@@ -184,7 +186,8 @@ struct ForumView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.lock")
                 .font(.system(size: 48))
-                .foregroundColor(.orange)
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
             Text("Forum nicht verfügbar")
                 .font(.headline)
             Text("Die Verbindung zum Forum konnte nicht hergestellt werden. Die Forum-Authentifizierung wird noch konfiguriert.")
@@ -204,12 +207,13 @@ struct ForumView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 48))
-                .foregroundColor(.orange)
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
             Text("Fehler beim Laden")
                 .font(.headline)
             Text(message)
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Erneut versuchen") {
                 viewModel.loadTopics()
@@ -235,27 +239,30 @@ private struct TopicRow: View {
                 // Author name
                 Text(topic.createdBy.displayName ?? topic.createdBy.username)
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
 
                 Spacer()
 
                 // Reply count (postsCount includes the original post, so subtract 1)
                 Label("\(max(0, topic.postsCount - 1))", systemImage: "bubble.left")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("\(max(0, topic.postsCount - 1)) Antworten")
 
                 // View count
                 Label("\(topic.viewCount)", systemImage: "eye")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("\(topic.viewCount) Aufrufe")
             }
 
             // Time ago
             Text(topic.createdAt, style: .relative)
                 .font(.caption2)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
     }
 }
 

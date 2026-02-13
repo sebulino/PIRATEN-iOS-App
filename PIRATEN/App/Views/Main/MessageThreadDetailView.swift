@@ -144,7 +144,8 @@ struct MessageThreadDetailView: View {
         VStack(spacing: 16) {
             Image(systemName: "envelope.open")
                 .font(.system(size: 48))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text("Keine Nachrichten")
                 .font(.headline)
             Text("Diese Unterhaltung enthält noch keine Nachrichten.")
@@ -164,7 +165,8 @@ struct MessageThreadDetailView: View {
         VStack(spacing: 16) {
             Image(systemName: "person.crop.circle.badge.questionmark")
                 .font(.system(size: 48))
-                .foregroundColor(.blue)
+                .foregroundStyle(.blue)
+                .accessibilityHidden(true)
             Text("Anmeldung erforderlich")
                 .font(.headline)
             Text("Bitte melde dich an, um die Nachrichten zu sehen.")
@@ -184,7 +186,8 @@ struct MessageThreadDetailView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.lock")
                 .font(.system(size: 48))
-                .foregroundColor(.orange)
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
             Text("Sitzung abgelaufen")
                 .font(.headline)
             Text(message)
@@ -204,12 +207,13 @@ struct MessageThreadDetailView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 48))
-                .foregroundColor(.orange)
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
             Text("Fehler beim Laden")
                 .font(.headline)
             Text(message)
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Erneut versuchen") {
                 viewModel.retry()
@@ -271,9 +275,10 @@ private struct ReplyComposerView: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.title2)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .disabled(composerState == .sending)
+                .accessibilityLabel("Abbrechen")
 
                 // Text input
                 TextField("Nachricht schreiben...", text: $replyText, axis: .vertical)
@@ -305,6 +310,7 @@ private struct ReplyComposerView: View {
                     .font(.title2)
                 }
                 .disabled(!canSend)
+                .accessibilityLabel("Senden")
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -416,12 +422,13 @@ private struct MessagePostRow: View {
             // Avatar circle with initials
             ZStack {
                 Circle()
-                    .fill(avatarColor.opacity(0.2))
+                    .fill(avatarColor.opacity(0.3))
                     .frame(width: 40, height: 40)
                 Text(authorInitials)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(avatarColor)
+                    .font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(avatarColor)
             }
+            .accessibilityHidden(true)
 
             // Message content
             VStack(alignment: .leading, spacing: 4) {
@@ -433,7 +440,7 @@ private struct MessagePostRow: View {
                         Text(post.author.displayName ?? post.author.username)
                             .font(.subheadline)
                             .fontWeight(.semibold)
-                            .foregroundColor(.primary)
+                            .foregroundStyle(.primary)
                     }
                     .buttonStyle(.plain)
 
@@ -442,7 +449,7 @@ private struct MessagePostRow: View {
                     // Timestamp - use relative for recent, date for older
                     Text(formatTimestamp(post.createdAt))
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
 
                 // Message body with clickable links
