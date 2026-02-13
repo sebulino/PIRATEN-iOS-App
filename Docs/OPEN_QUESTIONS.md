@@ -288,23 +288,38 @@ Where does user profile data come from?
 
 ### Q-011: Posting and Reply Functionality
 
-**Status:** Open
-**Blocking:** Future milestone (write features)
+**Status:** Resolved ✅
+**Blocking:** Forum/Messages write features
 **Asked:** 2026-02-01
+**Resolved:** 2026-02-13
 
 **Question:**
 How should the app implement posting to forum topics and sending private messages?
 
-**What we need:**
-- Discourse endpoint for creating posts (`POST /posts`)
-- Required parameters (topic_id, raw, reply_to_post_number)
-- CSRF token requirements (if any)
-- Draft saving behavior
-- Rate limits for posting (separate from reading?)
-- Markdown preview API availability
+**Answer:**
+The Discourse API `POST /posts.json` endpoint supports both general topic replies and threaded post replies.
 
-**Current implementation:**
-Not implemented. M3B scope is read-only.
+**Confirmed working:**
+- **Endpoint:** `POST /posts.json`
+- **Required parameters:**
+  - `topic_id` (Int): The ID of the topic to post to
+  - `raw` (String): Markdown content of the post
+  - `reply_to_post_number` (Int, optional): For threading replies to specific posts
+- **Authentication:** User API Key header (same as read operations)
+- **No CSRF tokens required** for API key auth
+- **Rate limiting:** Same limits as read operations (20 req/min, 2880 req/day)
+
+**Implementation (2026-02-13):**
+- ✅ Forum post replies implemented (general + threaded)
+- ✅ PM replies implemented
+- ✅ MessageSafetyService enforces rate limiting (30s cooldown, 10k char limit)
+- ✅ ReplyComposerView shared between forum and PM replies
+- ✅ Validation and error handling integrated
+
+**Not implemented yet:**
+- Draft saving (client-side only, no server sync)
+- Markdown preview API
+- Creating new topics (future milestone)
 
 ---
 

@@ -1,12 +1,30 @@
 # Project Status
 
-Last updated: 2026-02-12 (M8 — Knowledge Hub)
+Last updated: 2026-02-13 (M8 — Knowledge Hub + Forum Reply Feature)
 
 ## Current Milestone
 
 **Milestone 8: Knowledge Hub (Wissen)** — Complete
 
 Goal: Fetch educational content from the public GitHub repo sebulino/PIRATEN-Kanon, cache it locally, and present interactive lessons with progress tracking, quizzes, and checklists.
+
+## Recent Enhancements
+
+### Forum Post Reply Feature (2026-02-13)
+**Status:** Complete ✅
+
+Added ability to reply to forum topics and individual posts with threaded replies.
+
+**Implementation:**
+- Domain: `Post.replyToPostNumber` field, `DiscourseRepository.replyToForumPost()` method
+- Data: `DiscoursePostDTO.reply_to_post_number` parsing, `DiscourseAPIClient.replyToForumPost()` with optional `reply_to_post_number` parameter
+- Presentation: `TopicDetailViewModel` reply composer state (mirroring PM reply pattern), `ReplyComposerView` extracted to shared component
+- UI: Toolbar reply button (general topic reply) + per-post reply button (threaded reply), reply context banner showing target post
+- Validation: `MessageSafetyService` integration (30s cooldown, 10k char limit)
+
+**API:** Uses Discourse `POST /posts.json` with `topic_id`, `raw`, and optional `reply_to_post_number`
+
+**Resolved:** OPEN_QUESTIONS.md Q-011
 
 ## Milestone 8 Progress
 
