@@ -22,7 +22,8 @@ struct ProfileView: View {
                     VStack(spacing: 16) {
                         Image(systemName: "exclamationmark.triangle")
                             .font(.largeTitle)
-                            .foregroundColor(.orange)
+                            .foregroundStyle(.orange)
+                            .accessibilityHidden(true)
                         Text(error)
                             .multilineTextAlignment(.center)
                         Button("Erneut versuchen") {
@@ -38,10 +39,11 @@ struct ProfileView: View {
                     VStack(spacing: 16) {
                         Image(systemName: "person.circle")
                             .font(.system(size: 60))
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
                         Text("Kein Profil verfügbar")
                             .font(.headline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -67,6 +69,7 @@ struct ProfileView: View {
                         Text(user.displayName)
                             .font(.title2)
                             .fontWeight(.semibold)
+
                         Text("@\(user.username)")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
@@ -75,6 +78,7 @@ struct ProfileView: View {
                 .padding(.vertical, 8)
             }
 
+            
             // Bio section (from Discourse)
             if let bio = viewModel.discourseProfile?.bio, !bio.isEmpty {
                 Section("Über mich") {
@@ -147,6 +151,24 @@ struct ProfileView: View {
 
             // Notification settings section
             notificationSettingsSection
+
+            // Privacy & Info section
+            Section {
+                NavigationLink {
+                    PrivacyView()
+                } label: {
+                    Label {
+                        Text("Datenschutz")
+                    } icon: {
+                        Image(systemName: "hand.raised.fill")
+                            .foregroundColor(.orange)
+                    }
+                }
+            } header: {
+                Text("Informationen")
+            } footer: {
+                Text("Diese App verwendet kein Tracking und keine Analytics.")
+            }
 
             // Discourse load failure note (non-blocking)
             if viewModel.discourseLoadFailed {
@@ -256,7 +278,7 @@ struct ProfileView: View {
         } header: {
             Text("Mitteilungen")
         } footer: {
-            Text("Mitteilungen werden nur für die aktivierten Kategorien gesendet. Es werden keine Tracking-Daten erfasst.")
+            Text("Mitteilungen werden nur für die aktivierten Kategorien gesendet. Es werden keine Nachrichteninhalte übertragen – nur ein allgemeiner Hinweis. Es werden keine Tracking-Daten erfasst.")
                 .font(.caption)
         }
     }

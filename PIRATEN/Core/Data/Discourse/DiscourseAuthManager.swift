@@ -156,7 +156,7 @@ final class DiscourseAuthManager {
         // Export public key in PEM format
         let publicKeyPEM = try rsaKeyManager.exportPublicKeyAsPEM(from: privateKey)
         discourseAuthLog.info("Public key PEM length: \(publicKeyPEM.count) characters")
-        discourseAuthLog.debug("Public key PEM:\n\(publicKeyPEM)")
+        // Public key intentionally NOT logged — use PEM length above for debugging
 
         // Generate cryptographically random nonce (32 bytes = 64 hex chars)
         guard let nonceData = generateNonce() else {
@@ -298,7 +298,7 @@ final class DiscourseAuthManager {
     /// - Returns: The parsed callback result containing the encrypted payload
     /// - Throws: DiscourseAuthError if the URL cannot be parsed or is missing required data
     func parseCallbackURL(_ url: URL) throws -> DiscourseAuthCallbackResult {
-        discourseAuthLog.info("Parsing callback URL: \(url.absoluteString)")
+        discourseAuthLog.info("Parsing callback URL: \(LogRedactor.redactURL(url))")
 
         // Discourse sends the payload as a query parameter or fragment
         // The URL format is: {scheme}://{host}?payload={encrypted_payload}
@@ -308,15 +308,13 @@ final class DiscourseAuthManager {
         if let components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
             discourseAuthLog.info("URL scheme: \(components.scheme ?? "nil")")
             discourseAuthLog.info("URL host: \(components.host ?? "nil")")
-            discourseAuthLog.info("URL query: \(components.query ?? "nil")")
-            discourseAuthLog.info("URL fragment: \(components.fragment ?? "nil")")
+            discourseAuthLog.info("URL query present: \(components.query != nil)")
+            discourseAuthLog.info("URL fragment present: \(components.fragment != nil)")
 
             // Check query items for the payload
             if let queryItems = components.queryItems {
                 discourseAuthLog.info("Query items count: \(queryItems.count)")
-                for item in queryItems {
-                    discourseAuthLog.info("Query item: \(item.name) = \(item.value?.prefix(50) ?? "nil")...")
-                }
+                discourseAuthLog.info("Query item names: \(queryItems.map(\.name).joined(separator: ", "))")
                 // Discourse may use 'payload' or send the encrypted key directly
                 if let payload = queryItems.first(where: { $0.name == "payload" })?.value {
                     discourseAuthLog.info("Found payload in query, length: \(payload.count)")
@@ -326,7 +324,7 @@ final class DiscourseAuthManager {
 
             // Check the fragment (Discourse sometimes puts data here)
             if let fragment = components.fragment, !fragment.isEmpty {
-                discourseAuthLog.info("Fragment length: \(fragment.count)")
+                discourseAuthLog.info("Fragment present, length: \(fragment.count)")
                 // The fragment might contain the payload directly or as key=value
                 if fragment.contains("=") {
                     // Parse fragment as query string
@@ -388,9 +386,7 @@ final class DiscourseAuthManager {
         do {
             decryptedData = try rsaKeyManager.decrypt(encryptedData, using: privateKey)
             discourseAuthLog.info("Decrypted data: \(decryptedData.count) bytes")
-            if let decryptedString = String(data: decryptedData, encoding: .utf8) {
-                discourseAuthLog.debug("Decrypted JSON: \(decryptedString)")
-            }
+            // Decrypted payload intentionally NOT logged — contains User API Key
         } catch {
             discourseAuthLog.error("Decryption failed: \(error)")
             throw DiscourseAuthError.decryptionFailed

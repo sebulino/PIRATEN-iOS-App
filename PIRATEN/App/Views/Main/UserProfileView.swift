@@ -81,12 +81,13 @@ struct UserProfileView: View {
                     // Large avatar
                     ZStack {
                         Circle()
-                            .fill(avatarColor(for: profile.username).opacity(0.2))
+                            .fill(avatarColor(for: profile.username).opacity(0.3))
                             .frame(width: 80, height: 80)
                         Text(authorInitials(for: profile))
-                            .font(.system(size: 32, weight: .semibold))
-                            .foregroundColor(avatarColor(for: profile.username))
+                            .font(.system(.title, weight: .semibold))
+                            .foregroundStyle(avatarColor(for: profile.username))
                     }
+                    .accessibilityHidden(true)
 
                     // Display name
                     Text(profile.displayText)
@@ -96,7 +97,7 @@ struct UserProfileView: View {
                     // @username
                     Text("@\(profile.username)")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .padding(.top, 24)
 
@@ -157,13 +158,14 @@ struct UserProfileView: View {
         HStack {
             Text(label)
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             Spacer()
             Text(value)
                 .font(.body)
                 .fontWeight(.medium)
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
         }
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Error States
@@ -173,13 +175,14 @@ struct UserProfileView: View {
         VStack(spacing: 16) {
             Image(systemName: "person.crop.circle.badge.questionmark")
                 .font(.system(size: 60))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text("Nicht angemeldet")
                 .font(.title3)
                 .fontWeight(.semibold)
             Text("Melde dich an, um Profile anzusehen.")
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Zum Login") {
                 onLoginTapped()
@@ -194,13 +197,14 @@ struct UserProfileView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 60))
-                .foregroundColor(.orange)
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
             Text("Authentifizierung fehlgeschlagen")
                 .font(.title3)
                 .fontWeight(.semibold)
             Text(message)
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Zum Login") {
                 onLoginTapped()
@@ -215,13 +219,14 @@ struct UserProfileView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.circle")
                 .font(.system(size: 60))
-                .foregroundColor(.red)
+                .foregroundStyle(.red)
+                .accessibilityHidden(true)
             Text("Fehler")
                 .font(.title3)
                 .fontWeight(.semibold)
             Text(message)
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Erneut versuchen") {
                 viewModel.retry()

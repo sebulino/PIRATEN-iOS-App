@@ -721,6 +721,72 @@ Use native `AttributedString(markdown:)` with plain-text fallback on parsing fai
 
 ---
 
+## D-024: Bounded Retry Policy for HTTP Requests
+
+**Date:** 2026-02-13
+**Status:** Accepted
+
+### Context
+API calls can fail due to transient issues (network hiccups, server 5xx errors). Without retry logic, every transient failure surfaces as a user-visible error requiring manual retry. Options:
+1. No automatic retry (current state)
+2. Unbounded retry with backoff (risk of infinite loops)
+3. Bounded retry with exponential backoff (max attempts)
+
+### Decision
+Implement `RetryingHTTPClient` that wraps any `HTTPClient` with bounded retry:
+- **Max 3 attempts** (1 initial + 2 retries)
+- **Exponential backoff**: 1s, 2s delay between retries
+- **Only retry GET requests** (mutations are not idempotent)
+- **Only retry transient errors**: `networkError` and `serverError` (5xx)
+- **Fail immediately** on: auth errors (401/403), not found (404), decoding errors, cancellation
+
+### Rationale
+1. **Bounded**: Max 3 attempts prevents infinite loops (see D-011 for auth-specific rationale)
+2. **GET-only**: Retrying POST/PUT/DELETE could cause duplicate operations
+3. **Exponential backoff**: Reduces server load during outages
+4. **Selective**: Only retries errors that are genuinely transient; permanent errors fail fast
+5. **Transparent**: Wraps existing HTTPClient without changing callers
+
+### Consequences
+- Transient failures are automatically recovered for read operations
+- Write operations still require manual retry by the user
+- Max total delay before failure: ~3s (1s + 2s between retries)
+
+---
+
+## D-025: HTTP-Level Caching with URLCache
+
+**Date:** 2026-02-13
+**Status:** Accepted
+
+### Context
+API responses (forum topics, messages, todos) can be cached to improve perceived performance and reduce server load. Options:
+1. No caching (current state)
+2. Custom application-level cache
+3. HTTP-level caching via URLCache (respects server cache headers)
+
+### Decision
+Configure URLSession with a dedicated URLCache:
+- **Memory**: 10 MB
+- **Disk**: 50 MB
+- **Policy**: `useProtocolCachePolicy` (respects HTTP Cache-Control, ETag, Last-Modified headers)
+- **waitsForConnectivity**: `true` (waits for network rather than failing immediately)
+- **Resource timeout**: 30 seconds
+
+### Rationale
+1. **Low risk**: Standard HTTP caching; respects server-set cache policies
+2. **No custom logic**: No cache invalidation bugs; the server controls freshness via headers
+3. **Offline benefit**: Cached responses may be served when offline (if cache headers allow)
+4. **System-managed**: iOS can reclaim disk cache under storage pressure
+5. **Complements retry**: RetryingHTTPClient handles transient failures; URLCache handles repeated requests
+6. **Knowledge Hub already caches**: The existing file-based cache (D-020) handles knowledge content; this adds coverage for Discourse and Todo APIs
+
+### Consequences
+- Cache behavior depends on server response headers; if servers don't send cache headers, no caching occurs
+- Fresh data always available via pull-to-refresh (which bypasses cache via new request)
+
+---
+
 ## Future Decisions
 
 Decisions pending external input:

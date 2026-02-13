@@ -45,6 +45,16 @@ enum HTTPError: Error, Equatable {
         }
     }
 
+    /// Whether this error is transient and the request could succeed on retry
+    var isRetryable: Bool {
+        switch self {
+        case .networkError, .serverError:
+            return true
+        default:
+            return false
+        }
+    }
+
     var localizedDescription: String {
         switch self {
         case .unauthorized:

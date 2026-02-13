@@ -21,23 +21,23 @@ struct TodosView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if viewModel.isLoading && viewModel.todos.isEmpty {
-                    ProgressView("Lade Aufgaben...")
-                } else if let error = viewModel.errorMessage {
-                    VStack(spacing: 16) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.largeTitle)
-                            .foregroundColor(.orange)
-                        Text(error)
-                            .multilineTextAlignment(.center)
-                        Button("Erneut versuchen") {
-                            viewModel.loadTodos()
-                        }
-                        .buttonStyle(.bordered)
+                switch viewModel.loadState {
+                case .idle, .loading:
+                    if viewModel.todos.isEmpty {
+                        ProgressView("Lade Aufgaben...")
+                    } else {
+                        todosList
                     }
-                    .padding()
-                } else {
-                    todosList
+
+                case .loaded:
+                    if viewModel.todos.isEmpty {
+                        emptyState
+                    } else {
+                        todosList
+                    }
+
+                case .error(let message):
+                    errorState(message: message)
                 }
             }
             .navigationTitle("Todos")
@@ -48,6 +48,7 @@ struct TodosView: View {
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Neue Aufgabe erstellen")
                 }
             }
             .sheet(isPresented: $showingCreateSheet, onDismiss: {
@@ -60,11 +61,55 @@ struct TodosView: View {
                 }
             }
             .onAppear {
-                if viewModel.todos.isEmpty {
+                if viewModel.loadState == .idle {
                     viewModel.loadTodos()
                 }
             }
         }
+    }
+
+    // MARK: - State Views
+
+    @ViewBuilder
+    private var emptyState: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "checklist")
+                .font(.system(size: 48))
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            Text("Keine Aufgaben")
+                .font(.headline)
+            Text("Es sind noch keine Aufgaben vorhanden.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+            Button("Aktualisieren") {
+                viewModel.refresh()
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding()
+    }
+
+    @ViewBuilder
+    private func errorState(message: String) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 48))
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
+            Text("Fehler beim Laden")
+                .font(.headline)
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Button("Erneut versuchen") {
+                viewModel.loadTodos()
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding()
     }
 
     @ViewBuilder
@@ -113,20 +158,21 @@ struct TodoRow: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Image(systemName: statusIcon)
-                    .foregroundColor(statusColor)
+                    .foregroundStyle(statusColor)
                     .font(.title3)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(todo.title)
                         .font(.headline)
                         .lineLimit(2)
                         .strikethrough(todo.status == .done)
-                        .foregroundColor(todo.status == .done ? .secondary : .primary)
+                        .foregroundStyle(todo.status == .done ? .secondary : .primary)
 
                     if let creatorName = todo.creatorName {
                         Text(creatorName)
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
                 }
 
@@ -174,9 +220,10 @@ struct TodoRow: View {
             .fontWeight(.medium)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
-            .background(statusColor.opacity(0.15))
-            .foregroundColor(statusColor)
+            .background(statusColor.opacity(0.2))
+            .foregroundStyle(statusColor)
             .clipShape(Capsule())
+            .accessibilityLabel("Status: \(todo.status.displayName)")
     }
 
     @ViewBuilder
@@ -185,10 +232,12 @@ struct TodoRow: View {
 
         HStack(spacing: 4) {
             Image(systemName: isOverdue ? "clock.badge.exclamationmark" : "calendar")
+                .accessibilityHidden(true)
             Text(date, style: .date)
         }
         .font(.caption)
-        .foregroundColor(isOverdue ? .red : .secondary)
+        .foregroundStyle(isOverdue ? .red : .secondary)
+        .accessibilityLabel(isOverdue ? "Überfällig: \(date.formatted(date: .long, time: .omitted))" : "Fällig: \(date.formatted(date: .long, time: .omitted))")
     }
 }
 

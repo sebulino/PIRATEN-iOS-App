@@ -270,7 +270,7 @@ private struct FeaturedTopicCard: View {
                     .fontWeight(.medium)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
-                    .background(Color.accentColor.opacity(0.15))
+                    .background(Color.accentColor.opacity(0.2))
                     .foregroundColor(.accentColor)
                     .clipShape(Capsule())
 
@@ -310,12 +310,14 @@ private struct FeaturedTopicCard: View {
             switch progress.status {
             case .completed:
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
+                    .foregroundStyle(.green)
                     .font(.caption)
+                    .accessibilityLabel("Abgeschlossen")
             case .started:
                 Image(systemName: "book.fill")
                     .foregroundColor(.accentColor)
                     .font(.caption)
+                    .accessibilityLabel("Angefangen")
             case .unread:
                 EmptyView()
             }
@@ -351,7 +353,7 @@ private struct TopicListRow: View {
                         .fontWeight(.medium)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 1)
-                        .background(Color.accentColor.opacity(0.15))
+                        .background(Color.accentColor.opacity(0.2))
                         .foregroundColor(.accentColor)
                         .clipShape(Capsule())
                 }
@@ -370,7 +372,7 @@ private struct TopicListRow: View {
             switch progress.status {
             case .completed:
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
+                    .foregroundStyle(.green)
                     .accessibilityLabel("Abgeschlossen")
             case .started:
                 Image(systemName: "book.fill")

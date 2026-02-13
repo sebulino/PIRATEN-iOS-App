@@ -1,0 +1,27 @@
+## Codebase Patterns
+- Use ScrollView + LazyVStack instead of List to avoid UICollectionView dequeue crashes (see MEMORY.md)
+- PrivacySection helper provides grouped-style section appearance without UICollectionView
+
+---
+
+## 2026-02-13 — M9-002
+- What was implemented:
+  - Replaced List with ScrollView + LazyVStack in PrivacyView to prevent UICollectionView crashes
+  - Added PrivacySection helper view for grouped-style section layout
+  - PrivacyView already existed with comprehensive coverage of data usage, permissions, notifications, storage, and contact info
+  - ProfileView already links to PrivacyView via NavigationLink in "Informationen" section
+  - Notification settings already have clear data usage explanations with footer text
+  - No analytics or tracking code exists in the app
+- Files changed:
+  - PIRATEN/App/Views/Main/PrivacyView.swift (List → ScrollView+LazyVStack, added PrivacySection helper)
+- **Context7 consulted:** Apple SwiftUI privacy UI patterns and guidelines
+  - `privacySensitive(_:)` modifier available for marking sensitive content (iOS 15+); not needed here since no sensitive data is displayed in the privacy page itself
+  - `RedactionReasons.privacy` can redact views on lock screen; relevant for future widget work
+  - Settings views use Form/Toggle with @AppStorage for persistent preferences (already used in notification settings)
+  - Privacy transparency best practice: clearly list all data categories, permissions, and third-party connections (already implemented)
+  - No tracking or analytics is the strongest privacy stance; documented explicitly in the app
+  - ScrollView-based layout avoids UICollectionView issues known in this codebase
+- **Learnings for future iterations:**
+  - PrivacyView was already created in a prior session but used List; always check existing new files for the List→ScrollView pattern
+  - The Xcode project uses file system synchronized groups (objectVersion 77), so files in the PIRATEN/ directory are auto-included
+---

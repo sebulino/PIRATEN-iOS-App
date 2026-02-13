@@ -8,6 +8,21 @@
 import Foundation
 import Combine
 
+/// Represents the current state of the todos view.
+enum TodosLoadState: Equatable {
+    /// Initial state, no data loaded yet
+    case idle
+
+    /// Currently loading todos
+    case loading
+
+    /// Todos loaded successfully (may be empty)
+    case loaded
+
+    /// Loading failed with an error message
+    case error(message: String)
+}
+
 /// ViewModel for the Todos tab.
 /// Coordinates between the TodosView and the TodoRepository.
 /// Provides published state for SwiftUI data binding.
@@ -19,11 +34,21 @@ final class TodosViewModel: ObservableObject {
     /// The list of todos to display
     @Published private(set) var todos: [Todo] = []
 
-    /// Whether todos are currently being loaded
-    @Published private(set) var isLoading: Bool = false
+    /// The current load state of the todos
+    @Published private(set) var loadState: TodosLoadState = .idle
 
-    /// Error message if loading failed, nil otherwise
-    @Published private(set) var errorMessage: String?
+    /// Convenience property for backward compatibility
+    var isLoading: Bool {
+        loadState == .loading
+    }
+
+    /// Convenience property for backward compatibility
+    var errorMessage: String? {
+        if case .error(let message) = loadState {
+            return message
+        }
+        return nil
+    }
 
     // MARK: - Dependencies
 
@@ -42,13 +67,16 @@ final class TodosViewModel: ObservableObject {
     /// Loads the list of todos from the repository.
     /// Updates published state for loading, todos, and errors.
     func loadTodos() {
-        isLoading = true
-        errorMessage = nil
+        loadState = .loading
 
         Task {
-            let fetchedTodos = await todoRepository.fetchTodos()
-            self.todos = fetchedTodos
-            self.isLoading = false
+            do {
+                let fetchedTodos = try await todoRepository.fetchTodos()
+                self.todos = fetchedTodos
+                self.loadState = .loaded
+            } catch {
+                self.loadState = .error(message: "Aufgaben konnten nicht geladen werden. Bitte überprüfe deine Verbindung.")
+            }
         }
     }
 

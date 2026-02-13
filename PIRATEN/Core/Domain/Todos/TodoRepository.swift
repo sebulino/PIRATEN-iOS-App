@@ -22,10 +22,10 @@ enum TodoError: Error, Equatable {
 @MainActor
 protocol TodoRepository {
     /// Fetches all todos.
-    func fetchTodos() async -> [Todo]
+    func fetchTodos() async throws -> [Todo]
 
     /// Fetches todos filtered by completion status.
-    func fetchTodos(completed: Bool) async -> [Todo]
+    func fetchTodos(completed: Bool) async throws -> [Todo]
 
     /// Fetches a single todo by ID.
     func fetchTodo(byId id: Int) async -> Todo?
