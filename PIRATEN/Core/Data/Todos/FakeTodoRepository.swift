@@ -107,12 +107,12 @@ final class FakeTodoRepository: TodoRepository {
 
     // MARK: - TodoRepository
 
-    func fetchTodos() async -> [Todo] {
+    func fetchTodos() async throws -> [Todo] {
         try? await Task.sleep(nanoseconds: 100_000_000)
         return todos
     }
 
-    func fetchTodos(completed: Bool) async -> [Todo] {
+    func fetchTodos(completed: Bool) async throws -> [Todo] {
         try? await Task.sleep(nanoseconds: 100_000_000)
         if completed {
             return todos.filter { $0.status == .done }

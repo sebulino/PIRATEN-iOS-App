@@ -24,18 +24,18 @@ final class RealTodoRepository: TodoRepository {
 
     // MARK: - Fetch
 
-    func fetchTodos() async -> [Todo] {
+    func fetchTodos() async throws -> [Todo] {
         do {
             let data = try await apiClient.fetchTasks()
             let dtos = try decode([TaskDTO].self, from: data)
             return dtos.map { $0.toDomainModel() }
-        } catch {
-            return []
+        } catch let error as TodoAPIError {
+            throw mapToTodoError(error)
         }
     }
 
-    func fetchTodos(completed: Bool) async -> [Todo] {
-        let all = await fetchTodos()
+    func fetchTodos(completed: Bool) async throws -> [Todo] {
+        let all = try await fetchTodos()
         if completed {
             return all.filter { $0.status == .done }
         } else {

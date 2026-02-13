@@ -251,9 +251,12 @@ final class AppContainer {
             credentialStore: credentialStore
         )
 
-        // HTTP layer for Discourse API
-        // Use DiscourseHTTPClient which adds User-Api-Key headers for Discourse auth
-        let baseHTTPClient = URLSessionHTTPClient()
+        // HTTP layer
+        // Caching session (see D-025) + retry wrapper for transient failures (see D-024)
+        let rawHTTPClient = URLSessionHTTPClient.withCaching()
+        let baseHTTPClient = RetryingHTTPClient(wrapped: rawHTTPClient)
+
+        // Discourse HTTP client adds User-Api-Key headers for Discourse auth
         let discourseHTTPClient = DiscourseHTTPClient(
             baseClient: baseHTTPClient,
             apiKeyProvider: discourseAPIKeyProvider

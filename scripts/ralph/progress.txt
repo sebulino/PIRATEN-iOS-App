@@ -54,3 +54,26 @@ Started: 2026-02-12
   - Decorative state icons (error, empty, auth states) should always be `accessibilityHidden(true)` — the heading text already conveys meaning
   - Combined accessibility elements (`.accessibilityElement(children: .combine)`) are better than individual labels for list rows with multiple metadata items
 ---
+
+## [2026-02-13 14:00] - M9-004
+- Made loading/error/empty states consistent across all tabs (Forum, Messages, Todos, Knowledge)
+- **TodosViewModel upgraded**: Replaced simple `isLoading`/`errorMessage` with `TodosLoadState` enum matching Forum/Messages pattern (idle/loading/loaded/error)
+- **TodoRepository.fetchTodos() now throws**: Errors propagate to ViewModel instead of being silently swallowed (RealTodoRepository previously returned `[]` on error)
+- **TodosView**: Added proper empty state (checklist icon + "Keine Aufgaben") and error state (triangle icon + message + retry button), matching ForumView/MessagesView/KnowledgeView patterns
+- **RetryingHTTPClient**: New HTTP client wrapper with bounded exponential backoff (max 3 attempts, 1s/2s delays). Only retries GET requests. Only retries transient errors (network + server 5xx). Documented in D-024.
+- **HTTPError.isRetryable**: Added computed property to classify transient errors
+- **URLSession caching**: Configured 10MB memory / 50MB disk URLCache with `useProtocolCachePolicy`, `waitsForConnectivity: true`, 30s resource timeout. Documented in D-025.
+- **AppContainer updated**: Uses `URLSessionHTTPClient.withCaching()` + `RetryingHTTPClient` wrapper
+- Files changed: TodoRepository.swift, RealTodoRepository.swift, FakeTodoRepository.swift, TodosViewModel.swift, TodosView.swift, HTTPError.swift, URLSessionHTTPClient.swift, RetryingHTTPClient.swift (new), AppContainer.swift, DECISIONS.md, prd.json, progress.txt
+- **Context7 summary (URLSession caching & network resilience):**
+  - `URLCache` supports both memory and disk caching; `useProtocolCachePolicy` respects HTTP Cache-Control/ETag/Last-Modified headers
+  - `waitsForConnectivity` on URLSessionConfiguration waits for network availability instead of failing immediately
+  - Apple's new HTTP loader (iOS 18+) supports HTTP/2 and HTTP/3 natively; no special configuration needed
+  - Retry logic should be bounded and use exponential backoff; only safe for idempotent (GET) requests
+  - Swift Foundation's `URLRequest.CachePolicy` enum provides fine-grained cache control per request
+  - `URLCache(memoryCapacity:diskCapacity:)` is the modern initializer; `diskPath:` is deprecated
+- **Learnings for future iterations:**
+  - TodoRepository was swallowing all errors by returning empty arrays — always make fetch methods `throws` so errors reach the UI
+  - `waitsForConnectivity: true` is valuable for mobile — prevents immediate failure on poor networks
+  - Only retry GET requests to avoid duplicate mutations
+---

@@ -21,23 +21,23 @@ struct TodosView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if viewModel.isLoading && viewModel.todos.isEmpty {
-                    ProgressView("Lade Aufgaben...")
-                } else if let error = viewModel.errorMessage {
-                    VStack(spacing: 16) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.largeTitle)
-                            .foregroundColor(.orange)
-                        Text(error)
-                            .multilineTextAlignment(.center)
-                        Button("Erneut versuchen") {
-                            viewModel.loadTodos()
-                        }
-                        .buttonStyle(.bordered)
+                switch viewModel.loadState {
+                case .idle, .loading:
+                    if viewModel.todos.isEmpty {
+                        ProgressView("Lade Aufgaben...")
+                    } else {
+                        todosList
                     }
-                    .padding()
-                } else {
-                    todosList
+
+                case .loaded:
+                    if viewModel.todos.isEmpty {
+                        emptyState
+                    } else {
+                        todosList
+                    }
+
+                case .error(let message):
+                    errorState(message: message)
                 }
             }
             .navigationTitle("Todos")
@@ -61,11 +61,55 @@ struct TodosView: View {
                 }
             }
             .onAppear {
-                if viewModel.todos.isEmpty {
+                if viewModel.loadState == .idle {
                     viewModel.loadTodos()
                 }
             }
         }
+    }
+
+    // MARK: - State Views
+
+    @ViewBuilder
+    private var emptyState: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "checklist")
+                .font(.system(size: 48))
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            Text("Keine Aufgaben")
+                .font(.headline)
+            Text("Es sind noch keine Aufgaben vorhanden.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+            Button("Aktualisieren") {
+                viewModel.refresh()
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding()
+    }
+
+    @ViewBuilder
+    private func errorState(message: String) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 48))
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
+            Text("Fehler beim Laden")
+                .font(.headline)
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Button("Erneut versuchen") {
+                viewModel.loadTodos()
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding()
     }
 
     @ViewBuilder
