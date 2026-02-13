@@ -77,3 +77,21 @@ Started: 2026-02-12
   - `waitsForConnectivity: true` is valuable for mobile — prevents immediate failure on poor networks
   - Only retry GET requests to avoid duplicate mutations
 ---
+
+## [2026-02-13 16:00] - M9-005
+- Created `Docs/RELEASE_CHECKLIST.md` with steps for versioning (MARKETING_VERSION + CURRENT_PROJECT_VERSION), code signing (Automatic signing, bundle IDs), secrets verification, privacy review (no analytics, privacy manifest guidance), build/test/archive commands, App Store submission, and post-release tagging
+- Created `Docs/CI_NOTES.md` documenting all xcodebuild commands (debug build, release build, clean, test, archive, export), simulator UDID pinning (D-007), Ralph agent workflow, xcconfig setup, and sensitive config documentation
+- Verified no secrets committed: `Config/Secrets.xcconfig` is git-ignored, `Secrets.sample.xcconfig` documents required keys, no credential files tracked by git
+- Files changed: Docs/RELEASE_CHECKLIST.md (new), Docs/CI_NOTES.md (new), prd.json, progress.txt
+- **Context7 summary (Xcode build/test automation):**
+  - `xcodebuild archive` with `-destination 'generic/platform=iOS'` creates a device-ready archive
+  - `xcodebuild -exportArchive` with `-exportOptionsPlist` exports for App Store, ad-hoc, or development distribution
+  - Provisioning profiles are cryptographically signed by Apple; App Store re-signs apps during distribution
+  - Xcode Cloud supports automatic CI/CD with TestFlight delivery; for local/Ralph CI, manual `xcodebuild` commands suffice
+  - `CODE_SIGN_STYLE = Automatic` delegates signing to Xcode; manual signing requires explicit provisioning profile UUIDs
+  - Privacy Manifests (`PrivacyInfo.xcprivacy`) are required for apps using certain system APIs (UserDefaults, file timestamps)
+- **Learnings for future iterations:**
+  - `ExportOptions.plist` is team-specific and should not be committed; document its format for onboarding
+  - Pinned simulator UDIDs must be updated after Xcode updates — document the fallback procedure alongside each reference
+  - `generic/platform=iOS` is the correct destination for archive builds (not a simulator UDID)
+---
