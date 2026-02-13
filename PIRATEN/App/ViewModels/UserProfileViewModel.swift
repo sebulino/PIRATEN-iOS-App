@@ -62,6 +62,7 @@ final class UserProfileViewModel: ObservableObject {
         Task {
             do {
                 let fetchedProfile = try await discourseRepository.fetchUserProfile(username: username)
+                
                 profile = fetchedProfile
                 loadState = .loaded
             } catch let error as DiscourseRepositoryError {

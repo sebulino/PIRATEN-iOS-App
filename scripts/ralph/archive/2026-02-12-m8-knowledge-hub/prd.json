@@ -1,0 +1,72 @@
+{
+  "project": "piraten-ios-m9-hardening-governance",
+  "branchName": "ralph/m9-hardening-governance",
+  "description": "Milestone 9: Operational hardening & governance readiness for an official party tool\u2014security reviews, privacy documentation, reliability, accessibility, and release process.",
+  "userStories": [
+    {
+      "id": "M9-001",
+      "category": "security",
+      "title": "Security hardening pass (auth + storage + networking)",
+      "description": "Review and tighten security across auth, keychain, logging, and network layers.",
+      "acceptanceCriteria": [
+        "Audit and remove any accidental sensitive logging (tokens, message bodies, identifiers)",
+        "Add centralized redaction utilities and apply them across the codebase",
+        "Document security assumptions and mitigations in Docs/THREAT_MODEL.md",
+        "Context7 consulted for iOS security logging guidance; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M9-002",
+      "category": "privacy",
+      "title": "Privacy controls and transparency improvements",
+      "description": "Ensure users can control what data is shown and how notifications behave.",
+      "acceptanceCriteria": [
+        "Settings clearly explain data usage and permissions (notifications, profile visibility where applicable)",
+        "Add an in-app Privacy page summarizing key points",
+        "No analytics/tracking introduced",
+        "Context7 consulted for privacy UI patterns and Apple guidelines; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M9-003",
+      "category": "accessibility",
+      "title": "Accessibility pass for core flows",
+      "description": "Improve accessibility for the main tabs and critical flows.",
+      "acceptanceCriteria": [
+        "VoiceOver labels for primary controls and lists",
+        "Dynamic Type support for core screens",
+        "Contrast issues identified and corrected",
+        "Context7 consulted for SwiftUI accessibility best practices; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M9-004",
+      "category": "reliability",
+      "title": "Resilience and offline/poor-network behavior",
+      "description": "Make behavior predictable under poor connectivity and API failures.",
+      "acceptanceCriteria": [
+        "Consistent loading/error/empty states across Forum, Messages, Todos",
+        "Retry behavior is bounded (no infinite loops); documented in Docs/DECISIONS.md",
+        "Optional caching policy documented and implemented if low-risk",
+        "Context7 consulted for URLSession caching and network resilience patterns; summary added to progress.txt"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M9-005",
+      "category": "release",
+      "title": "Release readiness checklist and basic CI documentation",
+      "description": "Define a minimal, repeatable release process suitable for an official tool.",
+      "acceptanceCriteria": [
+        "Docs/RELEASE_CHECKLIST.md exists with steps for versioning, signing, and privacy review",
+        "Docs/CI_NOTES.md documents the xcodebuild commands used by Ralph and local dev",
+        "No secrets committed; sensitive config via env/xcconfig documented",
+        "Context7 consulted for modern Xcode build/test automation guidance; summary added to progress.txt"
+      ],
+      "passes": false
+    }
+  ]
+}

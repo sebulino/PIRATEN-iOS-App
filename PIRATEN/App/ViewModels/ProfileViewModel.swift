@@ -59,6 +59,8 @@ final class ProfileViewModel: ObservableObject {
 
         Task {
             let fetchedUser = await authRepository.getCurrentUser()
+            
+
             self.user = fetchedUser
             self.isLoading = false
 
@@ -67,6 +69,10 @@ final class ProfileViewModel: ObservableObject {
                 do {
                     let profile = try await discourseRepository.fetchUserProfile(username: username)
                     self.discourseProfile = profile
+                    //if fetchedUser?.displayName == "none none" {
+                    //    let self.
+                    //    fetchedUser?.displayName = discourseProfile?.displayText ?? "none"
+                   // }
                 } catch {
                     self.discourseLoadFailed = true
                 }
