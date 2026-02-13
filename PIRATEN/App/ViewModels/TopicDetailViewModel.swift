@@ -45,9 +45,50 @@ final class TopicDetailViewModel: ObservableObject {
     /// The current load state
     @Published private(set) var loadState: TopicDetailLoadState = .idle
 
+    // MARK: - Reply Composer State
+
+    /// Whether the reply composer is currently shown
+    @Published var isComposerVisible: Bool = false
+
+    /// The text content of the reply being composed
+    @Published var replyText: String = ""
+
+    /// The current state of the reply composer
+    @Published private(set) var composerState: ReplyComposerState = .idle
+
+    /// Validation error message for the composer (nil if valid)
+    @Published private(set) var validationErrorMessage: String?
+
+    /// The post being replied to (nil for general topic reply)
+    @Published private(set) var replyingToPost: Post?
+
+    /// Whether the user is authenticated (derived from load state)
+    var isAuthenticated: Bool {
+        switch loadState {
+        case .notAuthenticated, .authenticationFailed:
+            return false
+        default:
+            return true
+        }
+    }
+
+    /// Whether the send button should be enabled
+    var canSendReply: Bool {
+        let validation = safetyService.validate(content: replyText)
+        return validation.isValid
+            && composerState != .sending
+            && safetyService.canSend()
+    }
+
+    /// Current character count info for display
+    var characterCountInfo: (current: Int, max: Int, isOverLimit: Bool) {
+        safetyService.characterCount(for: replyText)
+    }
+
     // MARK: - Dependencies
 
     private let discourseRepository: DiscourseRepository
+    private let safetyService: MessageSafetyService
 
     // MARK: - Initialization
 
@@ -55,9 +96,15 @@ final class TopicDetailViewModel: ObservableObject {
     /// - Parameters:
     ///   - topic: The topic to display details for
     ///   - discourseRepository: The repository to fetch post data from
-    init(topic: Topic, discourseRepository: DiscourseRepository) {
+    ///   - safetyService: The safety service for rate limiting and validation (optional, creates new instance if nil)
+    init(
+        topic: Topic,
+        discourseRepository: DiscourseRepository,
+        safetyService: MessageSafetyService? = nil
+    ) {
         self.topic = topic
         self.discourseRepository = discourseRepository
+        self.safetyService = safetyService ?? MessageSafetyService()
     }
 
     // MARK: - Public Methods
@@ -84,6 +131,93 @@ final class TopicDetailViewModel: ObservableObject {
         loadPosts()
     }
 
+    // MARK: - Reply Composer Methods
+
+    /// Shows the reply composer.
+    /// - Parameter post: The post to reply to (nil for general topic reply)
+    func showComposer(replyingTo post: Post? = nil) {
+        replyingToPost = post
+        isComposerVisible = true
+        composerState = .idle
+    }
+
+    /// Hides the reply composer and clears the text.
+    func hideComposer() {
+        isComposerVisible = false
+        replyText = ""
+        composerState = .idle
+        validationErrorMessage = nil
+        replyingToPost = nil
+    }
+
+    /// Validates the current reply text and updates the validation error message.
+    /// Call this when the user changes the text to provide real-time feedback.
+    func validateReplyText() {
+        let validation = safetyService.validate(content: replyText)
+        validationErrorMessage = validation.errorMessage
+    }
+
+    /// Sends the reply via the Discourse API.
+    /// Uses DiscourseRepository.replyToForumPost to POST the message.
+    /// Respects rate limiting via MessageSafetyService.
+    func sendReply() {
+        // Validate before sending
+        let validation = safetyService.validate(content: replyText)
+        guard validation.isValid else {
+            validationErrorMessage = validation.errorMessage
+            return
+        }
+
+        // Check rate limit
+        guard safetyService.canSend() else {
+            composerState = .failed(message: "Bitte warte einen Moment vor dem nächsten Senden.")
+            return
+        }
+
+        let contentToSend = replyText.trimmingCharacters(in: .whitespacesAndNewlines)
+        composerState = .sending
+        safetyService.willStartSend()
+
+        Task {
+            do {
+                // Send the reply via API
+                try await discourseRepository.replyToForumPost(
+                    topicId: topic.id,
+                    content: contentToSend,
+                    replyToPostNumber: replyingToPost?.postNumber
+                )
+
+                // Mark as sent successfully
+                safetyService.didCompleteSend(success: true)
+                composerState = .sent
+                replyText = ""
+                validationErrorMessage = nil
+
+                // After a brief moment, hide composer and reload posts
+                try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
+                isComposerVisible = false
+                composerState = .idle
+                replyingToPost = nil
+
+                // Reload posts to show the new reply
+                loadPosts()
+            } catch let error as DiscourseRepositoryError {
+                safetyService.didCompleteSend(success: false)
+                handleComposerError(error)
+            } catch {
+                safetyService.didCompleteSend(success: false)
+                composerState = .failed(message: "Antwort konnte nicht gesendet werden")
+            }
+        }
+    }
+
+    /// Dismisses any error state in the composer.
+    func dismissComposerError() {
+        if case .failed = composerState {
+            composerState = .idle
+        }
+    }
+
     // MARK: - Private Helpers
 
     private func handleError(_ error: DiscourseRepositoryError) {
@@ -94,6 +228,19 @@ final class TopicDetailViewModel: ObservableObject {
             loadState = .authenticationFailed(message: message)
         case .loadFailed(let message):
             loadState = .error(message: message)
+        }
+    }
+
+    private func handleComposerError(_ error: DiscourseRepositoryError) {
+        switch error {
+        case .notAuthenticated:
+            loadState = .notAuthenticated
+            composerState = .idle
+        case .authenticationFailed(let message):
+            loadState = .authenticationFailed(message: message)
+            composerState = .idle
+        case .loadFailed(let message):
+            composerState = .failed(message: message)
         }
     }
 }
