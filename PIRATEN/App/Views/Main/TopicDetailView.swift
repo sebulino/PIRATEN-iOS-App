@@ -24,6 +24,9 @@ struct TopicDetailView: View {
     /// Currently selected username for profile sheet
     @State private var selectedUsername: String?
 
+    /// Focus state for reply composer text field
+    @FocusState private var isComposerFocused: Bool
+
     var body: some View {
         Group {
             switch viewModel.loadState {
@@ -51,8 +54,41 @@ struct TopicDetailView: View {
                 errorState(message: message)
             }
         }
+        // Reply composer as safeAreaInset - doesn't trigger ScrollView relayout
+        // because it lives outside the ScrollView's layout hierarchy
+        .safeAreaInset(edge: .bottom) {
+            if viewModel.isAuthenticated && viewModel.isComposerVisible {
+                ReplyComposerView(
+                    replyText: $viewModel.replyText,
+                    composerState: viewModel.composerState,
+                    canSend: viewModel.canSendReply,
+                    characterCount: viewModel.characterCountInfo,
+                    validationError: viewModel.validationErrorMessage,
+                    isFocused: $isComposerFocused,
+                    replyContext: viewModel.replyingToPost.map {
+                        "Antwort auf @\($0.author.displayName ?? $0.author.username) (Beitrag #\($0.postNumber))"
+                    },
+                    onSend: { viewModel.sendReply() },
+                    onCancel: { viewModel.hideComposer() },
+                    onDismissError: { viewModel.dismissComposerError() },
+                    onTextChanged: { viewModel.validateReplyText() }
+                )
+            }
+        }
         .navigationTitle(viewModel.topic.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if viewModel.isAuthenticated && !viewModel.isComposerVisible {
+                    Button {
+                        viewModel.showComposer()
+                        isComposerFocused = true
+                    } label: {
+                        Label("Antworten", systemImage: "square.and.pencil")
+                    }
+                }
+            }
+        }
         .sheet(item: Binding(
             get: { selectedUsername.map { SelectedUsername(username: $0) } },
             set: { selectedUsername = $0?.username }
@@ -91,7 +127,11 @@ struct TopicDetailView: View {
                         post: post,
                         onUsernameTapped: { username in
                             selectedUsername = username
-                        }
+                        },
+                        onReplyTapped: viewModel.isAuthenticated ? {
+                            viewModel.showComposer(replyingTo: post)
+                            isComposerFocused = true
+                        } : nil
                     )
                     .padding(.horizontal, 16)
                     Divider()
@@ -195,6 +235,9 @@ private struct PostRow: View {
     /// Callback when username is tapped
     var onUsernameTapped: ((String) -> Void)?
 
+    /// Callback when reply button is tapped
+    var onReplyTapped: (() -> Void)?
+
     /// Whether the post content is expanded to show full text
     @State private var isExpanded = false
 
@@ -283,6 +326,18 @@ private struct PostRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .accessibilityLabel("\(post.likeCount) Likes")
+                }
+
+                // Reply button
+                if let onReplyTapped = onReplyTapped {
+                    Button {
+                        onReplyTapped()
+                    } label: {
+                        Label("Antworten", systemImage: "arrowshape.turn.up.left")
+                            .font(.caption)
+                            .foregroundStyle(.blue)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
