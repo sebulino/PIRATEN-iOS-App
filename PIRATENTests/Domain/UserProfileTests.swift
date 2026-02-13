@@ -136,8 +136,11 @@ final class UserProfileTests: XCTestCase {
         // When loading profile
         viewModel.loadProfile()
 
-        // Wait for async operation
-        try? await Task.sleep(nanoseconds: 600_000_000)
+        // Wait for async operation to complete (poll with timeout)
+        let startTime = Date()
+        while viewModel.loadState != .loaded && Date().timeIntervalSince(startTime) < 2.0 {
+            try? await Task.sleep(nanoseconds: 50_000_000) // 50ms polling interval
+        }
 
         // Then state should be loaded
         XCTAssertEqual(viewModel.loadState, .loaded)
@@ -153,8 +156,11 @@ final class UserProfileTests: XCTestCase {
         // When calling retry
         viewModel.retry()
 
-        // Wait for async operation
-        try? await Task.sleep(nanoseconds: 600_000_000)
+        // Wait for async operation to complete (poll with timeout)
+        let startTime = Date()
+        while viewModel.loadState != .loaded && Date().timeIntervalSince(startTime) < 2.0 {
+            try? await Task.sleep(nanoseconds: 50_000_000) // 50ms polling interval
+        }
 
         // Then it should load the profile
         XCTAssertEqual(viewModel.loadState, .loaded)

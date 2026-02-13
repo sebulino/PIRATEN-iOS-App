@@ -66,9 +66,13 @@ struct ProfileView: View {
                 HStack(spacing: 16) {
                     avatarView
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(user.displayName)
-                            .font(.title2)
-                            .fontWeight(.semibold)
+                        Text(
+                            user.displayName.lowercased().contains("none")
+                                ? (viewModel.discourseProfile?.displayText ?? user.displayName)
+                                : user.displayName
+                        )
+                        .font(.title2)
+                        .fontWeight(.semibold)
 
                         Text("@\(user.username)")
                             .font(.subheadline)
