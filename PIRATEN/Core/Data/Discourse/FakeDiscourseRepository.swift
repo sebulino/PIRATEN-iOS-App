@@ -313,6 +313,13 @@ final class FakeDiscourseRepository: DiscourseRepository {
         // A real integration test would verify behavior differently
     }
 
+    func replyToForumPost(topicId: Int, content: String, replyToPostNumber: Int?) async throws {
+        // Simulate network delay (placeholder behavior)
+        try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
+        // For fake implementation, we don't actually persist the reply
+        // A real integration test would verify behavior differently
+    }
+
     func searchUsers(query: String) async throws -> [UserSearchResult] {
         // Simulate network delay (placeholder behavior)
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds

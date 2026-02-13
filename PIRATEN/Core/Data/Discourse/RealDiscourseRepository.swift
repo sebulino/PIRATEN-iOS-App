@@ -162,6 +162,24 @@ final class RealDiscourseRepository: DiscourseRepository {
         }
     }
 
+    func replyToForumPost(topicId: Int, content: String, replyToPostNumber: Int?) async throws {
+        do {
+            // The API returns the created post, but we don't need to parse it
+            // The caller will refresh the topic to get the updated posts list
+            _ = try await apiClient.replyToForumPost(
+                topicId: topicId,
+                content: content,
+                replyToPostNumber: replyToPostNumber
+            )
+        } catch let error as DiscourseError {
+            throw mapToRepositoryError(error)
+        } catch {
+            throw DiscourseRepositoryError.loadFailed(
+                message: "Antwort konnte nicht gesendet werden"
+            )
+        }
+    }
+
     func searchUsers(query: String) async throws -> [UserSearchResult] {
         // Enforce minimum query length
         guard query.count >= 2 else {
