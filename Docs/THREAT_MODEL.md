@@ -637,6 +637,37 @@ The following patterns were reviewed and confirmed safe:
 
 ---
 
+## M9 Privacy Controls (2026-02-12)
+
+### In-App Privacy Page
+
+A dedicated `PrivacyView` was added (`App/Views/Main/PrivacyView.swift`) accessible from the Profile tab via NavigationLink. It provides transparent disclosure of:
+
+1. **No tracking/analytics**: Explicit statement that no analytics SDKs, tracking, or advertising are used
+2. **Data usage per feature**: Explains what data each feature (Forum, Messages, Todos, Knowledge, Profile) accesses and how it's handled
+3. **Notification privacy**: Clarifies that push notification payloads contain no message content or usernames
+4. **Storage practices**: Describes Keychain usage, thin-client model, and logout behavior
+5. **Network connections**: Lists all external services the app connects to (SSO, Discourse, GitHub)
+6. **Permission explanations**: Explains when and why notification permission is requested
+
+### User Controls
+
+- **Notification opt-in**: All notifications disabled by default; per-category toggles on Profile page
+- **Notification settings footer**: Clarifies that no message content is transmitted in push payloads
+- **Logout clears all data**: All tokens, notification settings, and device tokens cleared on logout
+- **No data silo**: App follows thin-client model; no local caching of messages, forum posts, or tasks
+
+### Privacy Principles Enforced
+
+- No analytics or telemetry SDKs included
+- No behavioral profiling or user tracking
+- No advertising networks
+- HTTPS for all connections
+- Minimal local persistence (only Keychain tokens, notification prefs, reading progress)
+- Data minimization: content fetched on demand, not cached (except Knowledge with 24h TTL)
+
+---
+
 ## Known Issues
 
 (None at this time)
