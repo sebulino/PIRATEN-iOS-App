@@ -10,6 +10,7 @@ import Foundation
 /// Domain model representing a forum post.
 /// This is independent of the Discourse API JSON shape - DTOs handle mapping.
 ///
+/// Supports threaded replies via replyToPostNumber field.
 /// Based on Discourse API concepts but intentionally simplified for our domain needs.
 /// See: Discourse API post objects in /t/{topic_id}.json and /posts.json responses
 struct Post: Identifiable, Equatable {
@@ -24,6 +25,10 @@ struct Post: Identifiable, Equatable {
 
     /// Summary of the user who wrote this post
     let author: UserSummary
+
+    /// The post number this post is replying to (nil if top-level post)
+    /// Used for threaded reply context display and API requests
+    let replyToPostNumber: Int?
 
     /// When the post was created
     let createdAt: Date
