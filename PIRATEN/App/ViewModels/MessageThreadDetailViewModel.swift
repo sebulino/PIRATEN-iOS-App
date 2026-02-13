@@ -55,6 +55,11 @@ enum ReplyComposerState: Equatable {
 @MainActor
 final class MessageThreadDetailViewModel: ObservableObject {
 
+    // MARK: - Constants
+
+    /// UserDefaults key for tracking whether the reply hint has been dismissed
+    private static let replyHintDismissedKey = "messageThreadReplyHintDismissed"
+
     // MARK: - Published State
 
     /// The message thread being viewed
@@ -77,6 +82,9 @@ final class MessageThreadDetailViewModel: ObservableObject {
 
     /// Validation error message for the composer (nil if valid)
     @Published private(set) var validationErrorMessage: String?
+
+    /// Whether to show the one-time reply hint to help users discover the reply button
+    @Published var shouldShowReplyHint: Bool
 
     /// Whether the user is authenticated (determined from load state)
     var isAuthenticated: Bool {
@@ -127,6 +135,10 @@ final class MessageThreadDetailViewModel: ObservableObject {
         self.thread = thread
         self.discourseRepository = discourseRepository
         self.safetyService = safetyService ?? MessageSafetyService()
+
+        // Load hint dismissed state from UserDefaults
+        // If not dismissed yet, show the hint to help users discover the reply feature
+        self.shouldShowReplyHint = !UserDefaults.standard.bool(forKey: Self.replyHintDismissedKey)
     }
 
     // MARK: - Public Methods
@@ -159,10 +171,18 @@ final class MessageThreadDetailViewModel: ObservableObject {
 
     // MARK: - Reply Composer Methods
 
-    /// Shows the reply composer.
+    /// Shows the reply composer and dismisses the hint (since user discovered the feature).
     func showComposer() {
         isComposerVisible = true
         composerState = .idle
+        dismissReplyHint()
+    }
+
+    /// Dismisses the reply hint and persists this choice.
+    /// Once dismissed, the hint will not be shown again.
+    func dismissReplyHint() {
+        shouldShowReplyHint = false
+        UserDefaults.standard.set(true, forKey: Self.replyHintDismissedKey)
     }
 
     /// Hides the reply composer and clears the text.

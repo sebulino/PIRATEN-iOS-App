@@ -132,11 +132,48 @@ struct MessageThreadDetailView: View {
                     Divider()
                         .padding(.leading, 16)
                 }
+
+                // One-time hint to help users discover the reply button
+                if viewModel.shouldShowReplyHint && !viewModel.isComposerVisible {
+                    replyHintBanner
+                        .padding(.top, 16)
+                }
             }
         }
         .refreshable {
             viewModel.retry()
         }
+    }
+
+    /// A subtle banner that helps users discover the reply button on first view.
+    /// Dismisses automatically when reply button is tapped or manually via X button.
+    @ViewBuilder
+    private var replyHintBanner: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "lightbulb.fill")
+                .foregroundColor(.orange)
+                .accessibilityHidden(true)
+
+            Text("Tippe auf das Symbol oben, um zu antworten")
+                .font(.subheadline)
+                .foregroundColor(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer()
+
+            Button {
+                viewModel.dismissReplyHint()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundColor(.secondary)
+            }
+            .accessibilityLabel("Hinweis ausblenden")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color(.systemGray6))
+        .cornerRadius(8)
+        .padding(.horizontal, 16)
     }
 
     @ViewBuilder
