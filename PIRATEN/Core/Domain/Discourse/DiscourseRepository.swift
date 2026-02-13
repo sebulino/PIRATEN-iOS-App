@@ -61,6 +61,16 @@ protocol DiscourseRepository {
     /// API Endpoint: POST /posts.json with topic_id and raw parameters
     func replyToThread(topicId: Int, content: String) async throws
 
+    /// Replies to a specific post in a forum topic.
+    /// - Parameters:
+    ///   - topicId: The ID of the topic containing the post
+    ///   - content: The raw text content of the reply
+    ///   - replyToPostNumber: Optional post number to reply to (for threading)
+    /// - Throws: DiscourseRepositoryError if sending fails
+    ///
+    /// API Endpoint: POST /posts.json with topic_id, raw, and optional reply_to_post_number
+    func replyToForumPost(topicId: Int, content: String, replyToPostNumber: Int?) async throws
+
     /// Searches for users by username or name.
     /// - Parameter query: The search term (minimum 2 characters recommended)
     /// - Returns: Array of matching users
