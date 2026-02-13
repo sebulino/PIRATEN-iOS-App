@@ -271,7 +271,45 @@ final class DiscourseAPIClient {
     /// Note: This uses the standard Discourse post creation endpoint.
     /// For PMs, topic_id is sufficient - no category is needed.
     func replyToMessageThread(topicId: Int, content: String) async throws -> Data {
-        let body = CreatePostRequest(topicId: topicId, raw: content)
+        let body = CreatePostRequest(topicId: topicId, raw: content, replyToPostNumber: nil)
+        let bodyData: Data
+        do {
+            bodyData = try JSONEncoder().encode(body)
+        } catch {
+            throw DiscourseError.unknown(statusCode: nil, message: "Failed to encode request")
+        }
+
+        var headers = commonHeaders()
+        headers["Content-Type"] = "application/json"
+
+        let request = HTTPRequest.post(url(for: "/posts.json"), body: bodyData, headers: headers)
+        do {
+            let response = try await httpClient.execute(request)
+            guard response.isSuccess else {
+                throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
+            }
+            return response.data
+        } catch let error as HTTPError {
+            throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
+        }
+    }
+
+    /// Posts a reply to a forum topic post.
+    /// Endpoint: POST /posts.json
+    /// - Parameters:
+    ///   - topicId: The ID of the topic to reply to
+    ///   - content: The raw markdown content of the reply
+    ///   - replyToPostNumber: Optional post number to reply to (for threading)
+    /// - Returns: Raw response data containing the created post
+    /// - Throws: DiscourseError if the request fails
+    func replyToForumPost(topicId: Int, content: String, replyToPostNumber: Int?) async throws -> Data {
+        let body = CreatePostRequest(
+            topicId: topicId,
+            raw: content,
+            replyToPostNumber: replyToPostNumber
+        )
         let bodyData: Data
         do {
             bodyData = try JSONEncoder().encode(body)
@@ -378,10 +416,12 @@ final class DiscourseAPIClient {
 private struct CreatePostRequest: Encodable {
     let topicId: Int
     let raw: String
+    let replyToPostNumber: Int?
 
     enum CodingKeys: String, CodingKey {
         case topicId = "topic_id"
         case raw
+        case replyToPostNumber = "reply_to_post_number"
     }
 }
 
