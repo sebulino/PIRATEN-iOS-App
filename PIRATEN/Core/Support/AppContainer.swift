@@ -280,7 +280,7 @@ final class AppContainer {
             meinePiratenBaseURL = URL(string: "https://meine-piraten.de")!
         }
         let todoAPIClient = TodoAPIClient(httpClient: baseHTTPClient, baseURL: meinePiratenBaseURL)
-        self.todoRepository = RealTodoRepository(apiClient: todoAPIClient)
+        self.todoRepository = RealTodoRepository(apiClient: todoAPIClient, authRepository: authRepository)
 
         // Knowledge Hub - GitHub API client and repository
         // Repo config read from Info.plist (set via xcconfig)

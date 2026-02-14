@@ -1,0 +1,98 @@
+{
+  "project": "piraten-ios-m10-termine-profile",
+  "branchName": "ralph/m10-termine-profile",
+  "description": "Milestone 10: Move Profile from bottom tab bar to a floating top-right icon that opens a sheet. Replace the Profile tab with a new Termine (Events) tab that displays calendar entries imported from an iCal feed (piragitator.de).",
+  "userStories": [
+    {
+      "id": "M10-001",
+      "category": "termine-domain",
+      "title": "Create Event domain entity and repository protocol",
+      "description": "Define the Event domain model and EventRepository protocol for calendar events from an iCal feed.",
+      "acceptanceCriteria": [
+        "Event struct exists in Core/Domain/Termine/ with fields: id (String), title, startDate, endDate, location?, description?, category?, url?",
+        "Event conforms to Identifiable and Equatable",
+        "EventRepository protocol exists with fetchEvents() async throws -> [Event]",
+        "EventRepositoryError enum with loadFailed case",
+        "App builds successfully"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M10-002",
+      "category": "termine-data",
+      "title": "Implement iCal parser and event repositories",
+      "description": "Create an iCal parser to convert RFC 5545 VCALENDAR data into Event entities, plus real and fake repository implementations.",
+      "acceptanceCriteria": [
+        "ICalParser parses VEVENT blocks extracting SUMMARY, DTSTART, DTEND, LOCATION, DESCRIPTION, CATEGORIES, URL, UID",
+        "Handles date formats YYYYMMDDTHHmmss and YYYYMMDD",
+        "Handles iCal escaped characters (\\, -> comma, \\n -> newline) and line folding",
+        "RealEventRepository fetches iCal data from URL via URLSession (no auth needed) and parses with ICalParser",
+        "iCal feed URL is configured via .xcconfig (ICAL_FEED_URL), not hardcoded",
+        "FakeEventRepository returns hardcoded sample events for previews and tests",
+        "Unit tests verify iCal parsing for valid and edge-case inputs",
+        "App builds successfully"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M10-003",
+      "category": "termine-viewmodel",
+      "title": "Create TermineViewModel following existing patterns",
+      "description": "Create the ViewModel for the Termine tab following the TodosViewModel pattern.",
+      "acceptanceCriteria": [
+        "TermineViewModel exists with TermineLoadState enum (idle, loading, loaded, error)",
+        "Published properties: events, loadState",
+        "Methods: loadEvents(), refresh()",
+        "Computed properties: upcomingEvents (startDate >= now, ascending), pastEvents (startDate < now, descending)",
+        "Wired into AppContainer with both production and test initializers",
+        "App builds successfully"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M10-004",
+      "category": "termine-view",
+      "title": "Create TermineView with inline event display",
+      "description": "Create the Termine tab view showing events inline using ScrollView + LazyVStack (not List).",
+      "acceptanceCriteria": [
+        "TermineView uses ScrollView + LazyVStack (no List, per project convention)",
+        "Shows sections: Kommende Termine (upcoming) and Vergangene Termine (past)",
+        "Each event row displays: title, date/time in German format, location, category, description",
+        "Supports .refreshable for pull-to-refresh",
+        "Shows loading, error, and empty states",
+        "App builds successfully"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M10-005",
+      "category": "profile-overlay",
+      "title": "Move Profile to floating top-right icon with sheet presentation",
+      "description": "Remove Profile from bottom tab bar. Add a floating overlay button (top-right, person.circle icon) on the TabView that presents ProfileView as a sheet.",
+      "acceptanceCriteria": [
+        "Profile tab removed from bottom tab bar",
+        "Floating person.circle icon visible in top-right corner on all tabs",
+        "Tapping icon presents ProfileView as a .sheet sliding up from the bottom",
+        "ProfileView includes a close/dismiss button in the sheet context",
+        "All existing profile functionality (settings, notifications, logout) works in sheet",
+        "App builds successfully"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M10-006",
+      "category": "integration",
+      "title": "Wire Termine tab into tab bar and update dependency chain",
+      "description": "Replace the Profile tab with the Termine tab in MainTabView and update the full dependency injection chain.",
+      "acceptanceCriteria": [
+        "Termine tab appears as tab index 4 with calendar icon and label 'Termine'",
+        "Tab order: Forum, Nachrichten, Wissen, ToDos, Termine",
+        "TermineViewModel passed through PIRATENApp -> StartupContainerView -> RootView -> MainTabView",
+        "DeepLinkRouter tab index comments updated",
+        "All existing tests pass",
+        "App builds and runs successfully"
+      ],
+      "passes": false
+    }
+  ]
+}

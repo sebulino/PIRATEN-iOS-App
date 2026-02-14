@@ -157,13 +157,6 @@ struct TodoDetailView: View {
             }
         case .claimed:
             Button {
-                viewModel.complete()
-            } label: {
-                Label("Erledigt", systemImage: "checkmark.circle")
-            }
-            .tint(.green)
-
-            Button {
                 viewModel.unclaim()
             } label: {
                 Label("Freigeben", systemImage: "person.badge.minus")
