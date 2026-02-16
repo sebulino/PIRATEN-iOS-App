@@ -15,11 +15,13 @@ final class RealTodoRepository: TodoRepository {
     // MARK: - Dependencies
 
     private let apiClient: TodoAPIClient
+    private let authRepository: AuthRepository
 
     // MARK: - Initialization
 
-    init(apiClient: TodoAPIClient) {
+    init(apiClient: TodoAPIClient, authRepository: AuthRepository) {
         self.apiClient = apiClient
+        self.authRepository = authRepository
     }
 
     // MARK: - Fetch
@@ -85,9 +87,10 @@ final class RealTodoRepository: TodoRepository {
 
     func claimTodo(id: Int) async throws -> Todo {
         do {
+            let username = await resolveUsername()
             let data = try await apiClient.updateTask(id: id, params: [
                 "status": "claimed",
-                "assignee": "current_user"
+                "assignee": username
             ])
             let dto = try decode(TaskDTO.self, from: data)
             return dto.toDomainModel()
@@ -145,9 +148,10 @@ final class RealTodoRepository: TodoRepository {
 
     func addComment(todoId: Int, text: String) async throws -> TodoComment {
         do {
+            let username = await resolveUsername()
             let data = try await apiClient.createComment(taskId: todoId, params: [
                 "text": text,
-                "author_name": "current_user"
+                "author_name": username
             ])
             let dto = try decode(CommentDTO.self, from: data)
             return dto.toDomainModel()
@@ -179,6 +183,15 @@ final class RealTodoRepository: TodoRepository {
     }
 
     // MARK: - Private Helpers
+
+    /// Resolves the current user's PiratenSSO username from the auth repository.
+    /// Falls back to "unknown" if the user cannot be retrieved.
+    private func resolveUsername() async -> String {
+        if let user = await authRepository.getCurrentUser() {
+            return user.username
+        }
+        return "unknown"
+    }
 
     private func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
         let decoder = JSONDecoder()

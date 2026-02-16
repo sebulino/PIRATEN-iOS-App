@@ -1,0 +1,46 @@
+{
+  "project": "piraten-ios-m11-push-activation",
+  "branchName": "ralph/m11-push-activation",
+  "description": "Milestone 11: Activate push notifications end-to-end. Requires an Apple Developer Account. Add the Push Notifications entitlement and Background Modes capability, and verify APNs token registration works on a real device.",
+  "userStories": [
+    {
+      "id": "M11-001",
+      "category": "push-entitlement",
+      "title": "Add Push Notifications entitlement and capability",
+      "description": "Add the aps-environment entitlement and Push Notifications capability to the Xcode project so APNs token registration succeeds.",
+      "acceptanceCriteria": [
+        "PIRATEN.entitlements file exists with aps-environment key",
+        "Push Notifications capability is added to the Xcode project",
+        "Background Modes capability added with remote-notification enabled",
+        "App builds successfully with the new entitlements"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M11-002",
+      "category": "push-token-backend",
+      "title": "Implement device token registration with backend",
+      "description": "Send the APNs device token to the backend so the server can send push notifications. Requires backend endpoint to be available (see OQ-08).",
+      "acceptanceCriteria": [
+        "Device token is sent to backend registration endpoint after successful APNs registration",
+        "Token is re-sent on app launch if notification settings are enabled",
+        "Token is deregistered on logout",
+        "Error handling for failed registration attempts"
+      ],
+      "passes": false
+    },
+    {
+      "id": "M11-003",
+      "category": "push-e2e-verification",
+      "title": "Verify end-to-end push notification delivery",
+      "description": "Test that push notifications are received on a real device, appear correctly, and deep links route to the correct screens.",
+      "acceptanceCriteria": [
+        "Push notification received on real device with correct banner/sound/badge",
+        "Tapping notification routes to correct Message thread or Todo detail",
+        "Foreground notifications display as banner",
+        "Notification settings toggles correctly control which categories are received"
+      ],
+      "passes": false
+    }
+  ]
+}
