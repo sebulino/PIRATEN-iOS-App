@@ -279,7 +279,17 @@ final class AppContainer {
             // Fallback for development — should not happen in production
             meinePiratenBaseURL = URL(string: "https://meine-piraten.de")!
         }
-        let todoAPIClient = TodoAPIClient(httpClient: baseHTTPClient, baseURL: meinePiratenBaseURL)
+        let todoTokenProvider = AuthStateTokenProvider(authStateManager: authStateManager)
+        let todoHTTPClient = AuthenticatedHTTPClient(
+            baseClient: baseHTTPClient,
+            tokenProvider: todoTokenProvider,
+            onAuthError: { [weak authStateManager] in
+                Task { @MainActor in
+                    authStateManager?.handleAuthenticationError()
+                }
+            }
+        )
+        let todoAPIClient = TodoAPIClient(httpClient: todoHTTPClient, baseURL: meinePiratenBaseURL)
         self.todoRepository = RealTodoRepository(apiClient: todoAPIClient, authRepository: authRepository)
 
         // Knowledge Hub - GitHub API client and repository
