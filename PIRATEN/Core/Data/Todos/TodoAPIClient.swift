@@ -112,6 +112,21 @@ final class TodoAPIClient {
         }
     }
 
+    // MARK: - Admin Requests
+
+    /// GET /admin_requests/status.json
+    func fetchAdminStatus() async throws -> Data {
+        let request = HTTPRequest.get(url(for: "/admin_requests/status.json"), headers: commonHeaders())
+        return try await execute(request)
+    }
+
+    /// POST /admin_requests.json
+    func requestAdmin(reason: String) async throws -> Data {
+        let body = try encodeParams(["reason": reason])
+        let request = makePostRequest(path: "/admin_requests.json", body: body)
+        return try await execute(request)
+    }
+
     // MARK: - Private Helpers
 
     private func execute(_ request: HTTPRequest) async throws -> Data {

@@ -252,6 +252,18 @@ final class FakeTodoRepository: TodoRepository {
         comments.removeValue(forKey: id)
     }
 
+    // MARK: - Admin Requests
+
+    func checkAdminStatus() async -> Bool? {
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        return false
+    }
+
+    func requestAdmin(reason: String) async throws {
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        // No-op stub
+    }
+
     // MARK: - Reference Data
 
     func fetchEntities() async -> [Entity] {

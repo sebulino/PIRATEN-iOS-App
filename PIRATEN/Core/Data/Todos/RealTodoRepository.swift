@@ -160,6 +160,26 @@ final class RealTodoRepository: TodoRepository {
         }
     }
 
+    // MARK: - Admin Requests
+
+    func checkAdminStatus() async -> Bool? {
+        do {
+            let data = try await apiClient.fetchAdminStatus()
+            let result = try JSONDecoder().decode([String: Bool].self, from: data)
+            return result["admin"]
+        } catch {
+            return nil
+        }
+    }
+
+    func requestAdmin(reason: String) async throws {
+        do {
+            _ = try await apiClient.requestAdmin(reason: reason)
+        } catch let error as TodoAPIError {
+            throw mapToTodoError(error)
+        }
+    }
+
     // MARK: - Reference Data
 
     func fetchEntities() async -> [Entity] {

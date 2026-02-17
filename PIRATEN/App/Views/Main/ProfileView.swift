@@ -12,6 +12,11 @@ import SwiftUI
 struct ProfileView: View {
     @ObservedObject var viewModel: ProfileViewModel
     @ObservedObject var notificationSettings: NotificationSettingsManager
+    var adminRequestViewModelFactory: (() -> AdminRequestViewModel)?
+    var checkAdminStatus: (() async -> Bool?)?
+
+    @State private var showAdminRequest = false
+    @State private var adminStatus: Bool?
 
     var body: some View {
         NavigationStack {
@@ -156,6 +161,22 @@ struct ProfileView: View {
             // Notification settings section
             notificationSettingsSection
 
+            // Admin status / request section
+            if let status = adminStatus {
+                Section("Aufgaben-Verwaltung") {
+                    if status {
+                        Label("Admin", systemImage: "checkmark.shield.fill")
+                            .foregroundColor(.green)
+                    } else if adminRequestViewModelFactory != nil {
+                        Button {
+                            showAdminRequest = true
+                        } label: {
+                            Label("Admin-Rechte beantragen", systemImage: "person.badge.key")
+                        }
+                    }
+                }
+            }
+
             // Privacy & Info section
             Section {
                 NavigationLink {
@@ -187,8 +208,21 @@ struct ProfileView: View {
                 }
             }
         }
+        .task {
+            if let check = checkAdminStatus {
+                adminStatus = await check()
+            }
+        }
         .refreshable {
             viewModel.refresh()
+            if let check = checkAdminStatus {
+                adminStatus = await check()
+            }
+        }
+        .sheet(isPresented: $showAdminRequest) {
+            if let factory = adminRequestViewModelFactory {
+                AdminRequestView(viewModel: factory())
+            }
         }
     }
 

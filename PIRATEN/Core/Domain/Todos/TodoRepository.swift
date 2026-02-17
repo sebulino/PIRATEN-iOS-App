@@ -55,6 +55,15 @@ protocol TodoRepository {
     /// Deletes a todo by ID.
     func deleteTodo(id: Int) async throws
 
+    // MARK: - Admin Requests
+
+    /// Checks whether the current user has admin status.
+    /// Returns `true` if admin, `false` if not, `nil` if the server is unreachable.
+    func checkAdminStatus() async -> Bool?
+
+    /// Requests admin access with the given reason.
+    func requestAdmin(reason: String) async throws
+
     // MARK: - Reference Data
 
     /// Fetches all available entities.

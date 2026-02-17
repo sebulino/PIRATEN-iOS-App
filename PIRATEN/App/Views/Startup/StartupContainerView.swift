@@ -49,6 +49,12 @@ struct StartupContainerView: View {
     /// Factory for creating TodoDetailViewModels
     var todoDetailViewModelFactory: ((Todo) -> TodoDetailViewModel)?
 
+    /// Factory for creating AdminRequestViewModels
+    var adminRequestViewModelFactory: (() -> AdminRequestViewModel)?
+
+    /// Closure to check the current user's admin status
+    var checkAdminStatus: (() async -> Bool?)?
+
     // MARK: - Splash Screen State
 
     /// Whether to show the startup splash screen
@@ -76,7 +82,9 @@ struct StartupContainerView: View {
                 userProfileViewModelFactory: userProfileViewModelFactory,
                 createTodoViewModelFactory: createTodoViewModelFactory,
                 knowledgeTopicDetailViewModelFactory: knowledgeTopicDetailViewModelFactory,
-                todoDetailViewModelFactory: todoDetailViewModelFactory
+                todoDetailViewModelFactory: todoDetailViewModelFactory,
+                adminRequestViewModelFactory: adminRequestViewModelFactory,
+                checkAdminStatus: checkAdminStatus
             )
 
             // Startup splash screen overlay (dismisses after delay)

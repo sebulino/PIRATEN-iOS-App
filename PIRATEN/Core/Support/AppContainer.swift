@@ -189,6 +189,12 @@ final class AppContainer {
         TodoDetailViewModel(todo: todo, todoRepository: todoRepository)
     }
 
+    /// Creates an AdminRequestViewModel for requesting admin access.
+    /// - Returns: A configured AdminRequestViewModel
+    func makeAdminRequestViewModel() -> AdminRequestViewModel {
+        AdminRequestViewModel(todoRepository: todoRepository)
+    }
+
     // MARK: - Initialization
 
     /// Creates the container with default production dependencies.
