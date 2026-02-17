@@ -21,12 +21,12 @@ struct StartupScreenView: View {
             RadialGradient(
                 colors: [
                     Color.orange,
-                    Color.orange.opacity(0.9),
-                    Color(red: 0.9, green: 0.5, blue: 0.2) // Darker orange/amber
+                    Color.orange.opacity(0.99),
+                    Color(red: 255/255, green: 177/255, blue: 0/255)
                 ],
                 center: .center,
                 startRadius: 100,
-                endRadius: 500
+                endRadius: 450
             )
             .ignoresSafeArea()
 
