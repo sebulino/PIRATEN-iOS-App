@@ -9,7 +9,8 @@ import SwiftUI
 
 struct LoginView: View {
     @ObservedObject var authStateManager: AuthStateManager
-
+    @Environment(\.openURL) private var openURL
+    
     var body: some View {
         VStack(spacing: 20) {
             Spacer()
@@ -63,6 +64,23 @@ struct LoginView: View {
                 }
                 .padding(.horizontal, 40)
                 .accessibilityIdentifier("loginButton")
+                Button(action: {
+                    guard let url = URL(string: "https://members.piratenpartei.de/") else { return }
+                    openURL(url)
+                }) {
+                    Text("Mitglied werden")
+                        .font(.headline)
+                        .foregroundColor(.orange)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white)
+                        .overlay(RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.orange, lineWidth: 2)
+                        )
+                        .cornerRadius(10)
+                }
+                .padding(.horizontal, 40)
+                .accessibilityIdentifier("SignUpButton")
             }
 
             Spacer()

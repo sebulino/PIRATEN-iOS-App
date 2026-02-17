@@ -99,7 +99,7 @@ struct StartupContainerView: View {
             // which causes AttributeGraph cycles with RootView's own .task
             try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
 
-            withAnimation(.easeOut(duration: 0.5)) {
+            withAnimation(.easeOut(duration: 0.25)) {
                 showSplash = false
             }
         }
