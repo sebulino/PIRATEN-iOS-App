@@ -81,6 +81,12 @@ struct PIRATENApp: App {
                 },
                 todoDetailViewModelFactory: { [container] todo in
                     container.makeTodoDetailViewModel(for: todo)
+                },
+                adminRequestViewModelFactory: { [container] in
+                    container.makeAdminRequestViewModel()
+                },
+                checkAdminStatus: { [container] in
+                    await container.todoRepository.checkAdminStatus()
                 }
             )
             .onOpenURL { url in

@@ -42,6 +42,12 @@ struct RootView: View {
     /// Factory for creating TodoDetailViewModels
     var todoDetailViewModelFactory: ((Todo) -> TodoDetailViewModel)?
 
+    /// Factory for creating AdminRequestViewModels
+    var adminRequestViewModelFactory: (() -> AdminRequestViewModel)?
+
+    /// Closure to check the current user's admin status
+    var checkAdminStatus: (() async -> Bool?)?
+
     var body: some View {
         Group {
             switch authStateManager.currentState {
@@ -68,7 +74,9 @@ struct RootView: View {
                     userProfileViewModelFactory: userProfileViewModelFactory,
                     createTodoViewModelFactory: createTodoViewModelFactory,
                     knowledgeTopicDetailViewModelFactory: knowledgeTopicDetailViewModelFactory,
-                    todoDetailViewModelFactory: todoDetailViewModelFactory
+                    todoDetailViewModelFactory: todoDetailViewModelFactory,
+                    adminRequestViewModelFactory: adminRequestViewModelFactory,
+                    checkAdminStatus: checkAdminStatus
                 )
                 .provideWindow()
             case .failed(let error):

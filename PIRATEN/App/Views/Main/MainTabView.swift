@@ -41,6 +41,12 @@ struct MainTabView: View {
     /// Factory for creating TodoDetailViewModels
     var todoDetailViewModelFactory: ((Todo) -> TodoDetailViewModel)?
 
+    /// Factory for creating AdminRequestViewModels
+    var adminRequestViewModelFactory: (() -> AdminRequestViewModel)?
+
+    /// Closure to check the current user's admin status
+    var checkAdminStatus: (() async -> Bool?)?
+
     // MARK: - Compose Flow State
 
     /// Whether the recipient picker is being shown
@@ -109,7 +115,7 @@ struct MainTabView: View {
                 }
                 .tag(3)
 
-            ProfileView(viewModel: profileViewModel, notificationSettings: notificationSettings)
+            ProfileView(viewModel: profileViewModel, notificationSettings: notificationSettings, adminRequestViewModelFactory: adminRequestViewModelFactory, checkAdminStatus: checkAdminStatus)
                 .tabItem {
                     Label("Profil", systemImage: "person.circle")
                 }
@@ -307,6 +313,9 @@ struct MainTabView: View {
         },
         todoDetailViewModelFactory: { todo in
             TodoDetailViewModel(todo: todo, todoRepository: FakeTodoRepository())
+        },
+        adminRequestViewModelFactory: {
+            AdminRequestViewModel(todoRepository: FakeTodoRepository())
         }
     )
 }
