@@ -31,7 +31,7 @@ protocol TodoRepository {
     func fetchTodo(byId id: Int) async -> Todo?
 
     /// Creates a new todo.
-    func createTodo(title: String, description: String?, entityId: Int, categoryId: Int, urgent: Bool) async throws -> Todo
+    func createTodo(title: String, description: String?, entityId: Int, categoryId: Int, urgent: Bool, dueDate: Date?, activityPoints: Int?, timeNeededInHours: Int?) async throws -> Todo
 
     /// Claims an open todo for the current user.
     func claimTodo(id: Int) async throws -> Todo

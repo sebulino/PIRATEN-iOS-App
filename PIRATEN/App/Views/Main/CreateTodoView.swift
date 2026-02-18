@@ -46,6 +46,31 @@ struct CreateTodoView: View {
                     }
                 }
 
+                Section("Details") {
+                    Toggle("Fälligkeitsdatum", isOn: $viewModel.hasDueDate)
+
+                    if viewModel.hasDueDate {
+                        DatePicker(
+                            "Datum",
+                            selection: $viewModel.dueDate,
+                            in: Date()...,
+                            displayedComponents: .date
+                        )
+                    }
+
+                    Stepper(
+                        "Aktivitätspunkte: \(viewModel.activityPoints == 0 ? "–" : "\(viewModel.activityPoints)")",
+                        value: $viewModel.activityPoints,
+                        in: 0...100
+                    )
+
+                    Stepper(
+                        "Zeitaufwand: \(viewModel.timeNeededInHours == 0 ? "–" : "\(viewModel.timeNeededInHours) Std.")",
+                        value: $viewModel.timeNeededInHours,
+                        in: 0...99
+                    )
+                }
+
                 if let error = viewModel.errorMessage {
                     Section {
                         Text(error)
