@@ -50,11 +50,11 @@ final class RealDiscourseRepository: DiscourseRepository {
 
     func fetchPosts(forTopicId topicId: Int) async throws -> [Post] {
         do {
-            let data = try await apiClient.fetchTopic(id: topicId)
+            // Fetch topic with print=true to get all posts (not just first 20)
+            let data = try await apiClient.fetchTopic(id: topicId, includeAllPosts: true)
             let response = try decodeTopicDetailResponse(from: data)
 
             // Map post DTOs to domain models
-            // Discourse /t/{id}.json returns posts in post_stream.posts (first 20)
             let posts = response.postStream.posts.compactMap { dto in
                 dto.toDomainModel()
             }
@@ -158,6 +158,24 @@ final class RealDiscourseRepository: DiscourseRepository {
         } catch {
             throw DiscourseRepositoryError.loadFailed(
                 message: "Nachricht konnte nicht gesendet werden"
+            )
+        }
+    }
+
+    func replyToForumPost(topicId: Int, content: String, replyToPostNumber: Int?) async throws {
+        do {
+            // The API returns the created post, but we don't need to parse it
+            // The caller will refresh the topic to get the updated posts list
+            _ = try await apiClient.replyToForumPost(
+                topicId: topicId,
+                content: content,
+                replyToPostNumber: replyToPostNumber
+            )
+        } catch let error as DiscourseError {
+            throw mapToRepositoryError(error)
+        } catch {
+            throw DiscourseRepositoryError.loadFailed(
+                message: "Antwort konnte nicht gesendet werden"
             )
         }
     }

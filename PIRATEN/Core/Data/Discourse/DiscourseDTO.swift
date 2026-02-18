@@ -262,6 +262,9 @@ struct DiscoursePostDTO: Decodable {
     /// Note: likes may come from actions_summary array in some responses
     let likeCount: Int?
 
+    /// The post number this post is replying to (nil if top-level post)
+    let replyToPostNumber: Int?
+
     enum CodingKeys: String, CodingKey {
         case id
         case topicId = "topic_id"
@@ -274,6 +277,7 @@ struct DiscoursePostDTO: Decodable {
         case replyCount = "reply_count"
         case reads
         case likeCount = "like_count"
+        case replyToPostNumber = "reply_to_post_number"
     }
 
     /// Converts this DTO to a Domain Post model.
@@ -301,6 +305,7 @@ struct DiscoursePostDTO: Decodable {
             topicId: topicId,
             postNumber: postNumber,
             author: author,
+            replyToPostNumber: replyToPostNumber,
             createdAt: date,
             content: cooked,
             replyCount: replyCount,

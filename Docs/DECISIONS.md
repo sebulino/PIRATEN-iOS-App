@@ -787,6 +787,51 @@ Configure URLSession with a dedicated URLCache:
 
 ---
 
+## D-026: Forum Reply UI Pattern (Shared Composer, Threaded Replies)
+
+**Date:** 2026-02-13
+**Status:** Accepted
+
+### Context
+Users need to reply to forum topics. Options:
+1. **Inline composer per post** - Each post has its own reply field
+2. **Modal sheet** - Full-screen overlay for composing replies
+3. **Bottom sheet via .safeAreaInset** - Composer appears at bottom, outside main content hierarchy
+4. **NavigationLink to separate view** - Dedicated reply screen
+
+Additionally, reply types:
+- **General topic reply** - Reply to the topic as a whole
+- **Threaded post reply** - Reply to a specific post (with `reply_to_post_number`)
+
+### Decision
+Use **bottom sheet composer via .safeAreaInset** with two entry points:
+1. **Toolbar button** - Shows composer for general topic reply (no `reply_to_post_number`)
+2. **Per-post reply button** - Shows composer with context banner ("Replying to @username (post #N)") and sets `replyToPostNumber`
+
+Extract `ReplyComposerView` as a shared component used by both `MessageThreadDetailView` (PM replies) and `TopicDetailView` (forum replies).
+
+### Rationale
+1. **Consistency**: Same UI pattern for both PM and forum replies reduces cognitive load
+2. **No AttributeGraph crashes**: .safeAreaInset places composer outside ScrollView/List hierarchy (proven safe in MessageThreadDetailView)
+3. **Reusable component**: Single source of truth for composer UI, validation, character count, error states
+4. **Clear reply context**: Banner shows which post is being replied to for threaded replies
+5. **Discourse API support**: `POST /posts.json` accepts optional `reply_to_post_number` parameter for threading
+
+### Implementation
+- **Domain**: `Post.replyToPostNumber` field added, `DiscourseRepository.replyToForumPost()` method
+- **Data**: `DiscoursePostDTO` parses `reply_to_post_number`, `DiscourseAPIClient` sends parameter
+- **ViewModel**: `TopicDetailViewModel` manages composer state (`isComposerVisible`, `replyText`, `replyingToPost`, `composerState`)
+- **View**: `TopicDetailView` uses shared `ReplyComposerView` with optional `replyContext` banner
+- **Validation**: `MessageSafetyService` enforces 30s cooldown, 10k character limit
+
+### Consequences
+- Users can reply to topics without navigating away
+- Threaded replies create clear conversation chains
+- Shared composer ensures consistent UX across PM and forum features
+- Future: Could extend to support draft saving, emoji picker, Markdown preview
+
+---
+
 ## Future Decisions
 
 Decisions pending external input:

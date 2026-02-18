@@ -123,6 +123,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 topicId: 1,
                 postNumber: 1,
                 author: fakeUsers[0],
+                replyToPostNumber: nil,
                 createdAt: Date().addingTimeInterval(-86400 * 2),
                 content: "Die EU plant neue Regelungen zu digitalen Grundrechten. Lasst uns die aktuellen Entwicklungen diskutieren.",
                 replyCount: 3,
@@ -134,6 +135,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 topicId: 1,
                 postNumber: 2,
                 author: fakeUsers[1],
+                replyToPostNumber: nil,
                 createdAt: Date().addingTimeInterval(-86400 * 2 + 3600),
                 content: "Besonders wichtig finde ich die Aspekte zur Datensouveränität. Hier müssen wir als Piraten klare Position beziehen.",
                 replyCount: 1,
@@ -145,6 +147,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 topicId: 1,
                 postNumber: 3,
                 author: fakeUsers[2],
+                replyToPostNumber: nil,
                 createdAt: Date().addingTimeInterval(-86400 * 1),
                 content: "Ich arbeite gerade an einer Zusammenfassung der wichtigsten Punkte. Teile ich hier, sobald fertig.",
                 replyCount: 0,
@@ -162,6 +165,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 topicId: 1001,
                 postNumber: 1,
                 author: fakeUsers[0],
+                replyToPostNumber: nil,
                 createdAt: Date().addingTimeInterval(-86400 * 3),
                 content: "Hallo zusammen, wir müssen noch die Agenda für die Bundesvorstandssitzung abstimmen. Hat jemand Vorschläge?",
                 replyCount: 2,
@@ -173,6 +177,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 topicId: 1001,
                 postNumber: 2,
                 author: fakeUsers[1],
+                replyToPostNumber: nil,
                 createdAt: Date().addingTimeInterval(-86400 * 3 + 7200),
                 content: "Ich würde gerne den Punkt 'Digitalisierungsstrategie' auf die Agenda setzen. Das Thema wird immer dringender.",
                 replyCount: 1,
@@ -184,6 +189,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 topicId: 1001,
                 postNumber: 3,
                 author: fakeUsers[0],
+                replyToPostNumber: nil,
                 createdAt: Date().addingTimeInterval(-3600 * 2),
                 content: "Guter Vorschlag! Ich nehme das auf. Gibt es weitere Punkte?",
                 replyCount: 0,
@@ -201,6 +207,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 topicId: 1002,
                 postNumber: 1,
                 author: fakeUsers[0],
+                replyToPostNumber: nil,
                 createdAt: Date().addingTimeInterval(-86400 * 7),
                 content: "Der LPT Bayern steht an. Wir müssen noch die Räumlichkeiten organisieren.",
                 replyCount: 0,
@@ -212,6 +219,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 topicId: 1002,
                 postNumber: 2,
                 author: fakeUsers[2],
+                replyToPostNumber: nil,
                 createdAt: Date().addingTimeInterval(-86400 * 1),
                 content: "Ich habe eine Location in München gefunden. Details im Anhang.",
                 replyCount: 0,
@@ -299,6 +307,13 @@ final class FakeDiscourseRepository: DiscourseRepository {
     }
 
     func replyToThread(topicId: Int, content: String) async throws {
+        // Simulate network delay (placeholder behavior)
+        try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
+        // For fake implementation, we don't actually persist the reply
+        // A real integration test would verify behavior differently
+    }
+
+    func replyToForumPost(topicId: Int, content: String, replyToPostNumber: Int?) async throws {
         // Simulate network delay (placeholder behavior)
         try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
         // For fake implementation, we don't actually persist the reply
