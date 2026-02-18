@@ -23,6 +23,15 @@ struct ForumView: View {
     /// Callback when user taps "Nachricht senden" from a profile
     var onSendMessageFromProfile: ((UserProfile) -> Void)?
 
+    /// Callback when user taps the profile toolbar button
+    var onProfileTapped: (() -> Void)?
+
+    /// Callback when user taps the notifications toolbar button
+    var onNotificationsTapped: (() -> Void)?
+
+    /// Whether to show a badge on the notification bell
+    var notificationsBadge: Bool = false
+
     /// The current window for presenting auth session
     @Environment(\.window) private var window: UIWindow?
 
@@ -56,6 +65,23 @@ struct ForumView: View {
                 }
             }
             .navigationTitle("Forum")
+            .toolbar {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    Button {
+                        onNotificationsTapped?()
+                    } label: {
+                        Image(systemName: notificationsBadge ? "bell.badge" : "bell")
+                    }
+                    .accessibilityLabel("Benachrichtigungen")
+
+                    Button {
+                        onProfileTapped?()
+                    } label: {
+                        Image(systemName: "person.circle")
+                    }
+                    .accessibilityLabel("Profil")
+                }
+            }
             .onAppear {
                 if viewModel.loadState == .idle {
                     viewModel.loadTopics()
