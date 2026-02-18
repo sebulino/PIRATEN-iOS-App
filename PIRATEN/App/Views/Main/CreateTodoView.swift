@@ -58,16 +58,18 @@ struct CreateTodoView: View {
                         )
                     }
 
-                    Stepper(
-                        "Aktivitätspunkte: \(viewModel.activityPoints == 0 ? "–" : "\(viewModel.activityPoints)")",
-                        value: $viewModel.activityPoints,
-                        in: 0...100
-                    )
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Aktivitätspunkte: \(viewModel.activityPoints == 0 ? "–" : "\(viewModel.activityPoints)")")
+                        Slider(value: Binding(
+                            get: { Double(viewModel.activityPoints == 0 ? 50 : viewModel.activityPoints) },
+                            set: { viewModel.activityPoints = Int($0) }
+                        ), in: 50...500, step: 10)
+                    }
 
                     Stepper(
                         "Zeitaufwand: \(viewModel.timeNeededInHours == 0 ? "–" : "\(viewModel.timeNeededInHours) Std.")",
                         value: $viewModel.timeNeededInHours,
-                        in: 0...99
+                        in: 0...20
                     )
                 }
 
