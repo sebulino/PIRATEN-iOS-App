@@ -57,7 +57,7 @@ final class RealTodoRepository: TodoRepository {
 
     // MARK: - Create
 
-    func createTodo(title: String, description: String?, entityId: Int, categoryId: Int, urgent: Bool) async throws -> Todo {
+    func createTodo(title: String, description: String?, entityId: Int, categoryId: Int, urgent: Bool, dueDate: Date?, activityPoints: Int?, timeNeededInHours: Int?) async throws -> Todo {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTitle.isEmpty else { throw TodoError.titleRequired }
         guard trimmedTitle.count <= 200 else { throw TodoError.titleTooLong }
@@ -72,6 +72,17 @@ final class RealTodoRepository: TodoRepository {
         ]
         if let description = description {
             params["description"] = description
+        }
+        if let dueDate = dueDate {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            params["due_date"] = formatter.string(from: dueDate)
+        }
+        if let activityPoints = activityPoints {
+            params["activity_points"] = activityPoints
+        }
+        if let timeNeededInHours = timeNeededInHours {
+            params["time_needed_in_hours"] = timeNeededInHours
         }
 
         do {

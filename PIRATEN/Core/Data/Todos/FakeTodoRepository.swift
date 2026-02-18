@@ -126,7 +126,7 @@ final class FakeTodoRepository: TodoRepository {
         return todos.first { $0.id == id }
     }
 
-    func createTodo(title: String, description: String?, entityId: Int, categoryId: Int, urgent: Bool) async throws -> Todo {
+    func createTodo(title: String, description: String?, entityId: Int, categoryId: Int, urgent: Bool, dueDate: Date?, activityPoints: Int?, timeNeededInHours: Int?) async throws -> Todo {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTitle.isEmpty else { throw TodoError.titleRequired }
         guard trimmedTitle.count <= 200 else { throw TodoError.titleTooLong }
@@ -141,12 +141,12 @@ final class FakeTodoRepository: TodoRepository {
             entityId: entityId,
             categoryId: categoryId,
             createdAt: Date(),
-            dueDate: nil,
+            dueDate: dueDate,
             status: .open,
             assignee: nil,
             urgent: urgent,
-            activityPoints: nil,
-            timeNeededInHours: nil,
+            activityPoints: activityPoints,
+            timeNeededInHours: timeNeededInHours,
             creatorName: "current_user"
         )
         nextId += 1

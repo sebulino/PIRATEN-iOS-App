@@ -20,6 +20,10 @@ final class CreateTodoViewModel: ObservableObject {
     @Published var selectedEntityId: Int?
     @Published var selectedCategoryId: Int?
     @Published var urgent: Bool = false
+    @Published var hasDueDate: Bool = false
+    @Published var dueDate: Date = Date()
+    @Published var activityPoints: Int = 0
+    @Published var timeNeededInHours: Int = 0
 
     // MARK: - Reference Data
 
@@ -86,7 +90,10 @@ final class CreateTodoViewModel: ObservableObject {
                     description: desc.isEmpty ? nil : desc,
                     entityId: entityId,
                     categoryId: categoryId,
-                    urgent: urgent
+                    urgent: urgent,
+                    dueDate: hasDueDate ? dueDate : nil,
+                    activityPoints: activityPoints > 0 ? activityPoints : nil,
+                    timeNeededInHours: timeNeededInHours > 0 ? timeNeededInHours : nil
                 )
                 self.didCreateSuccessfully = true
             } catch let error as TodoError {
