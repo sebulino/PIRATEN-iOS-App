@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UserNotifications
 
 struct MainTabView: View {
     @ObservedObject var forumViewModel: ForumViewModel
@@ -55,6 +56,9 @@ struct MainTabView: View {
     /// Whether the notifications sheet is being shown
     @State private var showingNotifications = false
 
+    /// Count of delivered notifications currently in the notification center
+    @State private var deliveredNotificationsCount: Int = 0
+
     // MARK: - Compose Flow State
 
     /// Whether the recipient picker is being shown
@@ -74,7 +78,7 @@ struct MainTabView: View {
 
     /// Whether the notification bell should show a badge
     private var notificationsBadge: Bool {
-        notificationSettings.authorizationStatus == .denied
+        deliveredNotificationsCount > 0 || notificationSettings.authorizationStatus == .denied
     }
 
     var body: some View {
@@ -230,8 +234,13 @@ struct MainTabView: View {
                 )
             }
         }
-        .sheet(isPresented: $showingNotifications) {
-            NotificationsSheetView(notificationSettings: notificationSettings)
+        .sheet(isPresented: $showingNotifications, onDismiss: {
+            Task { await refreshDeliveredNotificationsCount() }
+        }) {
+            NotificationsSheetView()
+        }
+        .task {
+            await refreshDeliveredNotificationsCount()
         }
         .onChange(of: deepLinkRouter.pendingDeepLink) { _, pendingDeepLink in
             guard let deepLink = pendingDeepLink else { return }
@@ -263,6 +272,15 @@ struct MainTabView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Notification Badge Helper
+
+    /// Fetches the count of delivered notifications to update the bell badge.
+    @MainActor
+    private func refreshDeliveredNotificationsCount() async {
+        let delivered = await UNUserNotificationCenter.current().deliveredNotifications()
+        deliveredNotificationsCount = delivered.count
     }
 
     // MARK: - Profile Messaging Helper
