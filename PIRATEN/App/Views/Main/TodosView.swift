@@ -16,6 +16,15 @@ struct TodosView: View {
     /// Factory for creating TodoDetailViewModels
     var todoDetailViewModelFactory: ((Todo) -> TodoDetailViewModel)?
 
+    /// Callback when user taps the profile toolbar button
+    var onProfileTapped: (() -> Void)?
+
+    /// Callback when user taps the notifications toolbar button
+    var onNotificationsTapped: (() -> Void)?
+
+    /// Whether to show a badge on the notification bell
+    var notificationsBadge: Bool = false
+
     @State private var showingCreateSheet = false
 
     var body: some View {
@@ -42,7 +51,21 @@ struct TodosView: View {
             }
             .navigationTitle("Todos")
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    Button {
+                        onNotificationsTapped?()
+                    } label: {
+                        Image(systemName: notificationsBadge ? "bell.badge" : "bell")
+                    }
+                    .accessibilityLabel("Benachrichtigungen")
+
+                    Button {
+                        onProfileTapped?()
+                    } label: {
+                        Image(systemName: "person.circle")
+                    }
+                    .accessibilityLabel("Profil")
+
                     Button {
                         showingCreateSheet = true
                     } label: {

@@ -13,6 +13,15 @@ struct KnowledgeView: View {
     /// Factory for creating KnowledgeTopicDetailViewModel
     var topicDetailViewModelFactory: ((KnowledgeTopic) -> KnowledgeTopicDetailViewModel)?
 
+    /// Callback when user taps the profile toolbar button
+    var onProfileTapped: (() -> Void)?
+
+    /// Callback when user taps the notifications toolbar button
+    var onNotificationsTapped: (() -> Void)?
+
+    /// Whether to show a badge on the notification bell
+    var notificationsBadge: Bool = false
+
     private let categoryColumns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12)
@@ -40,6 +49,23 @@ struct KnowledgeView: View {
             }
             .navigationTitle("Wissen")
             .searchable(text: $viewModel.searchQuery, prompt: "Themen durchsuchen")
+            .toolbar {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    Button {
+                        onNotificationsTapped?()
+                    } label: {
+                        Image(systemName: notificationsBadge ? "bell.badge" : "bell")
+                    }
+                    .accessibilityLabel("Benachrichtigungen")
+
+                    Button {
+                        onProfileTapped?()
+                    } label: {
+                        Image(systemName: "person.circle")
+                    }
+                    .accessibilityLabel("Profil")
+                }
+            }
             .onAppear {
                 if viewModel.loadState == .idle {
                     viewModel.loadIndex()

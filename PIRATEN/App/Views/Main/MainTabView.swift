@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UserNotifications
 
 struct MainTabView: View {
     @ObservedObject var forumViewModel: ForumViewModel
@@ -47,6 +48,17 @@ struct MainTabView: View {
     /// Closure to check the current user's admin status
     var checkAdminStatus: (() async -> Bool?)?
 
+    // MARK: - Toolbar Sheet State
+
+    /// Whether the profile sheet is being shown
+    @State private var showingProfile = false
+
+    /// Whether the notifications sheet is being shown
+    @State private var showingNotifications = false
+
+    /// Count of delivered notifications currently in the notification center
+    @State private var deliveredNotificationsCount: Int = 0
+
     // MARK: - Compose Flow State
 
     /// Whether the recipient picker is being shown
@@ -64,6 +76,11 @@ struct MainTabView: View {
     /// State for handling deep link navigation to todo detail
     @State private var deepLinkedTodo: Todo?
 
+    /// Whether the notification bell should show a badge
+    private var notificationsBadge: Bool {
+        deliveredNotificationsCount > 0 || notificationSettings.authorizationStatus == .denied
+    }
+
     var body: some View {
         TabView(selection: $deepLinkRouter.selectedTab) {
             ForumView(
@@ -73,7 +90,10 @@ struct MainTabView: View {
                 userProfileViewModelFactory: userProfileViewModelFactory,
                 onSendMessageFromProfile: { profile in
                     handleSendMessageFromProfile(profile)
-                }
+                },
+                onProfileTapped: { showingProfile = true },
+                onNotificationsTapped: { showingNotifications = true },
+                notificationsBadge: notificationsBadge
             )
                 .tabItem {
                     Label("Forum", systemImage: "bubble.left.and.bubble.right")
@@ -89,7 +109,10 @@ struct MainTabView: View {
                 },
                 onComposeTapped: {
                     showingRecipientPicker = true
-                }
+                },
+                onProfileTapped: { showingProfile = true },
+                onNotificationsTapped: { showingNotifications = true },
+                notificationsBadge: notificationsBadge
             )
                 .tabItem {
                     Label("Nachrichten", systemImage: "envelope")
@@ -98,7 +121,10 @@ struct MainTabView: View {
 
             KnowledgeView(
                 viewModel: knowledgeViewModel,
-                topicDetailViewModelFactory: knowledgeTopicDetailViewModelFactory
+                topicDetailViewModelFactory: knowledgeTopicDetailViewModelFactory,
+                onProfileTapped: { showingProfile = true },
+                onNotificationsTapped: { showingNotifications = true },
+                notificationsBadge: notificationsBadge
             )
                 .tabItem {
                     Label("Wissen", systemImage: "book")
@@ -108,18 +134,15 @@ struct MainTabView: View {
             TodosView(
                 viewModel: todosViewModel,
                 createTodoViewModelFactory: createTodoViewModelFactory,
-                todoDetailViewModelFactory: todoDetailViewModelFactory
+                todoDetailViewModelFactory: todoDetailViewModelFactory,
+                onProfileTapped: { showingProfile = true },
+                onNotificationsTapped: { showingNotifications = true },
+                notificationsBadge: notificationsBadge
             )
                 .tabItem {
                     Label("ToDos", systemImage: "checklist")
                 }
                 .tag(3)
-
-            ProfileView(viewModel: profileViewModel, notificationSettings: notificationSettings, adminRequestViewModelFactory: adminRequestViewModelFactory, checkAdminStatus: checkAdminStatus)
-                .tabItem {
-                    Label("Profil", systemImage: "person.circle")
-                }
-                .tag(4)
         }
         .sheet(isPresented: $showingRecipientPicker, onDismiss: {
             // After recipient picker dismisses, show compose if we have a recipient
@@ -201,6 +224,24 @@ struct MainTabView: View {
                 }
             }
         }
+        .sheet(isPresented: $showingProfile) {
+            NavigationStack {
+                ProfileView(
+                    viewModel: profileViewModel,
+                    notificationSettings: notificationSettings,
+                    adminRequestViewModelFactory: adminRequestViewModelFactory,
+                    checkAdminStatus: checkAdminStatus
+                )
+            }
+        }
+        .sheet(isPresented: $showingNotifications, onDismiss: {
+            Task { await refreshDeliveredNotificationsCount() }
+        }) {
+            NotificationsSheetView()
+        }
+        .task {
+            await refreshDeliveredNotificationsCount()
+        }
         .onChange(of: deepLinkRouter.pendingDeepLink) { _, pendingDeepLink in
             guard let deepLink = pendingDeepLink else { return }
 
@@ -231,6 +272,15 @@ struct MainTabView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Notification Badge Helper
+
+    /// Fetches the count of delivered notifications to update the bell badge.
+    @MainActor
+    private func refreshDeliveredNotificationsCount() async {
+        let delivered = await UNUserNotificationCenter.current().deliveredNotifications()
+        deliveredNotificationsCount = delivered.count
     }
 
     // MARK: - Profile Messaging Helper
