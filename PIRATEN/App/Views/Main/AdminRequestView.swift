@@ -54,7 +54,7 @@ struct AdminRequestView: View {
                     ProgressView()
                 }
             }
-            .onChange(of: viewModel.didSubmitSuccessfully) { success in
+            .onChange(of: viewModel.didSubmitSuccessfully) { _, success in
                 if success {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                         dismiss()

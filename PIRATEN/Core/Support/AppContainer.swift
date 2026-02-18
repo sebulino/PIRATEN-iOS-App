@@ -286,13 +286,12 @@ final class AppContainer {
             meinePiratenBaseURL = URL(string: "https://meine-piraten.de")!
         }
         let todoTokenProvider = AuthStateTokenProvider(authStateManager: authStateManager)
+        let capturedStateManager = self.authStateManager
         let todoHTTPClient = AuthenticatedHTTPClient(
             baseClient: baseHTTPClient,
             tokenProvider: todoTokenProvider,
-            onAuthError: { [weak authStateManager] in
-                Task { @MainActor in
-                    authStateManager?.handleAuthenticationError()
-                }
+            onAuthError: { [weak capturedStateManager] in
+                await capturedStateManager?.handleAuthenticationError()
             }
         )
         let todoAPIClient = TodoAPIClient(httpClient: todoHTTPClient, baseURL: meinePiratenBaseURL)
