@@ -44,6 +44,9 @@ struct Post: Identifiable, Equatable {
     /// Number of likes this post has received
     let likeCount: Int
 
+    /// Whether the current user has liked this post
+    let likedByCurrentUser: Bool
+
     /// Whether this post has been read by the current user
     let isRead: Bool
 }

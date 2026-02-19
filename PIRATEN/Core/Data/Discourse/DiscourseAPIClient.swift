@@ -312,6 +312,65 @@ final class DiscourseAPIClient {
         }
     }
 
+    /// Likes a post on behalf of the current user.
+    /// Endpoint: POST /post_actions.json with post_action_type_id=2
+    /// - Parameter postId: The ID of the post to like
+    /// - Returns: Raw response data (not decoded - confirmation only)
+    /// - Throws: DiscourseError if the request fails
+    func likePost(postId: Int) async throws -> Data {
+        let body = PostActionRequest(id: postId, postActionTypeId: 2)
+        let bodyData: Data
+        do {
+            bodyData = try JSONEncoder().encode(body)
+        } catch {
+            throw DiscourseError.unknown(statusCode: nil, message: "Failed to encode like request")
+        }
+
+        var headers = commonHeaders()
+        headers["Content-Type"] = "application/json"
+
+        let request = HTTPRequest.post(url(for: "/post_actions.json"), body: bodyData, headers: headers)
+        do {
+            let response = try await httpClient.execute(request)
+            guard response.isSuccess else {
+                throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
+            }
+            return response.data
+        } catch let error as HTTPError {
+            throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
+        }
+    }
+
+    /// Removes a like from a post on behalf of the current user.
+    /// Endpoint: DELETE /post_actions/{postId}.json?post_action_type_id=2
+    /// - Parameter postId: The ID of the post to unlike
+    /// - Throws: DiscourseError if the request fails
+    func unlikePost(postId: Int) async throws {
+        var components = URLComponents(
+            url: url(for: "/post_actions/\(postId).json"),
+            resolvingAgainstBaseURL: false
+        )!
+        components.queryItems = [URLQueryItem(name: "post_action_type_id", value: "2")]
+
+        guard let finalURL = components.url else {
+            throw DiscourseError.unknown(statusCode: nil, message: "Failed to construct unlike URL")
+        }
+
+        let request = HTTPRequest(url: finalURL, method: .delete, headers: commonHeaders())
+        do {
+            let response = try await httpClient.execute(request)
+            guard response.isSuccess else {
+                throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
+            }
+        } catch let error as HTTPError {
+            throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
+        }
+    }
+
     /// Posts a reply to a forum topic post.
     /// Endpoint: POST /posts.json
     /// - Parameters:
@@ -438,6 +497,17 @@ private struct CreatePostRequest: Encodable {
         case topicId = "topic_id"
         case raw
         case replyToPostNumber = "reply_to_post_number"
+    }
+}
+
+/// Request body for liking a post via POST /post_actions.json
+private struct PostActionRequest: Encodable {
+    let id: Int
+    let postActionTypeId: Int
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case postActionTypeId = "post_action_type_id"
     }
 }
 

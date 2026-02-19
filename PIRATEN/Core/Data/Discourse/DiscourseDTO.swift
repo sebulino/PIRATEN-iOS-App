@@ -241,6 +241,17 @@ struct DiscoursePostStreamDTO: Decodable {
     let stream: [Int]?
 }
 
+/// Action summary entry from Discourse API (e.g. likes).
+/// Appears in the `actions_summary` array of a post response.
+/// - `id == 2` corresponds to the "like" action type.
+struct ActionSummaryDTO: Decodable {
+    let id: Int
+    /// Like count — absent when zero in some Discourse responses
+    let count: Int?
+    /// True if the current authenticated user has performed this action
+    let acted: Bool?
+}
+
 /// A post from the Discourse API.
 /// Maps to the Domain Post model via toDomainModel().
 struct DiscoursePostDTO: Decodable {
@@ -262,6 +273,9 @@ struct DiscoursePostDTO: Decodable {
     /// Note: likes may come from actions_summary array in some responses
     let likeCount: Int?
 
+    /// Action summaries array; entry with id==2 is the like action
+    let actionsSummary: [ActionSummaryDTO]?
+
     /// The post number this post is replying to (nil if top-level post)
     let replyToPostNumber: Int?
 
@@ -277,6 +291,7 @@ struct DiscoursePostDTO: Decodable {
         case replyCount = "reply_count"
         case reads
         case likeCount = "like_count"
+        case actionsSummary = "actions_summary"
         case replyToPostNumber = "reply_to_post_number"
     }
 
@@ -300,6 +315,11 @@ struct DiscoursePostDTO: Decodable {
         // Build author UserSummary
         let author = buildAuthor()
 
+        // Extract like info from actions_summary (id==2 is the like action)
+        let likeAction = actionsSummary?.first(where: { $0.id == 2 })
+        let resolvedLikeCount = likeAction?.count ?? likeCount ?? 0
+        let likedByCurrentUser = likeAction?.acted ?? false
+
         return Post(
             id: id,
             topicId: topicId,
@@ -309,7 +329,8 @@ struct DiscoursePostDTO: Decodable {
             createdAt: date,
             content: cooked,
             replyCount: replyCount,
-            likeCount: likeCount ?? 0,
+            likeCount: resolvedLikeCount,
+            likedByCurrentUser: likedByCurrentUser,
             isRead: (reads ?? 0) > 0
         )
     }

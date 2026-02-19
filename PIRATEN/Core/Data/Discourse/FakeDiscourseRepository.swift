@@ -115,6 +115,9 @@ final class FakeDiscourseRepository: DiscourseRepository {
         ]
     }
 
+    /// Tracks which post IDs have been liked by the current user (in-memory fake state)
+    private var likedPostIds: Set<Int> = []
+
     /// Static fake posts for topic 1 (placeholder data for development)
     private var fakePostsForTopic1: [Post] {
         [
@@ -128,6 +131,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 content: "Die EU plant neue Regelungen zu digitalen Grundrechten. Lasst uns die aktuellen Entwicklungen diskutieren.",
                 replyCount: 3,
                 likeCount: 12,
+                likedByCurrentUser: false,
                 isRead: true
             ),
             Post(
@@ -140,6 +144,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 content: "Besonders wichtig finde ich die Aspekte zur Datensouveränität. Hier müssen wir als Piraten klare Position beziehen.",
                 replyCount: 1,
                 likeCount: 8,
+                likedByCurrentUser: false,
                 isRead: true
             ),
             Post(
@@ -152,6 +157,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 content: "Ich arbeite gerade an einer Zusammenfassung der wichtigsten Punkte. Teile ich hier, sobald fertig.",
                 replyCount: 0,
                 likeCount: 5,
+                likedByCurrentUser: false,
                 isRead: false
             )
         ]
@@ -170,6 +176,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 content: "Hallo zusammen, wir müssen noch die Agenda für die Bundesvorstandssitzung abstimmen. Hat jemand Vorschläge?",
                 replyCount: 2,
                 likeCount: 0,
+                likedByCurrentUser: false,
                 isRead: true
             ),
             Post(
@@ -182,6 +189,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 content: "Ich würde gerne den Punkt 'Digitalisierungsstrategie' auf die Agenda setzen. Das Thema wird immer dringender.",
                 replyCount: 1,
                 likeCount: 0,
+                likedByCurrentUser: false,
                 isRead: true
             ),
             Post(
@@ -194,6 +202,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 content: "Guter Vorschlag! Ich nehme das auf. Gibt es weitere Punkte?",
                 replyCount: 0,
                 likeCount: 0,
+                likedByCurrentUser: false,
                 isRead: true
             )
         ]
@@ -212,6 +221,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 content: "Der LPT Bayern steht an. Wir müssen noch die Räumlichkeiten organisieren.",
                 replyCount: 0,
                 likeCount: 0,
+                likedByCurrentUser: false,
                 isRead: true
             ),
             Post(
@@ -224,6 +234,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 content: "Ich habe eine Location in München gefunden. Details im Anhang.",
                 replyCount: 0,
                 likeCount: 0,
+                likedByCurrentUser: false,
                 isRead: false
             )
         ]
@@ -277,16 +288,34 @@ final class FakeDiscourseRepository: DiscourseRepository {
         // Simulate network delay (placeholder behavior)
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
 
-        // Return posts for known topic/message thread IDs
+        // Return posts for known topic/message thread IDs, applying in-memory like state
+        let rawPosts: [Post]
         switch topicId {
         case 1:
-            return fakePostsForTopic1
+            rawPosts = fakePostsForTopic1
         case 1001:
-            return fakePostsForMessageThread1001
+            rawPosts = fakePostsForMessageThread1001
         case 1002:
-            return fakePostsForMessageThread1002
+            rawPosts = fakePostsForMessageThread1002
         default:
-            return []
+            rawPosts = []
+        }
+
+        return rawPosts.map { post in
+            let isLiked = likedPostIds.contains(post.id)
+            return Post(
+                id: post.id,
+                topicId: post.topicId,
+                postNumber: post.postNumber,
+                author: post.author,
+                replyToPostNumber: post.replyToPostNumber,
+                createdAt: post.createdAt,
+                content: post.content,
+                replyCount: post.replyCount,
+                likeCount: isLiked ? post.likeCount + 1 : post.likeCount,
+                likedByCurrentUser: isLiked,
+                isRead: post.isRead
+            )
         }
     }
 
@@ -318,6 +347,18 @@ final class FakeDiscourseRepository: DiscourseRepository {
         try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
         // For fake implementation, we don't actually persist the reply
         // A real integration test would verify behavior differently
+    }
+
+    func likePost(id: Int) async throws {
+        // Simulate network delay (placeholder behavior)
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        likedPostIds.insert(id)
+    }
+
+    func unlikePost(id: Int) async throws {
+        // Simulate network delay (placeholder behavior)
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        likedPostIds.remove(id)
     }
 
     func searchUsers(query: String) async throws -> [UserSearchResult] {

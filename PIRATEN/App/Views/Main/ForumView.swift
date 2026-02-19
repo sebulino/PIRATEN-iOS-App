@@ -275,6 +275,14 @@ private struct TopicRow: View {
                     .foregroundStyle(.secondary)
                     .accessibilityLabel("\(max(0, topic.postsCount - 1)) Antworten")
 
+                // Like count
+                if topic.likeCount > 0 {
+                    Label("\(topic.likeCount)", systemImage: "heart")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel("\(topic.likeCount) Likes")
+                }
+
                 // View count
                 Label("\(topic.viewCount)", systemImage: "eye")
                     .font(.caption)

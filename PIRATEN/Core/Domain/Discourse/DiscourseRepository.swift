@@ -98,4 +98,18 @@ protocol DiscourseRepository {
     ///
     /// API Endpoint: GET /u/{username}.json
     func fetchUserProfile(username: String) async throws -> UserProfile
+
+    /// Likes a post on behalf of the current user.
+    /// - Parameter id: The ID of the post to like
+    /// - Throws: DiscourseRepositoryError if the action fails
+    ///
+    /// API Endpoint: POST /post_actions.json with post_action_type_id=2
+    func likePost(id: Int) async throws
+
+    /// Removes the current user's like from a post.
+    /// - Parameter id: The ID of the post to unlike
+    /// - Throws: DiscourseRepositoryError if the action fails
+    ///
+    /// API Endpoint: DELETE /post_actions/{id}.json?post_action_type_id=2
+    func unlikePost(id: Int) async throws
 }

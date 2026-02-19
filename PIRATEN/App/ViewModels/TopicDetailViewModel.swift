@@ -45,6 +45,9 @@ final class TopicDetailViewModel: ObservableObject {
     /// The current load state
     @Published private(set) var loadState: TopicDetailLoadState = .idle
 
+    /// Error message from a failed like/unlike action (nil when no error)
+    @Published private(set) var likeErrorMessage: String?
+
     // MARK: - Reply Composer State
 
     /// Whether the reply composer is currently shown
@@ -207,6 +210,41 @@ final class TopicDetailViewModel: ObservableObject {
             } catch {
                 safetyService.didCompleteSend(success: false)
                 composerState = .failed(message: "Antwort konnte nicht gesendet werden")
+            }
+        }
+    }
+
+    /// Toggles the like state of a post.
+    /// Immediately updates the UI, then fires the API call in the background.
+    /// On API failure the local state is kept (next refresh syncs with server).
+    func toggleLike(for post: Post) {
+        guard let index = posts.firstIndex(where: { $0.id == post.id }) else { return }
+
+        let wasLiked = post.likedByCurrentUser
+        posts[index] = Post(
+            id: post.id,
+            topicId: post.topicId,
+            postNumber: post.postNumber,
+            author: post.author,
+            replyToPostNumber: post.replyToPostNumber,
+            createdAt: post.createdAt,
+            content: post.content,
+            replyCount: post.replyCount,
+            likeCount: wasLiked ? max(0, post.likeCount - 1) : post.likeCount + 1,
+            likedByCurrentUser: !wasLiked,
+            isRead: post.isRead
+        )
+        likeErrorMessage = nil
+
+        Task {
+            do {
+                if wasLiked {
+                    try await discourseRepository.unlikePost(id: post.id)
+                } else {
+                    try await discourseRepository.likePost(id: post.id)
+                }
+            } catch {
+                likeErrorMessage = "Änderung konnte nicht gespeichert werden"
             }
         }
     }
