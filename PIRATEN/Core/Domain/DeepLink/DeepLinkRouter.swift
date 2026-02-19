@@ -18,7 +18,7 @@ final class DeepLinkRouter: ObservableObject {
     /// The pending deep link waiting to be handled
     @Published var pendingDeepLink: DeepLink?
 
-    /// Selected tab index (0: Forum, 1: Messages, 2: Knowledge, 3: Todos, 4: Profile)
+    /// Selected tab index (0: Kajüte, 1: Forum, 2: Nachrichten, 3: Wissen, 4: Termine, 5: ToDos)
     @Published var selectedTab: Int = 0
 
     // MARK: - Public Methods
@@ -32,10 +32,10 @@ final class DeepLinkRouter: ObservableObject {
         // Switch to the appropriate tab
         switch deepLink {
         case .messageThread:
-            selectedTab = 1 // Messages tab
+            selectedTab = 2 // Nachrichten tab
 
         case .todoDetail:
-            selectedTab = 3 // Todos tab
+            selectedTab = 5 // ToDos tab
         }
     }
 

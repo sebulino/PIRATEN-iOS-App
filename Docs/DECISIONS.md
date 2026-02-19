@@ -832,9 +832,77 @@ Extract `ReplyComposerView` as a shared component used by both `MessageThreadDet
 
 ---
 
+## D-027: Custom iCal Parser for Calendar Events (No External Dependencies)
+
+**Date:** 2026-02-19
+**Status:** Accepted
+
+### Context
+The Termine tab needs to display events from the piragitator.de iCal feed (`/api/veranstaltung/ical/1/`). Options:
+1. Full iCalendar library (e.g., icalendar-swift)
+2. Custom lightweight parser
+3. Server-side JSON conversion
+
+### Decision
+Implement a custom lightweight iCal parser (`ICalParser`) that handles the subset of RFC 5545 needed for VEVENT extraction: line unfolding, key-value parsing (including parameters), date parsing (date-time and date-only formats, UTC Z suffix), text unescaping, and graceful skipping of unparseable events.
+
+### Rationale
+1. **No external dependency**: Avoids adding a library for a limited use case
+2. **Controlled scope**: Only parses VEVENT blocks with fields we display (SUMMARY, DTSTART, DTEND, LOCATION, CATEGORIES, URL, DESCRIPTION)
+3. **Graceful degradation**: Unparseable events are silently skipped rather than failing the entire parse
+4. **Follows existing pattern**: Same approach as D-022 (custom YAML parser for Knowledge content)
+
+### Consequences
+- Cannot parse full RFC 5545 (no RRULE recurrence, no VALARM, no VTIMEZONE beyond Z suffix)
+- If the feed uses recurrence rules, events will not repeat — see Q-020
+
+---
+
+## D-028: Public Calendar Endpoint (No Authentication)
+
+**Date:** 2026-02-19
+**Status:** Accepted
+
+### Context
+The piragitator.de iCal feed at `/api/veranstaltung/ical/1/` is publicly accessible and does not require authentication.
+
+### Decision
+Use the base `HTTPClient` (via `RetryingHTTPClient`) for calendar requests instead of `AuthenticatedHTTPClient`. The `CalendarAPIClient` follows the same pattern as `TodoAPIClient` but without auth wrappers.
+
+### Rationale
+1. **Public endpoint**: No auth tokens needed; reduces complexity
+2. **Independent of user session**: Calendar data loads even if auth is expired
+3. **Base URL configurable**: `PIRAGITATOR_BASE_URL` in xcconfig, same pattern as other external services
+
+---
+
+## D-029: Six-Tab Layout with iOS "More" Menu
+
+**Date:** 2026-02-19
+**Status:** Accepted
+
+### Context
+Adding Kajüte (Home) and Termine (Calendar) tabs brings the tab count from 4 to 6. iOS TabView behavior with >5 tabs shows the first 4 tabs plus a "More" menu containing the rest.
+
+### Decision
+Tab order: Kajüte (0), Forum (1), Nachrichten (2), Wissen (3), Termine (4), ToDos (5). The first 4 tabs are always visible; Termine and ToDos appear in the "More" menu.
+
+### Rationale
+1. **Kajüte first**: Dashboard is the natural landing page showing cross-feature overview
+2. **Core tabs visible**: Forum, Nachrichten, Wissen are the most-used features
+3. **"More" for less frequent**: Calendar events and Todos are consulted less often
+4. **iOS standard**: The "More" pattern is familiar to iOS users
+
+### Consequences
+- Deep link tab indices updated: Messages = 2, Todos = 5
+- Users can reorder tabs in "More" on the device (standard iOS behavior)
+
+---
+
 ## Future Decisions
 
 Decisions pending external input:
 - meine-piraten.de authentication integration (when server adds auth)
 - Todo pagination strategy (when data volume requires it)
 - Knowledge progress sync across devices (if needed)
+- piragitator.de RRULE support (see Q-020)

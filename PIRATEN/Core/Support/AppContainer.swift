@@ -75,6 +75,10 @@ final class AppContainer {
     /// Production uses RealKnowledgeRepository (GitHub API); tests use FakeKnowledgeRepository.
     let knowledgeRepository: KnowledgeRepository
 
+    /// Calendar repository implementation.
+    /// Production uses RealCalendarRepository (piragitator.de iCal); tests use FakeCalendarRepository.
+    let calendarRepository: CalendarRepository
+
     // MARK: - Presentation Layer (ViewModels)
 
     /// Authentication state manager (ViewModel for auth flow).
@@ -91,6 +95,12 @@ final class AppContainer {
 
     /// Knowledge view model for displaying educational content.
     let knowledgeViewModel: KnowledgeViewModel
+
+    /// Calendar view model for displaying events.
+    let calendarViewModel: CalendarViewModel
+
+    /// Home view model for the Kajüte dashboard.
+    let homeViewModel: HomeViewModel
 
     /// Profile view model for displaying user information.
     /// Note: Currently displays PLACEHOLDER DATA until SSO integration.
@@ -315,6 +325,18 @@ final class AppContainer {
         )
         self.knowledgeRepository = realKnowledgeRepository
 
+        // piragitator.de calendar API client and repository
+        // Base URL read from Info.plist (set via xcconfig PIRAGITATOR_BASE_URL)
+        let piragitatorBaseURL: URL
+        if let urlString = Bundle.main.infoDictionary?["PIRAGITATOR_BASE_URL"] as? String,
+           let url = URL(string: urlString) {
+            piragitatorBaseURL = url
+        } else {
+            piragitatorBaseURL = URL(string: "https://piragitator.de")!
+        }
+        let calendarAPIClient = CalendarAPIClient(httpClient: baseHTTPClient, baseURL: piragitatorBaseURL)
+        self.calendarRepository = RealCalendarRepository(apiClient: calendarAPIClient)
+
         // Remaining presentation layer
         self.forumViewModel = ForumViewModel(discourseRepository: discourseRepository)
         self.messagesViewModel = MessagesViewModel(
@@ -325,6 +347,13 @@ final class AppContainer {
         self.knowledgeViewModel = KnowledgeViewModel(
             repository: realKnowledgeRepository,
             progressStore: readingProgressStore
+        )
+        self.calendarViewModel = CalendarViewModel(calendarRepository: calendarRepository)
+        self.homeViewModel = HomeViewModel(
+            discourseRepository: discourseRepository,
+            knowledgeRepository: realKnowledgeRepository,
+            readingProgressStorage: readingProgressStore,
+            authRepository: authRepository
         )
         self.profileViewModel = ProfileViewModel(authRepository: authRepository, discourseRepository: discourseRepository)
     }
@@ -371,6 +400,7 @@ final class AppContainer {
         self.discourseRepository = discourseRepository ?? FakeDiscourseRepository()
         self.todoRepository = todoRepository ?? FakeTodoRepository()
         self.knowledgeRepository = FakeKnowledgeRepository()
+        self.calendarRepository = FakeCalendarRepository()
 
         // Storage layer (use standard UserDefaults for testing)
         self.recentRecipientsStore = RecentRecipientsStore()
@@ -395,6 +425,13 @@ final class AppContainer {
         self.knowledgeViewModel = KnowledgeViewModel(
             repository: knowledgeRepository,
             progressStore: readingProgressStore
+        )
+        self.calendarViewModel = CalendarViewModel(calendarRepository: self.calendarRepository)
+        self.homeViewModel = HomeViewModel(
+            discourseRepository: self.discourseRepository,
+            knowledgeRepository: self.knowledgeRepository,
+            readingProgressStorage: readingProgressStore,
+            authRepository: self.authRepository
         )
         self.profileViewModel = ProfileViewModel(authRepository: self.authRepository, discourseRepository: self.discourseRepository)
     }

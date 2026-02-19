@@ -9,9 +9,11 @@ import SwiftUI
 
 struct RootView: View {
     @ObservedObject var authStateManager: AuthStateManager
+    @ObservedObject var homeViewModel: HomeViewModel
     @ObservedObject var forumViewModel: ForumViewModel
     @ObservedObject var messagesViewModel: MessagesViewModel
     @ObservedObject var knowledgeViewModel: KnowledgeViewModel
+    @ObservedObject var calendarViewModel: CalendarViewModel
     @ObservedObject var todosViewModel: TodosViewModel
     @ObservedObject var profileViewModel: ProfileViewModel
     @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
@@ -59,9 +61,11 @@ struct RootView: View {
                     }
             case .authenticated:
                 MainTabView(
+                    homeViewModel: homeViewModel,
                     forumViewModel: forumViewModel,
                     messagesViewModel: messagesViewModel,
                     knowledgeViewModel: knowledgeViewModel,
+                    calendarViewModel: calendarViewModel,
                     todosViewModel: todosViewModel,
                     profileViewModel: profileViewModel,
                     discourseAuthCoordinator: discourseAuthCoordinator,
@@ -170,6 +174,12 @@ struct SessionExpiredView: View {
 
     RootView(
         authStateManager: AuthStateManager(authRepository: authRepository),
+        homeViewModel: HomeViewModel(
+            discourseRepository: fakeDiscourseRepo,
+            knowledgeRepository: fakeKnowledgeRepo,
+            readingProgressStorage: progressStore,
+            authRepository: authRepository
+        ),
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
         messagesViewModel: MessagesViewModel(
             discourseRepository: fakeDiscourseRepo,
@@ -179,6 +189,7 @@ struct SessionExpiredView: View {
             repository: fakeKnowledgeRepo,
             progressStore: progressStore
         ),
+        calendarViewModel: CalendarViewModel(calendarRepository: FakeCalendarRepository()),
         todosViewModel: TodosViewModel(todoRepository: FakeTodoRepository()),
         profileViewModel: ProfileViewModel(authRepository: authRepository, discourseRepository: fakeDiscourseRepo),
         discourseAuthCoordinator: DiscourseAuthCoordinator(

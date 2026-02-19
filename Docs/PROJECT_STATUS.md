@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-02-13 (M8 — Knowledge Hub + Forum Reply Feature)
+Last updated: 2026-02-19 (Kajüte + Termine tabs)
 
 ## Current Milestone
 
@@ -9,6 +9,38 @@ Last updated: 2026-02-13 (M8 — Knowledge Hub + Forum Reply Feature)
 Goal: Fetch educational content from the public GitHub repo sebulino/PIRATEN-Kanon, cache it locally, and present interactive lessons with progress tracking, quizzes, and checklists.
 
 ## Recent Enhancements
+
+### Kajüte (Home) and Termine (Calendar) Tabs (2026-02-19)
+**Status:** Complete ✅
+
+Added two new tabs to the app, bringing the total to 6:
+
+**Kajüte (Home) — Tab 0:**
+- Dashboard view aggregating data from existing sources
+- Section 1 "Letzte Kontakte": Horizontal avatar scroll from message thread participants
+- Section 2 "Weiterlesen": Up to 3 knowledge articles (in-progress first, then unread)
+- Section 3 "Aktuelle Themen": 5 most recent forum topics
+- Each section loads independently (partial data OK on failure)
+
+**Termine (Calendar) — Tab 4:**
+- Fetches iCal feed from piragitator.de (`/api/veranstaltung/ical/1/`)
+- Custom ICalParser for RFC 5545 VEVENT extraction
+- Two sections: "Kommende Termine" (ascending) and "Vergangene Woche" (descending)
+- Event rows with title, date/time, location, category badges
+- Public endpoint — no authentication required
+
+**Tab Reordering:**
+- New order: Kajüte (0), Forum (1), Nachrichten (2), Wissen (3), Termine (4), ToDos (5)
+- iOS shows first 4 tabs visible + "More" menu for Termine and ToDos
+- Deep link indices updated (Messages = 2, Todos = 5)
+
+**Configuration:**
+- `PIRAGITATOR_BASE_URL` added to xcconfig + Info.plist
+- CalendarAPIClient uses base HTTPClient (no auth wrapper)
+- AppContainer wires CalendarRepository and HomeViewModel
+
+**Tests:** ICalParserTests, CalendarViewModelTests, HomeViewModelTests
+**Docs:** DECISIONS.md D-027/D-028/D-029, OPEN_QUESTIONS.md Q-020/Q-021
 
 ### Forum Post Reply Feature (2026-02-13)
 **Status:** Complete ✅
