@@ -218,6 +218,8 @@ struct TodoRow: View {
         switch todo.status {
         case .done:
             return "checkmark.circle.fill"
+        case .completed:
+            return "checkmark.circle"
         case .claimed:
             return "person.circle"
         case .open:
@@ -228,6 +230,8 @@ struct TodoRow: View {
     private var statusColor: Color {
         switch todo.status {
         case .done:
+            return .green
+        case .completed:
             return .green
         case .claimed:
             return .blue

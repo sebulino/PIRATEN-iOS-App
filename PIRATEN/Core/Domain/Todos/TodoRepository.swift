@@ -36,8 +36,11 @@ protocol TodoRepository {
     /// Claims an open todo for the current user.
     func claimTodo(id: Int) async throws -> Todo
 
-    /// Marks a claimed todo as done.
+    /// Marks a claimed todo as completed.
     func completeTodo(id: Int) async throws -> Todo
+
+    /// Marks a completed todo back to claimed status.
+    func uncompleteTodo(id: Int) async throws -> Todo
 
     /// Unclaims a claimed todo, returning it to open status.
     func unclaimTodo(id: Int) async throws -> Todo

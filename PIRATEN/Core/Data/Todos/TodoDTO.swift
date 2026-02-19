@@ -54,6 +54,7 @@ struct TaskDTO: Decodable {
         let todoStatus: TodoStatus
         switch status {
         case "claimed": todoStatus = .claimed
+        case "completed": todoStatus = .completed
         case "done": todoStatus = .done
         default: todoStatus = .open
         }

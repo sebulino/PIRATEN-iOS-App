@@ -44,11 +44,19 @@ final class TodoDetailViewModel: ObservableObject {
         }
     }
 
-    /// Marks the todo as done.
+    /// Marks the todo as completed.
     /// Optimistically updates status, reverts on failure.
     func complete() {
         performAction { [self] in
             try await todoRepository.completeTodo(id: todo.id)
+        }
+    }
+
+    /// Marks a completed todo back to claimed status.
+    /// Optimistically updates status, reverts on failure.
+    func uncomplete() {
+        performAction { [self] in
+            try await todoRepository.uncompleteTodo(id: todo.id)
         }
     }
 

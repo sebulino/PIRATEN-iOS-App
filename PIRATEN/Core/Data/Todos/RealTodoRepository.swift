@@ -113,7 +113,19 @@ final class RealTodoRepository: TodoRepository {
     func completeTodo(id: Int) async throws -> Todo {
         do {
             let data = try await apiClient.updateTask(id: id, params: [
-                "status": "done"
+                "status": "completed"
+            ])
+            let dto = try decode(TaskDTO.self, from: data)
+            return dto.toDomainModel()
+        } catch let error as TodoAPIError {
+            throw mapToTodoError(error)
+        }
+    }
+
+    func uncompleteTodo(id: Int) async throws -> Todo {
+        do {
+            let data = try await apiClient.updateTask(id: id, params: [
+                "status": "claimed"
             ])
             let dto = try decode(TaskDTO.self, from: data)
             return dto.toDomainModel()
