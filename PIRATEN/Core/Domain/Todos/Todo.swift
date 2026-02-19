@@ -11,6 +11,7 @@ import Foundation
 enum TodoStatus: String, CaseIterable {
     case open
     case claimed
+    case completed
     case done
 
     /// German display name for the status
@@ -18,6 +19,7 @@ enum TodoStatus: String, CaseIterable {
         switch self {
         case .open: return "Offen"
         case .claimed: return "Übernommen"
+        case .completed: return "Bearbeitet"
         case .done: return "Erledigt"
         }
     }

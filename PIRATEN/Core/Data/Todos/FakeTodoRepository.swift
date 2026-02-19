@@ -188,7 +188,28 @@ final class FakeTodoRepository: TodoRepository {
             id: old.id, title: old.title, description: old.description,
             entityId: old.entityId, categoryId: old.categoryId,
             createdAt: old.createdAt, dueDate: old.dueDate,
-            status: .done, assignee: old.assignee,
+            status: .completed, assignee: old.assignee,
+            urgent: old.urgent, activityPoints: old.activityPoints,
+            timeNeededInHours: old.timeNeededInHours, creatorName: old.creatorName
+        )
+        todos[index] = updated
+        return updated
+    }
+
+    func uncompleteTodo(id: Int) async throws -> Todo {
+        guard let index = todos.firstIndex(where: { $0.id == id }) else {
+            throw TodoError.todoNotFound
+        }
+        guard todos[index].status == .completed else {
+            throw TodoError.invalidTransition
+        }
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        let old = todos[index]
+        let updated = Todo(
+            id: old.id, title: old.title, description: old.description,
+            entityId: old.entityId, categoryId: old.categoryId,
+            createdAt: old.createdAt, dueDate: old.dueDate,
+            status: .claimed, assignee: old.assignee,
             urgent: old.urgent, activityPoints: old.activityPoints,
             timeNeededInHours: old.timeNeededInHours, creatorName: old.creatorName
         )
