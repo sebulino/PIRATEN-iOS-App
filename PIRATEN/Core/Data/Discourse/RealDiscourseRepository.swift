@@ -225,6 +225,26 @@ final class RealDiscourseRepository: DiscourseRepository {
         }
     }
 
+    func likePost(id: Int) async throws {
+        do {
+            _ = try await apiClient.likePost(postId: id)
+        } catch let error as DiscourseError {
+            throw mapToRepositoryError(error)
+        } catch {
+            throw DiscourseRepositoryError.loadFailed(message: "Gefällt mir konnte nicht gesetzt werden")
+        }
+    }
+
+    func unlikePost(id: Int) async throws {
+        do {
+            try await apiClient.unlikePost(postId: id)
+        } catch let error as DiscourseError {
+            throw mapToRepositoryError(error)
+        } catch {
+            throw DiscourseRepositoryError.loadFailed(message: "Gefällt mir konnte nicht entfernt werden")
+        }
+    }
+
     func fetchUserProfile(username: String) async throws -> UserProfile {
         do {
             let data = try await apiClient.fetchUserProfile(username: username)

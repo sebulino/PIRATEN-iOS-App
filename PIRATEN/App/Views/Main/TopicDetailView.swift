@@ -131,6 +131,9 @@ struct TopicDetailView: View {
                         onReplyTapped: viewModel.isAuthenticated ? {
                             viewModel.showComposer(replyingTo: post)
                             isComposerFocused = true
+                        } : nil,
+                        onLikeTapped: viewModel.isAuthenticated ? {
+                            viewModel.toggleLike(for: post)
                         } : nil
                     )
                     .padding(.horizontal, 16)
@@ -238,6 +241,9 @@ private struct PostRow: View {
     /// Callback when reply button is tapped
     var onReplyTapped: (() -> Void)?
 
+    /// Callback when like button is tapped
+    var onLikeTapped: (() -> Void)?
+
     /// Whether the post content is expanded to show full text
     @State private var isExpanded = false
 
@@ -320,13 +326,19 @@ private struct PostRow: View {
                         .accessibilityLabel("\(post.replyCount) Antworten")
                 }
 
-                // Like count
-                if post.likeCount > 0 {
-                    Label("\(post.likeCount)", systemImage: "heart")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel("\(post.likeCount) Likes")
+                // Like button
+                Button {
+                    onLikeTapped?()
+                } label: {
+                    Label(
+                        post.likeCount > 0 ? "\(post.likeCount)" : "",
+                        systemImage: post.likedByCurrentUser ? "heart.fill" : "heart"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(post.likedByCurrentUser ? Color.orange : Color.secondary)
+                    .accessibilityLabel(post.likedByCurrentUser ? "Gefällt mir entfernen" : "Gefällt mir")
                 }
+                .buttonStyle(.plain)
 
                 // Reply button
                 if let onReplyTapped = onReplyTapped {
