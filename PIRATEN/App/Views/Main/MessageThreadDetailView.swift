@@ -28,6 +28,9 @@ struct MessageThreadDetailView: View {
     /// Currently selected username for profile sheet
     @State private var selectedUsername: String?
 
+    /// Tracks whether the initial scroll to bottom has been performed
+    @State private var hasScrolledToBottom = false
+
     var body: some View {
         Group {
             switch viewModel.loadState {
@@ -117,31 +120,49 @@ struct MessageThreadDetailView: View {
 
     /// Messages list using ScrollView + LazyVStack instead of List to avoid
     /// UICollectionView cell dequeue crashes (AttributeGraph cycles).
+    /// Scrolls to the last message on initial load.
     @ViewBuilder
     private var messagesList: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                ForEach(viewModel.posts) { post in
-                    MessagePostRow(
-                        post: post,
-                        onUsernameTapped: { username in
-                            selectedUsername = username
-                        }
-                    )
-                    .padding(.horizontal, 16)
-                    Divider()
-                        .padding(.leading, 16)
-                }
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(viewModel.posts) { post in
+                        MessagePostRow(
+                            post: post,
+                            onUsernameTapped: { username in
+                                selectedUsername = username
+                            }
+                        )
+                        .padding(.horizontal, 16)
+                        Divider()
+                            .padding(.leading, 16)
+                    }
 
-                // One-time hint to help users discover the reply button
-                if viewModel.shouldShowReplyHint && !viewModel.isComposerVisible {
-                    replyHintBanner
-                        .padding(.top, 16)
+                    // One-time hint to help users discover the reply button
+                    if viewModel.shouldShowReplyHint && !viewModel.isComposerVisible {
+                        replyHintBanner
+                            .padding(.top, 16)
+                    }
+
+                    // Invisible anchor for scrolling to the bottom
+                    Color.clear
+                        .frame(height: 1)
+                        .id("messageListBottom")
                 }
             }
-        }
-        .refreshable {
-            viewModel.retry()
+            .refreshable {
+                viewModel.retry()
+            }
+            .onChange(of: viewModel.posts) { _, posts in
+                guard !posts.isEmpty, !hasScrolledToBottom else { return }
+                hasScrolledToBottom = true
+                proxy.scrollTo("messageListBottom", anchor: .bottom)
+            }
+            .onAppear {
+                guard !viewModel.posts.isEmpty, !hasScrolledToBottom else { return }
+                hasScrolledToBottom = true
+                proxy.scrollTo("messageListBottom", anchor: .bottom)
+            }
         }
     }
 
