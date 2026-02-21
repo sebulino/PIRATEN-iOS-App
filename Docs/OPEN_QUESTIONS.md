@@ -576,6 +576,40 @@ No bundled content. Empty state shown until first successful fetch.
 
 ---
 
+## piragitator.de Calendar
+
+### Q-020: Does piragitator.de use RRULE (Recurrence Rules)?
+
+**Status:** Open
+**Blocking:** Accurate display of recurring events
+**Asked:** 2026-02-19
+
+**Question:**
+Does the piragitator.de iCal feed use RRULE properties for recurring events?
+
+**What we need:**
+- Confirmation whether events use RRULE, RDATE, or EXDATE
+- If so, which recurrence patterns are used (DAILY, WEEKLY, MONTHLY?)
+
+**Current assumption:**
+The custom ICalParser does not support RRULE. If the feed uses recurrence rules, recurring events will only show their first occurrence. The parser would need to be extended to expand recurrences.
+
+---
+
+### Q-021: Is `/1/` a Fixed Feed ID on piragitator.de?
+
+**Status:** Open
+**Blocking:** Future calendar feed configurability
+**Asked:** 2026-02-19
+
+**Question:**
+The calendar endpoint `/api/veranstaltung/ical/1/` uses `/1/` as a path parameter. Is this a fixed feed ID, or could it change? Are there other feed IDs for different event categories?
+
+**Current assumption:**
+`/1/` is treated as a constant in `CalendarAPIClient`. If multiple feeds exist, the endpoint path would need to become configurable.
+
+---
+
 ## Resolved Questions
 
 ### Q-019: Create PIRATEN-Kanon GitHub Repository

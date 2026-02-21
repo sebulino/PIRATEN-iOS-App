@@ -9,9 +9,11 @@ import SwiftUI
 import UserNotifications
 
 struct MainTabView: View {
+    @ObservedObject var homeViewModel: HomeViewModel
     @ObservedObject var forumViewModel: ForumViewModel
     @ObservedObject var messagesViewModel: MessagesViewModel
     @ObservedObject var knowledgeViewModel: KnowledgeViewModel
+    @ObservedObject var calendarViewModel: CalendarViewModel
     @ObservedObject var todosViewModel: TodosViewModel
     @ObservedObject var profileViewModel: ProfileViewModel
     @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
@@ -83,6 +85,19 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $deepLinkRouter.selectedTab) {
+            HomeView(
+                viewModel: homeViewModel,
+                topicDetailViewModelFactory: topicDetailViewModelFactory,
+                knowledgeTopicDetailViewModelFactory: knowledgeTopicDetailViewModelFactory,
+                onProfileTapped: { showingProfile = true },
+                onNotificationsTapped: { showingNotifications = true },
+                notificationsBadge: notificationsBadge
+            )
+                .tabItem {
+                    Label("Kajüte", systemImage: "house")
+                }
+                .tag(0)
+
             ForumView(
                 viewModel: forumViewModel,
                 discourseAuthCoordinator: discourseAuthCoordinator,
@@ -98,7 +113,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Forum", systemImage: "bubble.left.and.bubble.right")
                 }
-                .tag(0)
+                .tag(1)
 
             MessagesView(
                 viewModel: messagesViewModel,
@@ -117,7 +132,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Nachrichten", systemImage: "envelope")
                 }
-                .tag(1)
+                .tag(2)
 
             KnowledgeView(
                 viewModel: knowledgeViewModel,
@@ -129,7 +144,18 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Wissen", systemImage: "book")
                 }
-                .tag(2)
+                .tag(3)
+
+            CalendarView(
+                viewModel: calendarViewModel,
+                onProfileTapped: { showingProfile = true },
+                onNotificationsTapped: { showingNotifications = true },
+                notificationsBadge: notificationsBadge
+            )
+                .tabItem {
+                    Label("Termine", systemImage: "calendar")
+                }
+                .tag(4)
 
             TodosView(
                 viewModel: todosViewModel,
@@ -142,7 +168,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("ToDos", systemImage: "checklist")
                 }
-                .tag(3)
+                .tag(5)
         }
         .sheet(isPresented: $showingRecipientPicker, onDismiss: {
             // After recipient picker dismisses, show compose if we have a recipient
@@ -319,6 +345,12 @@ struct MainTabView: View {
     let progressStore = ReadingProgressStore()
 
     MainTabView(
+        homeViewModel: HomeViewModel(
+            discourseRepository: fakeDiscourseRepo,
+            knowledgeRepository: fakeKnowledgeRepo,
+            readingProgressStorage: progressStore,
+            authRepository: authRepository
+        ),
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
         messagesViewModel: MessagesViewModel(
             discourseRepository: fakeDiscourseRepo,
@@ -328,6 +360,7 @@ struct MainTabView: View {
             repository: fakeKnowledgeRepo,
             progressStore: progressStore
         ),
+        calendarViewModel: CalendarViewModel(calendarRepository: FakeCalendarRepository()),
         todosViewModel: TodosViewModel(todoRepository: FakeTodoRepository()),
         profileViewModel: ProfileViewModel(authRepository: authRepository, discourseRepository: fakeDiscourseRepo),
         discourseAuthCoordinator: DiscourseAuthCoordinator(

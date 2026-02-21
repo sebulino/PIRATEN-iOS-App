@@ -50,9 +50,11 @@ struct PIRATENApp: App {
         WindowGroup {
             StartupContainerView(
                 authStateManager: container.authStateManager,
+                homeViewModel: container.homeViewModel,
                 forumViewModel: container.forumViewModel,
                 messagesViewModel: container.messagesViewModel,
                 knowledgeViewModel: container.knowledgeViewModel,
+                calendarViewModel: container.calendarViewModel,
                 todosViewModel: container.todosViewModel,
                 profileViewModel: container.profileViewModel,
                 discourseAuthCoordinator: container.discourseAuthCoordinator,
