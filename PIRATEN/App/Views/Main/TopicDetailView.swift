@@ -191,7 +191,7 @@ struct TopicDetailView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.lock")
                 .font(.system(size: 48))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Sitzung abgelaufen")
                 .font(.headline)
@@ -212,7 +212,7 @@ struct TopicDetailView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 48))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Fehler beim Laden")
                 .font(.headline)
@@ -335,7 +335,7 @@ private struct PostRow: View {
                         systemImage: post.likedByCurrentUser ? "heart.fill" : "heart"
                     )
                     .font(.caption)
-                    .foregroundStyle(post.likedByCurrentUser ? Color.orange : Color.secondary)
+                    .foregroundStyle(post.likedByCurrentUser ? Color.piratenPrimary : Color.secondary)
                     .accessibilityLabel(post.likedByCurrentUser ? "Gefällt mir entfernen" : "Gefällt mir")
                 }
                 .buttonStyle(.plain)

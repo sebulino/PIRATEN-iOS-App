@@ -27,7 +27,7 @@ struct QuizCard: View {
         VStack(alignment: .leading, spacing: 16) {
             Label("Mini-Quiz", systemImage: "questionmark.circle.fill")
                 .font(.headline)
-                .foregroundColor(.orange)
+                .foregroundColor(.piratenPrimary)
 
             ForEach(questions) { question in
                 questionView(question)
@@ -42,7 +42,7 @@ struct QuizCard: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.orange)
+                .tint(.piratenPrimary)
                 .disabled(!allAnswered)
                 .accessibilityLabel("Quiz auswerten")
             }
@@ -111,7 +111,7 @@ struct QuizCard: View {
             if isSelected { return .red }
             return .secondary
         }
-        return isSelected ? .orange : .secondary
+        return isSelected ? .piratenPrimary : .secondary
     }
 
     private func optionBackground(isSelected: Bool, isCorrect: Bool) -> Color {
@@ -120,13 +120,13 @@ struct QuizCard: View {
             if isSelected { return .red.opacity(0.1) }
             return .clear
         }
-        return isSelected ? .orange.opacity(0.1) : .clear
+        return isSelected ? Color.piratenPrimary.opacity(0.1) : .clear
     }
 
     private var scoreView: some View {
         HStack {
             Image(systemName: correctCount == questions.count ? "star.fill" : "chart.bar.fill")
-                .foregroundColor(correctCount == questions.count ? .orange : .blue)
+                .foregroundColor(correctCount == questions.count ? .piratenPrimary : .blue)
             Text("\(correctCount) von \(questions.count) richtig")
                 .font(.subheadline.weight(.medium))
         }

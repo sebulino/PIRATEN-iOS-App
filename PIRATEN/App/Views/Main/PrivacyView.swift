@@ -26,21 +26,21 @@ struct PrivacyView: View {
                         Text("Kein Tracking oder Analytics")
                     } icon: {
                         Image(systemName: "eye.slash")
-                            .foregroundColor(.orange)
+                            .foregroundColor(.piratenPrimary)
                     }
 
                     Label {
                         Text("Keine Verhaltensanalyse")
                     } icon: {
                         Image(systemName: "chart.bar.xaxis")
-                            .foregroundColor(.orange)
+                            .foregroundColor(.piratenPrimary)
                     }
 
                     Label {
                         Text("Keine Werbung oder Profiling")
                     } icon: {
                         Image(systemName: "person.badge.minus")
-                            .foregroundColor(.orange)
+                            .foregroundColor(.piratenPrimary)
                     }
                 }
 
@@ -195,7 +195,7 @@ private struct PrivacyRow: View {
                     .fontWeight(.medium)
             } icon: {
                 Image(systemName: icon)
-                    .foregroundColor(.orange)
+                    .foregroundColor(.piratenPrimary)
             }
 
             Text(detail)

@@ -174,7 +174,7 @@ struct MessageThreadDetailView: View {
     private var replyHintBanner: some View {
         HStack(spacing: 12) {
             Image(systemName: "lightbulb.fill")
-                .foregroundColor(.orange)
+                .foregroundColor(.piratenPrimary)
                 .accessibilityHidden(true)
 
             Text("Tippe auf das Symbol oben, um zu antworten")
@@ -246,7 +246,7 @@ struct MessageThreadDetailView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.lock")
                 .font(.system(size: 48))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Sitzung abgelaufen")
                 .font(.headline)
@@ -267,7 +267,7 @@ struct MessageThreadDetailView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 48))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Fehler beim Laden")
                 .font(.headline)
@@ -316,7 +316,7 @@ private struct MessagePostRow: View {
 
     /// Color for the avatar circle based on username hash
     private var avatarColor: Color {
-        let colors: [Color] = [.orange, .blue, .green, .purple, .pink, .teal]
+        let colors: [Color] = [.piratenPrimary, .blue, .green, .purple, .pink, .teal]
         let hash = post.author.username.hashValue
         return colors[abs(hash) % colors.count]
     }
