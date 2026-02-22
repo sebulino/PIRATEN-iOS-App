@@ -335,7 +335,7 @@ final class AppContainer {
             piragitatorBaseURL = URL(string: "https://piragitator.de")!
         }
         let calendarAPIClient = CalendarAPIClient(httpClient: baseHTTPClient, baseURL: piragitatorBaseURL)
-        self.calendarRepository = RealCalendarRepository(apiClient: calendarAPIClient)
+        self.calendarRepository = RealCalendarRepository(apiClient: calendarAPIClient, parser: ICalParser())
 
         // Remaining presentation layer
         self.forumViewModel = ForumViewModel(discourseRepository: discourseRepository)

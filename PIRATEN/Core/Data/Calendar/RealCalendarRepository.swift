@@ -19,7 +19,7 @@ final class RealCalendarRepository: CalendarRepository {
 
     // MARK: - Initialization
 
-    init(apiClient: CalendarAPIClient, parser: ICalParser = ICalParser()) {
+    init(apiClient: CalendarAPIClient, parser: ICalParser) {
         self.apiClient = apiClient
         self.parser = parser
     }

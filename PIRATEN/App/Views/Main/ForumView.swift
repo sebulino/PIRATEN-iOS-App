@@ -32,6 +32,9 @@ struct ForumView: View {
     /// Whether to show a badge on the notification bell
     var notificationsBadge: Bool = false
 
+    /// Callback when user taps the home button to navigate to Kajüte
+    var onHomeTapped: (() -> Void)?
+
     /// The current window for presenting auth session
     @Environment(\.window) private var window: UIWindow?
 
@@ -66,6 +69,14 @@ struct ForumView: View {
             }
             .navigationTitle("Forum")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        onHomeTapped?()
+                    } label: {
+                        Image(systemName: "house")
+                    }
+                    .accessibilityLabel("Kajüte")
+                }
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     Button {
                         onNotificationsTapped?()

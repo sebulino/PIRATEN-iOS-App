@@ -52,6 +52,9 @@ struct MainTabView: View {
 
     // MARK: - Toolbar Sheet State
 
+    /// Bottom safe area inset inside tab content (includes tab bar + home indicator)
+    @State private var tabContentBottomInset: CGFloat = 83
+
     /// Whether the profile sheet is being shown
     @State private var showingProfile = false
 
@@ -85,19 +88,6 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $deepLinkRouter.selectedTab) {
-            HomeView(
-                viewModel: homeViewModel,
-                topicDetailViewModelFactory: topicDetailViewModelFactory,
-                knowledgeTopicDetailViewModelFactory: knowledgeTopicDetailViewModelFactory,
-                onProfileTapped: { showingProfile = true },
-                onNotificationsTapped: { showingNotifications = true },
-                notificationsBadge: notificationsBadge
-            )
-                .tabItem {
-                    Label("Kajüte", systemImage: "house")
-                }
-                .tag(0)
-
             ForumView(
                 viewModel: forumViewModel,
                 discourseAuthCoordinator: discourseAuthCoordinator,
@@ -108,8 +98,18 @@ struct MainTabView: View {
                 },
                 onProfileTapped: { showingProfile = true },
                 onNotificationsTapped: { showingNotifications = true },
-                notificationsBadge: notificationsBadge
+                notificationsBadge: notificationsBadge,
+                onHomeTapped: { deepLinkRouter.selectedTab = 0 }
             )
+                .background(
+                    GeometryReader { geo in
+                        Color.clear
+                            .onAppear { tabContentBottomInset = geo.safeAreaInsets.bottom }
+                            .onChange(of: geo.safeAreaInsets.bottom) { _, newValue in
+                                if newValue > 0 { tabContentBottomInset = newValue }
+                            }
+                    }
+                )
                 .tabItem {
                     Label("Forum", systemImage: "bubble.left.and.bubble.right")
                 }
@@ -127,7 +127,8 @@ struct MainTabView: View {
                 },
                 onProfileTapped: { showingProfile = true },
                 onNotificationsTapped: { showingNotifications = true },
-                notificationsBadge: notificationsBadge
+                notificationsBadge: notificationsBadge,
+                onHomeTapped: { deepLinkRouter.selectedTab = 0 }
             )
                 .tabItem {
                     Label("Nachrichten", systemImage: "envelope")
@@ -139,7 +140,8 @@ struct MainTabView: View {
                 topicDetailViewModelFactory: knowledgeTopicDetailViewModelFactory,
                 onProfileTapped: { showingProfile = true },
                 onNotificationsTapped: { showingNotifications = true },
-                notificationsBadge: notificationsBadge
+                notificationsBadge: notificationsBadge,
+                onHomeTapped: { deepLinkRouter.selectedTab = 0 }
             )
                 .tabItem {
                     Label("Wissen", systemImage: "book")
@@ -150,7 +152,8 @@ struct MainTabView: View {
                 viewModel: calendarViewModel,
                 onProfileTapped: { showingProfile = true },
                 onNotificationsTapped: { showingNotifications = true },
-                notificationsBadge: notificationsBadge
+                notificationsBadge: notificationsBadge,
+                onHomeTapped: { deepLinkRouter.selectedTab = 0 }
             )
                 .tabItem {
                     Label("Termine", systemImage: "calendar")
@@ -163,12 +166,39 @@ struct MainTabView: View {
                 todoDetailViewModelFactory: todoDetailViewModelFactory,
                 onProfileTapped: { showingProfile = true },
                 onNotificationsTapped: { showingNotifications = true },
-                notificationsBadge: notificationsBadge
+                notificationsBadge: notificationsBadge,
+                onHomeTapped: { deepLinkRouter.selectedTab = 0 }
             )
                 .tabItem {
                     Label("ToDos", systemImage: "checklist")
                 }
                 .tag(5)
+        }
+        .overlay {
+            if deepLinkRouter.selectedTab == 0 {
+                GeometryReader { geo in
+                    VStack(spacing: 0) {
+                        HomeView(
+                            viewModel: homeViewModel,
+                            topicDetailViewModelFactory: topicDetailViewModelFactory,
+                            knowledgeTopicDetailViewModelFactory: knowledgeTopicDetailViewModelFactory,
+                            userProfileViewModelFactory: userProfileViewModelFactory,
+                            onSendMessageFromProfile: { profile in
+                                handleSendMessageFromProfile(profile)
+                            },
+                            onProfileTapped: { showingProfile = true },
+                            onNotificationsTapped: { showingNotifications = true },
+                            notificationsBadge: notificationsBadge
+                        )
+                        .frame(height: geo.size.height - tabContentBottomInset)
+
+                        Color.clear
+                            .frame(height: tabContentBottomInset)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .ignoresSafeArea()
+            }
         }
         .sheet(isPresented: $showingRecipientPicker, onDismiss: {
             // After recipient picker dismisses, show compose if we have a recipient

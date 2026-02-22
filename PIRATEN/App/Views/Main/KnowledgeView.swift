@@ -22,6 +22,9 @@ struct KnowledgeView: View {
     /// Whether to show a badge on the notification bell
     var notificationsBadge: Bool = false
 
+    /// Callback when user taps the home button to navigate to Kajüte
+    var onHomeTapped: (() -> Void)?
+
     private let categoryColumns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12)
@@ -50,6 +53,14 @@ struct KnowledgeView: View {
             .navigationTitle("Wissen")
             .searchable(text: $viewModel.searchQuery, prompt: "Themen durchsuchen")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        onHomeTapped?()
+                    } label: {
+                        Image(systemName: "house")
+                    }
+                    .accessibilityLabel("Kajüte")
+                }
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     Button {
                         onNotificationsTapped?()
