@@ -29,6 +29,7 @@ final class HomeViewModel: ObservableObject {
     /// Recent contacts extracted from message thread participants
     @Published private(set) var recentContacts: [UserSummary] = []
 
+
     /// Knowledge articles to continue reading or discover
     @Published private(set) var knowledgeArticles: [KnowledgeTopic] = []
 

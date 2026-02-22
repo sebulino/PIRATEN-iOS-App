@@ -34,6 +34,9 @@ struct MessagesView: View {
     /// Whether to show a badge on the notification bell
     var notificationsBadge: Bool = false
 
+    /// Callback when user taps the home button to navigate to Kajüte
+    var onHomeTapped: (() -> Void)?
+
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottomTrailing) {
@@ -81,6 +84,14 @@ struct MessagesView: View {
             }
             .navigationTitle("Nachrichten")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        onHomeTapped?()
+                    } label: {
+                        Image(systemName: "house")
+                    }
+                    .accessibilityLabel("Kajüte")
+                }
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     Button {
                         onNotificationsTapped?()

@@ -16,6 +16,12 @@ struct HomeView: View {
     /// Factory for creating KnowledgeTopicDetailViewModels
     var knowledgeTopicDetailViewModelFactory: ((KnowledgeTopic) -> KnowledgeTopicDetailViewModel)?
 
+    /// Factory for creating UserProfileViewModels
+    var userProfileViewModelFactory: ((String) -> UserProfileViewModel)?
+
+    /// Callback when user taps "Nachricht senden" from a contact profile
+    var onSendMessageFromProfile: ((UserProfile) -> Void)?
+
     /// Callback when user taps the profile toolbar button
     var onProfileTapped: (() -> Void)?
 
@@ -24,6 +30,9 @@ struct HomeView: View {
 
     /// Whether to show a badge on the notification bell
     var notificationsBadge: Bool = false
+
+    /// Username of the contact whose profile is being shown
+    @State private var selectedContactUsername: String?
 
     var body: some View {
         NavigationStack {
@@ -64,6 +73,21 @@ struct HomeView: View {
             .onAppear {
                 if viewModel.loadState == .idle {
                     viewModel.loadDashboard()
+                }
+            }
+            .sheet(item: Binding(
+                get: { selectedContactUsername.map { SelectedUsername(username: $0) } },
+                set: { selectedContactUsername = $0?.username }
+            )) { selected in
+                if let factory = userProfileViewModelFactory {
+                    UserProfileView(
+                        viewModel: factory(selected.username),
+                        onLoginTapped: { selectedContactUsername = nil },
+                        onSendMessageTapped: { profile in
+                            selectedContactUsername = nil
+                            onSendMessageFromProfile?(profile)
+                        }
+                    )
                 }
             }
         }
@@ -109,7 +133,12 @@ struct HomeView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
                         ForEach(viewModel.recentContacts) { contact in
-                            contactAvatar(contact)
+                            Button {
+                                selectedContactUsername = contact.username
+                            } label: {
+                                contactAvatar(contact)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                     .padding(.vertical, 4)
@@ -268,6 +297,11 @@ struct HomeView: View {
             .buttonStyle(.bordered)
         }
     }
+}
+
+private struct SelectedUsername: Identifiable {
+    let username: String
+    var id: String { username }
 }
 
 #Preview {

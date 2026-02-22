@@ -19,6 +19,9 @@ struct CalendarView: View {
     /// Whether to show a badge on the notification bell
     var notificationsBadge: Bool = false
 
+    /// Callback when user taps the home button to navigate to Kajüte
+    var onHomeTapped: (() -> Void)?
+
     var body: some View {
         NavigationStack {
             Group {
@@ -43,6 +46,14 @@ struct CalendarView: View {
             }
             .navigationTitle("Termine")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        onHomeTapped?()
+                    } label: {
+                        Image(systemName: "house")
+                    }
+                    .accessibilityLabel("Kajüte")
+                }
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     Button {
                         onNotificationsTapped?()

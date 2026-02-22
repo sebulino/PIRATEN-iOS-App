@@ -25,6 +25,9 @@ struct TodosView: View {
     /// Whether to show a badge on the notification bell
     var notificationsBadge: Bool = false
 
+    /// Callback when user taps the home button to navigate to Kajüte
+    var onHomeTapped: (() -> Void)?
+
     @State private var showingCreateSheet = false
 
     var body: some View {
@@ -51,6 +54,14 @@ struct TodosView: View {
             }
             .navigationTitle("Todos")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        onHomeTapped?()
+                    } label: {
+                        Image(systemName: "house")
+                    }
+                    .accessibilityLabel("Kajüte")
+                }
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     Button {
                         onNotificationsTapped?()
