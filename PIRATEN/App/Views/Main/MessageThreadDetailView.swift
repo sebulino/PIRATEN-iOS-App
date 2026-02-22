@@ -153,10 +153,12 @@ struct MessageThreadDetailView: View {
             .refreshable {
                 viewModel.retry()
             }
-            .onChange(of: viewModel.posts) { _, posts in
-                guard !posts.isEmpty, !hasScrolledToBottom else { return }
-                hasScrolledToBottom = true
-                proxy.scrollTo("messageListBottom", anchor: .bottom)
+            .onChange(of: viewModel.posts) { oldPosts, newPosts in
+                guard !newPosts.isEmpty else { return }
+                if !hasScrolledToBottom || newPosts.count > oldPosts.count {
+                    hasScrolledToBottom = true
+                    proxy.scrollTo("messageListBottom", anchor: .bottom)
+                }
             }
             .onAppear {
                 guard !viewModel.posts.isEmpty, !hasScrolledToBottom else { return }
