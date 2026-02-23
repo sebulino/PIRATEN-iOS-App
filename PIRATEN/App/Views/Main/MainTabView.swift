@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 import UserNotifications
 
 struct MainTabView: View {
@@ -295,6 +296,11 @@ struct MainTabView: View {
         }) {
             NotificationsSheetView()
         }
+        .tint(Color.piratenPrimary)
+        .onAppear {
+            configureNavigationBarAppearance()
+            configureTabBarAppearance()
+        }
         .task {
             await refreshDeliveredNotificationsCount()
         }
@@ -337,6 +343,29 @@ struct MainTabView: View {
     private func refreshDeliveredNotificationsCount() async {
         let delivered = await UNUserNotificationCenter.current().deliveredNotifications()
         deliveredNotificationsCount = delivered.count
+    }
+
+    // MARK: - Appearance Configuration
+
+    private func configureNavigationBarAppearance() {
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithDefaultBackground()
+        appearance.largeTitleTextAttributes = [
+            .foregroundColor: UIColor(Color.piratenPrimary)
+        ]
+        appearance.titleTextAttributes = [
+            .foregroundColor: UIColor(Color.piratenPrimary)
+        ]
+        UINavigationBar.appearance().standardAppearance = appearance
+        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        UINavigationBar.appearance().tintColor = UIColor(Color.piratenPrimary)
+    }
+
+    private func configureTabBarAppearance() {
+        let tabAppearance = UITabBarAppearance()
+        tabAppearance.configureWithDefaultBackground()
+        UITabBar.appearance().standardAppearance = tabAppearance
+        UITabBar.appearance().scrollEdgeAppearance = tabAppearance
     }
 
     // MARK: - Profile Messaging Helper

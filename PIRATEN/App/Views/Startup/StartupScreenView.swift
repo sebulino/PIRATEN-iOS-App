@@ -20,8 +20,8 @@ struct StartupScreenView: View {
             // Orange sunburst radial gradient background
             RadialGradient(
                 colors: [
-                    Color.orange,
-                    Color.orange.opacity(0.99),
+                    Color.piratenPrimary,
+                    Color.piratenPrimary.opacity(0.99),
                     Color(red: 255/255, green: 177/255, blue: 0/255)
                 ],
                 center: .center,

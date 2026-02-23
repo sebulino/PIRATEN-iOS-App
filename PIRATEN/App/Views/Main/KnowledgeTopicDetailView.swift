@@ -168,7 +168,7 @@ struct KnowledgeTopicDetailView: View {
                 viewModel.loadContent()
             }
             .buttonStyle(.borderedProminent)
-            .tint(.orange)
+            .tint(.piratenPrimary)
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)

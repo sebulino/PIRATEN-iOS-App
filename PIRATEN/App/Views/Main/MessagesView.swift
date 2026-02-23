@@ -82,30 +82,32 @@ struct MessagesView: View {
                     composeButton
                 }
             }
+            .piratenStyledBackground()
             .navigationTitle("Nachrichten")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
+                    PiratenIconButton(
+                        systemName: "house",
+                        accessibilityLabel: "Kajüte"
+                    ) {
                         onHomeTapped?()
-                    } label: {
-                        Image(systemName: "house")
                     }
-                    .accessibilityLabel("Kajüte")
                 }
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    Button {
+                    PiratenIconButton(
+                        systemName: notificationsBadge ? "bell.badge" : "bell",
+                        badge: notificationsBadge,
+                        accessibilityLabel: "Benachrichtigungen"
+                    ) {
                         onNotificationsTapped?()
-                    } label: {
-                        Image(systemName: notificationsBadge ? "bell.badge" : "bell")
                     }
-                    .accessibilityLabel("Benachrichtigungen")
 
-                    Button {
+                    PiratenIconButton(
+                        systemName: "person.circle",
+                        accessibilityLabel: "Profil"
+                    ) {
                         onProfileTapped?()
-                    } label: {
-                        Image(systemName: "person.circle")
                     }
-                    .accessibilityLabel("Profil")
                 }
             }
             .onAppear {
@@ -143,7 +145,7 @@ struct MessagesView: View {
                 .font(.system(size: 22, weight: .semibold))
                 .foregroundColor(.white)
                 .frame(width: 56, height: 56)
-                .background(Color.orange)
+                .background(Color.piratenPrimary)
                 .clipShape(Circle())
                 .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
         }
@@ -236,7 +238,7 @@ struct MessagesView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.lock")
                 .font(.system(size: 48))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Nachrichten nicht verfügbar")
                 .font(.headline)
@@ -257,7 +259,7 @@ struct MessagesView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 48))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Fehler beim Laden")
                 .font(.headline)

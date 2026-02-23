@@ -52,22 +52,24 @@ struct HomeView: View {
                     errorState(message: message)
                 }
             }
+            .piratenStyledBackground()
             .navigationTitle("Kajüte")
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    Button {
+                    PiratenIconButton(
+                        systemName: notificationsBadge ? "bell.badge" : "bell",
+                        badge: notificationsBadge,
+                        accessibilityLabel: "Benachrichtigungen"
+                    ) {
                         onNotificationsTapped?()
-                    } label: {
-                        Image(systemName: notificationsBadge ? "bell.badge" : "bell")
                     }
-                    .accessibilityLabel("Benachrichtigungen")
 
-                    Button {
+                    PiratenIconButton(
+                        systemName: "person.circle",
+                        accessibilityLabel: "Profil"
+                    ) {
                         onProfileTapped?()
-                    } label: {
-                        Image(systemName: "person.circle")
                     }
-                    .accessibilityLabel("Profil")
                 }
             }
             .onAppear {

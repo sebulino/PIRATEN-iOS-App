@@ -27,7 +27,7 @@ struct ProfileView: View {
                     VStack(spacing: 16) {
                         Image(systemName: "exclamationmark.triangle")
                             .font(.largeTitle)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.piratenPrimary)
                             .accessibilityHidden(true)
                         Text(error)
                             .multilineTextAlignment(.center)
@@ -186,7 +186,7 @@ struct ProfileView: View {
                         Text("Datenschutz")
                     } icon: {
                         Image(systemName: "hand.raised.fill")
-                            .foregroundColor(.orange)
+                            .foregroundColor(.piratenPrimary)
                     }
                 }
             } header: {
@@ -254,7 +254,7 @@ struct ProfileView: View {
     private var avatarPlaceholder: some View {
         Image(systemName: "person.circle.fill")
             .font(.system(size: 60))
-            .foregroundColor(.orange)
+            .foregroundColor(.piratenPrimary)
     }
 
     // MARK: - Notification Settings
@@ -273,7 +273,7 @@ struct ProfileView: View {
                     }
                 } icon: {
                     Image(systemName: "envelope.fill")
-                        .foregroundColor(.orange)
+                        .foregroundColor(.piratenPrimary)
                 }
             }
 
@@ -288,7 +288,7 @@ struct ProfileView: View {
                     }
                 } icon: {
                     Image(systemName: "checklist")
-                        .foregroundColor(.orange)
+                        .foregroundColor(.piratenPrimary)
                 }
             }
 
@@ -299,7 +299,7 @@ struct ProfileView: View {
                 } label: {
                     HStack {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.orange)
+                            .foregroundColor(.piratenPrimary)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Mitteilungen deaktiviert")
                                 .foregroundColor(.primary)
@@ -336,7 +336,7 @@ private struct ProfileRow: View {
                     .foregroundColor(.secondary)
             } icon: {
                 Image(systemName: icon)
-                    .foregroundColor(.orange)
+                    .foregroundColor(.piratenPrimary)
             }
             Spacer()
             Text(value)

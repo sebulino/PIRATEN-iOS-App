@@ -44,30 +44,32 @@ struct CalendarView: View {
                     errorState(message: message)
                 }
             }
+            .piratenStyledBackground()
             .navigationTitle("Termine")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
+                    PiratenIconButton(
+                        systemName: "house",
+                        accessibilityLabel: "Kajüte"
+                    ) {
                         onHomeTapped?()
-                    } label: {
-                        Image(systemName: "house")
                     }
-                    .accessibilityLabel("Kajüte")
                 }
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    Button {
+                    PiratenIconButton(
+                        systemName: notificationsBadge ? "bell.badge" : "bell",
+                        badge: notificationsBadge,
+                        accessibilityLabel: "Benachrichtigungen"
+                    ) {
                         onNotificationsTapped?()
-                    } label: {
-                        Image(systemName: notificationsBadge ? "bell.badge" : "bell")
                     }
-                    .accessibilityLabel("Benachrichtigungen")
 
-                    Button {
+                    PiratenIconButton(
+                        systemName: "person.circle",
+                        accessibilityLabel: "Profil"
+                    ) {
                         onProfileTapped?()
-                    } label: {
-                        Image(systemName: "person.circle")
                     }
-                    .accessibilityLabel("Profil")
                 }
             }
             .onAppear {

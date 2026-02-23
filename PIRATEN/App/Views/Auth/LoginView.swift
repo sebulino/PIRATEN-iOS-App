@@ -20,7 +20,7 @@ struct LoginView: View {
                 .scaledToFit()
                 .frame(width: 160, height: 160)
                 .font(.system(size: 80))
-                .foregroundColor(.orange)
+                .foregroundColor(.piratenPrimary)
                 .accessibilityIdentifier("loginLogo")
 
             Text("PIRATEN")
@@ -59,7 +59,7 @@ struct LoginView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.orange)
+                        .background(Color.piratenPrimary)
                         .cornerRadius(10)
                 }
                 .padding(.horizontal, 40)
@@ -70,12 +70,12 @@ struct LoginView: View {
                 }) {
                     Text("Mitglied werden")
                         .font(.headline)
-                        .foregroundColor(.orange)
+                        .foregroundColor(.piratenPrimary)
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.white)
                         .overlay(RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.orange, lineWidth: 2)
+                            .stroke(Color.piratenPrimary, lineWidth: 2)
                         )
                         .cornerRadius(10)
                 }

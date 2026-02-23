@@ -173,14 +173,14 @@ struct TodoDetailView: View {
             } label: {
                 Label("Freigeben", systemImage: "person.badge.minus")
             }
-            .tint(.orange)
+            .tint(.piratenPrimary)
         case .completed:
             Button {
                 viewModel.uncomplete()
             } label: {
                 Label("Nicht bearbeitet", systemImage: "arrow.uturn.backward")
             }
-            .tint(.orange)
+            .tint(.piratenPrimary)
         case .done:
             EmptyView()
         }
@@ -188,7 +188,7 @@ struct TodoDetailView: View {
 
     private var statusColor: Color {
         switch viewModel.todo.status {
-        case .open: return .orange
+        case .open: return .piratenPrimary
         case .claimed: return .blue
         case .completed: return .green
         case .done: return .green
