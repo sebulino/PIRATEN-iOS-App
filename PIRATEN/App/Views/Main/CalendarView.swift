@@ -22,6 +22,9 @@ struct CalendarView: View {
     /// Callback when user taps the home button to navigate to Kajüte
     var onHomeTapped: (() -> Void)?
 
+    /// Callback when user taps the messages button to open Nachrichten
+    var onMessagesTapped: (() -> Void)?
+
     var body: some View {
         NavigationStack {
             Group {
@@ -48,11 +51,19 @@ struct CalendarView: View {
             .navigationTitle("Termine")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    PiratenIconButton(
-                        systemName: "house",
-                        accessibilityLabel: "Kajüte"
-                    ) {
-                        onHomeTapped?()
+                    HStack(spacing: 2) {
+                        PiratenIconButton(
+                            systemName: "house",
+                            accessibilityLabel: "Kajüte"
+                        ) {
+                            onHomeTapped?()
+                        }
+                        PiratenIconButton(
+                            systemName: "envelope",
+                            accessibilityLabel: "Nachrichten"
+                        ) {
+                            onMessagesTapped?()
+                        }
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {

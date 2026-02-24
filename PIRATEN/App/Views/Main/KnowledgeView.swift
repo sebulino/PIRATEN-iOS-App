@@ -25,6 +25,9 @@ struct KnowledgeView: View {
     /// Callback when user taps the home button to navigate to Kajüte
     var onHomeTapped: (() -> Void)?
 
+    /// Callback when user taps the messages button to open Nachrichten
+    var onMessagesTapped: (() -> Void)?
+
     private let categoryColumns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12)
@@ -55,11 +58,19 @@ struct KnowledgeView: View {
             .searchable(text: $viewModel.searchQuery, prompt: "Themen durchsuchen")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    PiratenIconButton(
-                        systemName: "house",
-                        accessibilityLabel: "Kajüte"
-                    ) {
-                        onHomeTapped?()
+                    HStack(spacing: 2) {
+                        PiratenIconButton(
+                            systemName: "house",
+                            accessibilityLabel: "Kajüte"
+                        ) {
+                            onHomeTapped?()
+                        }
+                        PiratenIconButton(
+                            systemName: "envelope",
+                            accessibilityLabel: "Nachrichten"
+                        ) {
+                            onMessagesTapped?()
+                        }
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {

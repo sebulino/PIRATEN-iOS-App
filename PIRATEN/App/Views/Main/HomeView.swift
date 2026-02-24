@@ -31,6 +31,9 @@ struct HomeView: View {
     /// Whether to show a badge on the notification bell
     var notificationsBadge: Bool = false
 
+    /// Callback when user taps the messages button to open Nachrichten
+    var onMessagesTapped: (() -> Void)?
+
     /// Username of the contact whose profile is being shown
     @State private var selectedContactUsername: String?
 
@@ -55,6 +58,14 @@ struct HomeView: View {
             .piratenStyledBackground()
             .navigationTitle("Kajüte")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    PiratenIconButton(
+                        systemName: "envelope",
+                        accessibilityLabel: "Nachrichten"
+                    ) {
+                        onMessagesTapped?()
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 2) {
                         PiratenIconButton(

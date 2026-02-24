@@ -35,6 +35,9 @@ struct ForumView: View {
     /// Callback when user taps the home button to navigate to Kajüte
     var onHomeTapped: (() -> Void)?
 
+    /// Callback when user taps the messages button to open Nachrichten
+    var onMessagesTapped: (() -> Void)?
+
     /// The current window for presenting auth session
     @Environment(\.window) private var window: UIWindow?
 
@@ -71,11 +74,19 @@ struct ForumView: View {
             .navigationTitle("Forum")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    PiratenIconButton(
-                        systemName: "house",
-                        accessibilityLabel: "Kajüte"
-                    ) {
-                        onHomeTapped?()
+                    HStack(spacing: 2) {
+                        PiratenIconButton(
+                            systemName: "house",
+                            accessibilityLabel: "Kajüte"
+                        ) {
+                            onHomeTapped?()
+                        }
+                        PiratenIconButton(
+                            systemName: "envelope",
+                            accessibilityLabel: "Nachrichten"
+                        ) {
+                            onMessagesTapped?()
+                        }
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
