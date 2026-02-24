@@ -52,38 +52,40 @@ struct TodosView: View {
                     errorState(message: message)
                 }
             }
+            .piratenStyledBackground()
             .navigationTitle("Todos")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
+                    PiratenIconButton(
+                        systemName: "house",
+                        accessibilityLabel: "Kajüte"
+                    ) {
                         onHomeTapped?()
-                    } label: {
-                        Image(systemName: "house")
                     }
-                    .accessibilityLabel("Kajüte")
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 2) {
-                        Button {
+                        PiratenIconButton(
+                            systemName: notificationsBadge ? "bell.badge" : "bell",
+                            badge: notificationsBadge,
+                            accessibilityLabel: "Benachrichtigungen"
+                        ) {
                             onNotificationsTapped?()
-                        } label: {
-                            Image(systemName: notificationsBadge ? "bell.badge" : "bell")
                         }
-                        .accessibilityLabel("Benachrichtigungen")
 
-                        Button {
+                        PiratenIconButton(
+                            systemName: "person.circle",
+                            accessibilityLabel: "Profil"
+                        ) {
                             onProfileTapped?()
-                        } label: {
-                            Image(systemName: "person.circle")
                         }
-                        .accessibilityLabel("Profil")
 
-                        Button {
+                        PiratenIconButton(
+                            systemName: "plus",
+                            accessibilityLabel: "Neue Aufgabe erstellen"
+                        ) {
                             showingCreateSheet = true
-                        } label: {
-                            Image(systemName: "plus")
                         }
-                        .accessibilityLabel("Neue Aufgabe erstellen")
                     }
                 }
             }
@@ -132,7 +134,7 @@ struct TodosView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 48))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Fehler beim Laden")
                 .font(.headline)
@@ -167,6 +169,7 @@ struct TodosView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
         .refreshable {
             viewModel.refresh()
         }
@@ -249,7 +252,7 @@ struct TodoRow: View {
         case .claimed:
             return .blue
         case .open:
-            return todo.urgent ? .red : .orange
+            return todo.urgent ? .red : .piratenPrimary
         }
     }
 

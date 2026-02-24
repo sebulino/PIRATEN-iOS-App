@@ -136,7 +136,7 @@ struct SessionExpiredView: View {
         VStack(spacing: 24) {
             Image(systemName: "clock.badge.exclamationmark")
                 .font(.system(size: 64))
-                .foregroundColor(.orange)
+                .foregroundColor(.piratenPrimary)
 
             Text("Sitzung abgelaufen")
                 .font(.title)

@@ -29,7 +29,7 @@ struct CalloutView: View {
     private var accentColor: Color {
         switch type {
         case .tip: return .blue
-        case .warning: return .orange
+        case .warning: return .piratenPrimary
         case .keyTakeaway: return .green
         }
     }

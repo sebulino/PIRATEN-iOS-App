@@ -67,31 +67,33 @@ struct ForumView: View {
                     errorState(message: message)
                 }
             }
+            .piratenStyledBackground()
             .navigationTitle("Forum")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
+                    PiratenIconButton(
+                        systemName: "house",
+                        accessibilityLabel: "Kajüte"
+                    ) {
                         onHomeTapped?()
-                    } label: {
-                        Image(systemName: "house")
                     }
-                    .accessibilityLabel("Kajüte")
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 2) {
-                        Button {
+                        PiratenIconButton(
+                            systemName: notificationsBadge ? "bell.badge" : "bell",
+                            badge: notificationsBadge,
+                            accessibilityLabel: "Benachrichtigungen"
+                        ) {
                             onNotificationsTapped?()
-                        } label: {
-                            Image(systemName: notificationsBadge ? "bell.badge" : "bell")
                         }
-                        .accessibilityLabel("Benachrichtigungen")
 
-                        Button {
+                        PiratenIconButton(
+                            systemName: "person.circle",
+                            accessibilityLabel: "Profil"
+                        ) {
                             onProfileTapped?()
-                        } label: {
-                            Image(systemName: "person.circle")
                         }
-                        .accessibilityLabel("Profil")
                     }
                 }
             }
@@ -168,7 +170,7 @@ struct ForumView: View {
             case .idle, .failed:
                 Image(systemName: "bubble.left.and.bubble.right.fill")
                     .font(.system(size: 48))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.piratenPrimary)
                     .accessibilityHidden(true)
                 Text("Forum verbinden")
                     .font(.headline)
@@ -225,7 +227,7 @@ struct ForumView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.lock")
                 .font(.system(size: 48))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Forum nicht verfügbar")
                 .font(.headline)
@@ -246,7 +248,7 @@ struct ForumView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 48))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Fehler beim Laden")
                 .font(.headline)

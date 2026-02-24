@@ -197,7 +197,7 @@ struct UserProfileView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 60))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Authentifizierung fehlgeschlagen")
                 .font(.title3)
@@ -254,7 +254,7 @@ struct UserProfileView: View {
     /// Color for the avatar circle based on username hash
     /// Reused logic from MessagePostRow
     private func avatarColor(for username: String) -> Color {
-        let colors: [Color] = [.orange, .blue, .green, .purple, .pink, .teal]
+        let colors: [Color] = [.piratenPrimary, .blue, .green, .purple, .pink, .teal]
         let hash = username.hashValue
         return colors[abs(hash) % colors.count]
     }

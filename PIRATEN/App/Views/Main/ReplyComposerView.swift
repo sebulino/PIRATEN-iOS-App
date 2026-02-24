@@ -183,7 +183,7 @@ struct ReplyComposerView: View {
     private func validationBanner(message: String) -> some View {
         HStack {
             Image(systemName: "info.circle.fill")
-                .foregroundColor(.orange)
+                .foregroundColor(.piratenPrimary)
             Text(message)
                 .font(.caption)
                 .foregroundColor(.primary)

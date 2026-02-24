@@ -13,7 +13,7 @@ struct NextStepsCard: View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Nächste Schritte", systemImage: "arrow.right.circle.fill")
                 .font(.headline)
-                .foregroundColor(.orange)
+                .foregroundColor(.piratenPrimary)
 
             ForEach(topicIds, id: \.self) { topicId in
                 HStack(spacing: 8) {
