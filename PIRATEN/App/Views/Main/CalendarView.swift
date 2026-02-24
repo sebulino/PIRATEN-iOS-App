@@ -55,20 +55,22 @@ struct CalendarView: View {
                         onHomeTapped?()
                     }
                 }
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    PiratenIconButton(
-                        systemName: notificationsBadge ? "bell.badge" : "bell",
-                        badge: notificationsBadge,
-                        accessibilityLabel: "Benachrichtigungen"
-                    ) {
-                        onNotificationsTapped?()
-                    }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 2) {
+                        PiratenIconButton(
+                            systemName: notificationsBadge ? "bell.badge" : "bell",
+                            badge: notificationsBadge,
+                            accessibilityLabel: "Benachrichtigungen"
+                        ) {
+                            onNotificationsTapped?()
+                        }
 
-                    PiratenIconButton(
-                        systemName: "person.circle",
-                        accessibilityLabel: "Profil"
-                    ) {
-                        onProfileTapped?()
+                        PiratenIconButton(
+                            systemName: "person.circle",
+                            accessibilityLabel: "Profil"
+                        ) {
+                            onProfileTapped?()
+                        }
                     }
                 }
             }
