@@ -41,12 +41,12 @@ struct NewsView: View {
             .navigationTitle("News")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
+                    PiratenIconButton(
+                        systemName: "house",
+                        accessibilityLabel: "Kajüte"
+                    ) {
                         onHomeTapped?()
-                    } label: {
-                        Image(systemName: "house")
                     }
-                    .accessibilityLabel("Kajüte")
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 2) {
