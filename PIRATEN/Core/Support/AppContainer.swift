@@ -75,6 +75,10 @@ final class AppContainer {
     /// Production uses RealKnowledgeRepository (GitHub API); tests use FakeKnowledgeRepository.
     let knowledgeRepository: KnowledgeRepository
 
+    /// News repository implementation.
+    /// Production uses RealNewsRepository (Telegram Bot API); tests use FakeNewsRepository.
+    let newsRepository: NewsRepository
+
     /// Calendar repository implementation.
     /// Production uses RealCalendarRepository (piragitator.de iCal); tests use FakeCalendarRepository.
     let calendarRepository: CalendarRepository
@@ -96,6 +100,9 @@ final class AppContainer {
     /// Knowledge view model for displaying educational content.
     let knowledgeViewModel: KnowledgeViewModel
 
+    /// News view model for displaying Telegram bot news.
+    let newsViewModel: NewsViewModel
+
     /// Calendar view model for displaying events.
     let calendarViewModel: CalendarViewModel
 
@@ -115,6 +122,9 @@ final class AppContainer {
     /// Message draft storage for auto-saving in-progress messages.
     /// Stores a single draft that persists across app restarts.
     let messageDraftStore: MessageDraftStore
+
+    /// News cache storage for persisting Telegram bot messages.
+    let newsCacheStore: NewsCacheStore
 
     /// Reading progress storage for Knowledge Hub topics.
     let readingProgressStore: ReadingProgressStore
@@ -232,6 +242,7 @@ final class AppContainer {
         // Storage layer
         self.recentRecipientsStore = RecentRecipientsStore()
         self.messageDraftStore = MessageDraftStore()
+        self.newsCacheStore = NewsCacheStore()
         self.readingProgressStore = ReadingProgressStore()
 
         // Push notification layer
@@ -337,6 +348,18 @@ final class AppContainer {
         let calendarAPIClient = CalendarAPIClient(httpClient: baseHTTPClient, baseURL: piragitatorBaseURL)
         self.calendarRepository = RealCalendarRepository(apiClient: calendarAPIClient, parser: ICalParser())
 
+        // Telegram Bot API client and news repository
+        // Bot token and chat ID read from Info.plist (set via xcconfig)
+        let telegramBotToken = Bundle.main.infoDictionary?["TELEGRAM_BOT_TOKEN"] as? String ?? ""
+        let telegramChatIdString = Bundle.main.infoDictionary?["TELEGRAM_CHAT_ID"] as? String ?? "0"
+        let telegramChatId = Int64(telegramChatIdString) ?? 0
+        let telegramAPIClient = TelegramAPIClient(
+            httpClient: baseHTTPClient,
+            botToken: telegramBotToken,
+            chatId: telegramChatId
+        )
+        self.newsRepository = RealNewsRepository(apiClient: telegramAPIClient, cache: newsCacheStore)
+
         // Remaining presentation layer
         self.forumViewModel = ForumViewModel(discourseRepository: discourseRepository)
         self.messagesViewModel = MessagesViewModel(
@@ -348,6 +371,7 @@ final class AppContainer {
             repository: realKnowledgeRepository,
             progressStore: readingProgressStore
         )
+        self.newsViewModel = NewsViewModel(newsRepository: newsRepository)
         self.calendarViewModel = CalendarViewModel(calendarRepository: calendarRepository)
         self.homeViewModel = HomeViewModel(
             discourseRepository: discourseRepository,
@@ -400,11 +424,13 @@ final class AppContainer {
         self.discourseRepository = discourseRepository ?? FakeDiscourseRepository()
         self.todoRepository = todoRepository ?? FakeTodoRepository()
         self.knowledgeRepository = FakeKnowledgeRepository()
+        self.newsRepository = FakeNewsRepository()
         self.calendarRepository = FakeCalendarRepository()
 
         // Storage layer (use standard UserDefaults for testing)
         self.recentRecipientsStore = RecentRecipientsStore()
         self.messageDraftStore = MessageDraftStore()
+        self.newsCacheStore = NewsCacheStore()
         self.readingProgressStore = ReadingProgressStore()
 
         // Push notification layer (testing)
@@ -426,6 +452,7 @@ final class AppContainer {
             repository: knowledgeRepository,
             progressStore: readingProgressStore
         )
+        self.newsViewModel = NewsViewModel(newsRepository: self.newsRepository)
         self.calendarViewModel = CalendarViewModel(calendarRepository: self.calendarRepository)
         self.homeViewModel = HomeViewModel(
             discourseRepository: self.discourseRepository,

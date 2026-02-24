@@ -11,6 +11,7 @@ import UserNotifications
 struct MainTabView: View {
     @ObservedObject var homeViewModel: HomeViewModel
     @ObservedObject var forumViewModel: ForumViewModel
+    @ObservedObject var newsViewModel: NewsViewModel
     @ObservedObject var messagesViewModel: MessagesViewModel
     @ObservedObject var knowledgeViewModel: KnowledgeViewModel
     @ObservedObject var calendarViewModel: CalendarViewModel
@@ -115,6 +116,18 @@ struct MainTabView: View {
                 }
                 .tag(1)
 
+            NewsView(
+                viewModel: newsViewModel,
+                onProfileTapped: { showingProfile = true },
+                onNotificationsTapped: { showingNotifications = true },
+                notificationsBadge: notificationsBadge,
+                onHomeTapped: { deepLinkRouter.selectedTab = 0 }
+            )
+                .tabItem {
+                    Label("News", systemImage: "newspaper")
+                }
+                .tag(2)
+
             MessagesView(
                 viewModel: messagesViewModel,
                 messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
@@ -133,7 +146,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Nachrichten", systemImage: "envelope")
                 }
-                .tag(2)
+                .tag(3)
 
             KnowledgeView(
                 viewModel: knowledgeViewModel,
@@ -146,7 +159,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Wissen", systemImage: "book")
                 }
-                .tag(3)
+                .tag(4)
 
             CalendarView(
                 viewModel: calendarViewModel,
@@ -158,7 +171,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Termine", systemImage: "calendar")
                 }
-                .tag(4)
+                .tag(5)
 
             TodosView(
                 viewModel: todosViewModel,
@@ -172,7 +185,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("ToDos", systemImage: "checklist")
                 }
-                .tag(5)
+                .tag(6)
         }
         .overlay {
             if deepLinkRouter.selectedTab == 0 {
@@ -382,6 +395,7 @@ struct MainTabView: View {
             authRepository: authRepository
         ),
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
+        newsViewModel: NewsViewModel(newsRepository: FakeNewsRepository()),
         messagesViewModel: MessagesViewModel(
             discourseRepository: fakeDiscourseRepo,
             authRepository: authRepository
