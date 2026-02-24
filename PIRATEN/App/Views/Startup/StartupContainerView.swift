@@ -18,6 +18,7 @@ struct StartupContainerView: View {
     @ObservedObject var authStateManager: AuthStateManager
     @ObservedObject var homeViewModel: HomeViewModel
     @ObservedObject var forumViewModel: ForumViewModel
+    @ObservedObject var newsViewModel: NewsViewModel
     @ObservedObject var messagesViewModel: MessagesViewModel
     @ObservedObject var knowledgeViewModel: KnowledgeViewModel
     @ObservedObject var calendarViewModel: CalendarViewModel
@@ -71,6 +72,7 @@ struct StartupContainerView: View {
                 authStateManager: authStateManager,
                 homeViewModel: homeViewModel,
                 forumViewModel: forumViewModel,
+                newsViewModel: newsViewModel,
                 messagesViewModel: messagesViewModel,
                 knowledgeViewModel: knowledgeViewModel,
                 calendarViewModel: calendarViewModel,
@@ -130,6 +132,7 @@ struct StartupContainerView: View {
             authRepository: authRepository
         ),
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
+        newsViewModel: NewsViewModel(newsRepository: FakeNewsRepository()),
         messagesViewModel: MessagesViewModel(
             discourseRepository: fakeDiscourseRepo,
             authRepository: authRepository

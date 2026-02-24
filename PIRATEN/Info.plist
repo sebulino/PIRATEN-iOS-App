@@ -51,5 +51,9 @@
 	<string>$(KNOWLEDGE_REPO_BRANCH)</string>
 	<key>PIRAGITATOR_BASE_URL</key>
 	<string>$(PIRAGITATOR_BASE_URL)</string>
+	<key>TELEGRAM_BOT_TOKEN</key>
+	<string>$(TELEGRAM_BOT_TOKEN)</string>
+	<key>TELEGRAM_CHAT_ID</key>
+	<string>$(TELEGRAM_CHAT_ID)</string>
 </dict>
 </plist>
