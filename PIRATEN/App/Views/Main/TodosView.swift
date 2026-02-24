@@ -62,27 +62,29 @@ struct TodosView: View {
                     }
                     .accessibilityLabel("Kajüte")
                 }
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    Button {
-                        onNotificationsTapped?()
-                    } label: {
-                        Image(systemName: notificationsBadge ? "bell.badge" : "bell")
-                    }
-                    .accessibilityLabel("Benachrichtigungen")
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 2) {
+                        Button {
+                            onNotificationsTapped?()
+                        } label: {
+                            Image(systemName: notificationsBadge ? "bell.badge" : "bell")
+                        }
+                        .accessibilityLabel("Benachrichtigungen")
 
-                    Button {
-                        onProfileTapped?()
-                    } label: {
-                        Image(systemName: "person.circle")
-                    }
-                    .accessibilityLabel("Profil")
+                        Button {
+                            onProfileTapped?()
+                        } label: {
+                            Image(systemName: "person.circle")
+                        }
+                        .accessibilityLabel("Profil")
 
-                    Button {
-                        showingCreateSheet = true
-                    } label: {
-                        Image(systemName: "plus")
+                        Button {
+                            showingCreateSheet = true
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .accessibilityLabel("Neue Aufgabe erstellen")
                     }
-                    .accessibilityLabel("Neue Aufgabe erstellen")
                 }
             }
             .sheet(isPresented: $showingCreateSheet, onDismiss: {

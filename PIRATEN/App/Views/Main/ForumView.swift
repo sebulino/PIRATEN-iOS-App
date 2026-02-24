@@ -77,20 +77,22 @@ struct ForumView: View {
                     }
                     .accessibilityLabel("Kajüte")
                 }
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    Button {
-                        onNotificationsTapped?()
-                    } label: {
-                        Image(systemName: notificationsBadge ? "bell.badge" : "bell")
-                    }
-                    .accessibilityLabel("Benachrichtigungen")
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 2) {
+                        Button {
+                            onNotificationsTapped?()
+                        } label: {
+                            Image(systemName: notificationsBadge ? "bell.badge" : "bell")
+                        }
+                        .accessibilityLabel("Benachrichtigungen")
 
-                    Button {
-                        onProfileTapped?()
-                    } label: {
-                        Image(systemName: "person.circle")
+                        Button {
+                            onProfileTapped?()
+                        } label: {
+                            Image(systemName: "person.circle")
+                        }
+                        .accessibilityLabel("Profil")
                     }
-                    .accessibilityLabel("Profil")
                 }
             }
             .onAppear {
