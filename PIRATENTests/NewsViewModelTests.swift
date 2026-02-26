@@ -14,7 +14,7 @@ struct NewsViewModelTests {
     // MARK: - Helpers
 
     private func makeViewModel(repository: NewsRepository? = nil) -> NewsViewModel {
-        NewsViewModel(newsRepository: repository ?? FakeNewsRepository())
+        NewsViewModel(newsRepository: repository ?? FakeNewsRepository(), cache: NewsCacheStore())
     }
 
     // MARK: - Load State Tests
@@ -23,17 +23,17 @@ struct NewsViewModelTests {
     func initialState() {
         let vm = makeViewModel()
         #expect(vm.loadState == .idle)
-        #expect(vm.posts.isEmpty)
+        #expect(vm.items.isEmpty)
     }
 
-    @Test("Loading transitions from idle to loaded with posts")
+    @Test("Loading transitions from idle to loaded with items")
     func loadTransitions() async throws {
         let vm = makeViewModel()
         vm.loadNews()
 
         try await Task.sleep(nanoseconds: 300_000_000) // 300ms to allow fake delay
         #expect(vm.loadState == .loaded)
-        #expect(!vm.posts.isEmpty)
+        #expect(!vm.items.isEmpty)
     }
 
     @Test("Error state set when repository throws")
@@ -51,13 +51,13 @@ struct NewsViewModelTests {
         }
     }
 
-    @Test("Refresh re-fetches posts")
+    @Test("Refresh re-fetches items")
     func refresh() async throws {
         let vm = makeViewModel()
         vm.refresh()
 
         try await Task.sleep(nanoseconds: 300_000_000)
         #expect(vm.loadState == .loaded)
-        #expect(!vm.posts.isEmpty)
+        #expect(!vm.items.isEmpty)
     }
 }

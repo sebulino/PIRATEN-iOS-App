@@ -11,47 +11,46 @@ final class FakeNewsRepository: NewsRepository {
 
     var shouldThrow = false
 
-    func fetchNews() async throws -> [NewsPost] {
-        // Simulate network delay
+    func fetchNews() async throws -> [NewsItem] {
         try await Task.sleep(nanoseconds: 100_000_000) // 100ms
 
         if shouldThrow {
-            throw TelegramError.apiError(statusCode: 500)
+            throw NewsAPIError.serverError(statusCode: 500)
         }
 
-        return Self.samplePosts
+        return Self.sampleItems
     }
 
-    static let samplePosts: [NewsPost] = [
-        NewsPost(
-            id: 1001,
-            text: "Einladung zum Bundesparteitag am 15. März 2026 in Berlin. Alle Mitglieder sind herzlich willkommen! Anmeldung ab sofort möglich.",
-            date: Date().addingTimeInterval(-3600),
-            authorName: "Piraten News Bot"
+    static let sampleItems: [NewsItem] = [
+        NewsItem(
+            chatId: -1001,
+            messageId: 1001,
+            postedAt: Date().addingTimeInterval(-3600),
+            text: "Einladung zum Bundesparteitag am 15. März 2026 in Berlin. Alle Mitglieder sind herzlich willkommen! Anmeldung ab sofort möglich."
         ),
-        NewsPost(
-            id: 1002,
-            text: "Neue Stellungnahme zum Digitale-Dienste-Gesetz veröffentlicht. Unsere Position zu Plattformregulierung und Meinungsfreiheit im Netz.",
-            date: Date().addingTimeInterval(-7200),
-            authorName: "Piraten News Bot"
+        NewsItem(
+            chatId: -1001,
+            messageId: 1002,
+            postedAt: Date().addingTimeInterval(-7200),
+            text: "Neue Stellungnahme zum Digitale-Dienste-Gesetz veröffentlicht. Unsere Position zu Plattformregulierung und Meinungsfreiheit im Netz."
         ),
-        NewsPost(
-            id: 1003,
-            text: "Erfolg bei der Kommunalwahl in Hessen! Drei neue Mandate in Frankfurt und Kassel. Herzlichen Glückwunsch an alle Kandidat:innen!",
-            date: Date().addingTimeInterval(-86400),
-            authorName: "Piraten News Bot"
+        NewsItem(
+            chatId: -1001,
+            messageId: 1003,
+            postedAt: Date().addingTimeInterval(-86400),
+            text: "Erfolg bei der Kommunalwahl in Hessen! Drei neue Mandate in Frankfurt und Kassel. Herzlichen Glückwunsch an alle Kandidat:innen!"
         ),
-        NewsPost(
-            id: 1004,
-            text: "Reminder: Morgen um 20 Uhr findet der wöchentliche Mumble-Stammtisch statt. Thema: Vorbereitung Wahlkampf 2026.",
-            date: Date().addingTimeInterval(-172800),
-            authorName: "Piraten News Bot"
+        NewsItem(
+            chatId: -1001,
+            messageId: 1004,
+            postedAt: Date().addingTimeInterval(-172800),
+            text: "Wer: AG Kommunalpolitik\nReminder: Morgen um 20 Uhr findet der wöchentliche Mumble-Stammtisch statt. Thema: Vorbereitung Wahlkampf 2026."
         ),
-        NewsPost(
-            id: 1005,
-            text: "Die AG Datenschutz hat ein neues Positionspapier zur Vorratsdatenspeicherung erarbeitet. Feedback willkommen!",
-            date: Date().addingTimeInterval(-259200),
-            authorName: "AG Datenschutz"
+        NewsItem(
+            chatId: -1001,
+            messageId: 1005,
+            postedAt: Date().addingTimeInterval(-259200),
+            text: "Die AG Datenschutz hat ein neues Positionspapier zur Vorratsdatenspeicherung erarbeitet. Feedback willkommen!\n\nMehr Infos: https://wiki.piratenpartei.de/AG_Datenschutz"
         )
     ]
 }

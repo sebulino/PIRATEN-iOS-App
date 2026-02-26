@@ -183,7 +183,7 @@ struct SessionExpiredView: View {
             authRepository: authRepository
         ),
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
-        newsViewModel: NewsViewModel(newsRepository: FakeNewsRepository()),
+        newsViewModel: NewsViewModel(newsRepository: FakeNewsRepository(), cache: NewsCacheStore()),
         messagesViewModel: MessagesViewModel(
             discourseRepository: fakeDiscourseRepo,
             authRepository: authRepository

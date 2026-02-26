@@ -76,7 +76,7 @@ final class AppContainer {
     let knowledgeRepository: KnowledgeRepository
 
     /// News repository implementation.
-    /// Production uses RealNewsRepository (Telegram Bot API); tests use FakeNewsRepository.
+    /// Production uses RealNewsRepository (meine-piraten.de API); tests use FakeNewsRepository.
     let newsRepository: NewsRepository
 
     /// Calendar repository implementation.
@@ -100,7 +100,7 @@ final class AppContainer {
     /// Knowledge view model for displaying educational content.
     let knowledgeViewModel: KnowledgeViewModel
 
-    /// News view model for displaying Telegram bot news.
+    /// News view model for displaying news items.
     let newsViewModel: NewsViewModel
 
     /// Calendar view model for displaying events.
@@ -123,7 +123,7 @@ final class AppContainer {
     /// Stores a single draft that persists across app restarts.
     let messageDraftStore: MessageDraftStore
 
-    /// News cache storage for persisting Telegram bot messages.
+    /// News cache storage for persisting news items offline.
     let newsCacheStore: NewsCacheStore
 
     /// Reading progress storage for Knowledge Hub topics.
@@ -140,14 +140,32 @@ final class AppContainer {
     /// Deep link router for handling notification-based navigation.
     let deepLinkRouter: DeepLinkRouter
 
+    // MARK: - ViewModel Cache
+
+    /// Cache for TopicDetailViewModels, keyed by topic ID.
+    /// Prevents ViewModel recreation when SwiftUI re-evaluates NavigationStack destinations.
+    /// Limited to 10 entries to keep memory bounded.
+    private var topicDetailViewModelCache: [Int: TopicDetailViewModel] = [:]
+    private static let maxCachedViewModels = 10
+
     // MARK: - ViewModel Factories
 
-    /// Creates a TopicDetailViewModel for the given topic.
-    /// Used for navigating from topic list to detail view.
+    /// Returns a TopicDetailViewModel for the given topic.
+    /// Reuses a cached ViewModel if one exists for the same topic ID,
+    /// preserving loaded posts, composer state, and reply drafts.
     /// - Parameter topic: The topic to display in detail
-    /// - Returns: A configured TopicDetailViewModel
+    /// - Returns: A configured TopicDetailViewModel (may be cached)
     func makeTopicDetailViewModel(for topic: Topic) -> TopicDetailViewModel {
-        TopicDetailViewModel(topic: topic, discourseRepository: discourseRepository)
+        if let cached = topicDetailViewModelCache[topic.id] {
+            return cached
+        }
+        // Evict oldest entries if cache is full
+        if topicDetailViewModelCache.count >= Self.maxCachedViewModels {
+            topicDetailViewModelCache.removeAll()
+        }
+        let vm = TopicDetailViewModel(topic: topic, discourseRepository: discourseRepository)
+        topicDetailViewModelCache[topic.id] = vm
+        return vm
     }
 
     /// Creates a MessageThreadDetailViewModel for the given message thread.
@@ -348,17 +366,9 @@ final class AppContainer {
         let calendarAPIClient = CalendarAPIClient(httpClient: baseHTTPClient, baseURL: piragitatorBaseURL)
         self.calendarRepository = RealCalendarRepository(apiClient: calendarAPIClient, parser: ICalParser())
 
-        // Telegram Bot API client and news repository
-        // Bot token and chat ID read from Info.plist (set via xcconfig)
-        let telegramBotToken = Bundle.main.infoDictionary?["TELEGRAM_BOT_TOKEN"] as? String ?? ""
-        let telegramChatIdString = Bundle.main.infoDictionary?["TELEGRAM_CHAT_ID"] as? String ?? "0"
-        let telegramChatId = Int64(telegramChatIdString) ?? 0
-        let telegramAPIClient = TelegramAPIClient(
-            httpClient: baseHTTPClient,
-            botToken: telegramBotToken,
-            chatId: telegramChatId
-        )
-        self.newsRepository = RealNewsRepository(apiClient: telegramAPIClient, cache: newsCacheStore)
+        // News API client and repository (meine-piraten.de Rails backend)
+        let newsAPIClient = NewsAPIClient(httpClient: baseHTTPClient, baseURL: meinePiratenBaseURL)
+        self.newsRepository = RealNewsRepository(apiClient: newsAPIClient, cache: newsCacheStore)
 
         // Remaining presentation layer
         self.forumViewModel = ForumViewModel(discourseRepository: discourseRepository)
@@ -371,7 +381,7 @@ final class AppContainer {
             repository: realKnowledgeRepository,
             progressStore: readingProgressStore
         )
-        self.newsViewModel = NewsViewModel(newsRepository: newsRepository)
+        self.newsViewModel = NewsViewModel(newsRepository: newsRepository, cache: newsCacheStore)
         self.calendarViewModel = CalendarViewModel(calendarRepository: calendarRepository)
         self.homeViewModel = HomeViewModel(
             discourseRepository: discourseRepository,
@@ -452,7 +462,7 @@ final class AppContainer {
             repository: knowledgeRepository,
             progressStore: readingProgressStore
         )
-        self.newsViewModel = NewsViewModel(newsRepository: self.newsRepository)
+        self.newsViewModel = NewsViewModel(newsRepository: self.newsRepository, cache: newsCacheStore)
         self.calendarViewModel = CalendarViewModel(calendarRepository: self.calendarRepository)
         self.homeViewModel = HomeViewModel(
             discourseRepository: self.discourseRepository,

@@ -31,7 +31,7 @@ struct NewsView: View {
                     ProgressView("Lade News...")
 
                 case .loaded:
-                    if viewModel.posts.isEmpty {
+                    if viewModel.items.isEmpty {
                         emptyState
                     } else {
                         loadedContent
@@ -61,19 +61,20 @@ struct NewsView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 2) {
-                        Button {
+                        PiratenIconButton(
+                            systemName: notificationsBadge ? "bell.badge" : "bell",
+                            badge: notificationsBadge,
+                            accessibilityLabel: "Benachrichtigungen"
+                        ) {
                             onNotificationsTapped?()
-                        } label: {
-                            Image(systemName: notificationsBadge ? "bell.badge" : "bell")
                         }
-                        .accessibilityLabel("Benachrichtigungen")
 
-                        Button {
+                        PiratenIconButton(
+                            systemName: "person.circle",
+                            accessibilityLabel: "Profil"
+                        ) {
                             onProfileTapped?()
-                        } label: {
-                            Image(systemName: "person.circle")
                         }
-                        .accessibilityLabel("Profil")
                     }
                 }
             }
@@ -90,9 +91,16 @@ struct NewsView: View {
     @ViewBuilder
     private var loadedContent: some View {
         ScrollView {
+            if let errorMessage = viewModel.errorMessage {
+                errorBanner(message: errorMessage)
+            }
+
             LazyVStack(alignment: .leading, spacing: 16) {
-                ForEach(viewModel.posts) { post in
-                    NewsPostRow(post: post)
+                ForEach(viewModel.items) { item in
+                    NavigationLink(destination: NewsDetailView(item: item)) {
+                        NewsCardView(item: item)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 16)
@@ -101,6 +109,27 @@ struct NewsView: View {
         .refreshable {
             viewModel.refresh()
         }
+    }
+
+    // MARK: - Error Banner
+
+    @ViewBuilder
+    private func errorBanner(message: String) -> some View {
+        HStack {
+            Image(systemName: "exclamationmark.triangle")
+                .foregroundStyle(.orange)
+            Text(message)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Button("Retry") {
+                viewModel.refresh()
+            }
+            .font(.caption)
+            .buttonStyle(.bordered)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
     }
 
     // MARK: - State Views
@@ -128,42 +157,11 @@ struct NewsView: View {
     }
 }
 
-// MARK: - News Post Row
-
-private struct NewsPostRow: View {
-    let post: NewsPost
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                if let authorName = post.authorName {
-                    Text(authorName)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                Text(post.date, style: .relative)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
-
-            if let text = post.text {
-                Text(text)
-                    .font(.body)
-            }
-        }
-        .padding(12)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .shadow(color: .black.opacity(0.05), radius: 2, y: 1)
-    }
-}
-
 #Preview {
     NewsView(
-        viewModel: NewsViewModel(newsRepository: FakeNewsRepository())
+        viewModel: NewsViewModel(
+            newsRepository: FakeNewsRepository(),
+            cache: NewsCacheStore()
+        )
     )
 }

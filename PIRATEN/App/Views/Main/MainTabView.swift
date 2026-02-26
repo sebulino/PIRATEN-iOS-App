@@ -313,7 +313,7 @@ struct MainTabView: View {
         }) {
             NotificationsSheetView()
         }
-        .tint(Color.piratenPrimary)
+        .tint(deepLinkRouter.selectedTab == 0 ? Color(.tertiaryLabel) : Color.piratenPrimary)
         .onAppear {
             configureNavigationBarAppearance()
             configureTabBarAppearance()
@@ -429,7 +429,7 @@ struct MainTabView: View {
             authRepository: authRepository
         ),
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
-        newsViewModel: NewsViewModel(newsRepository: FakeNewsRepository()),
+        newsViewModel: NewsViewModel(newsRepository: FakeNewsRepository(), cache: NewsCacheStore()),
         messagesViewModel: MessagesViewModel(
             discourseRepository: fakeDiscourseRepo,
             authRepository: authRepository

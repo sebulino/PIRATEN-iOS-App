@@ -12,7 +12,7 @@ import Foundation
 ///
 /// This is independent of the Discourse API JSON shape - DTOs handle mapping.
 /// Based on Discourse API's created_by and username fields in responses.
-struct UserSummary: Identifiable, Equatable {
+struct UserSummary: Identifiable, Equatable, Hashable {
     /// Unique identifier for the user
     let id: Int
 

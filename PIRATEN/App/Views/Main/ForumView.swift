@@ -108,6 +108,16 @@ struct ForumView: View {
                     }
                 }
             }
+            .navigationDestination(for: Topic.self) { topic in
+                if let factory = topicDetailViewModelFactory {
+                    TopicDetailView(
+                        viewModel: factory(topic),
+                        onLoginTapped: onLoginTapped,
+                        userProfileViewModelFactory: userProfileViewModelFactory,
+                        onSendMessageFromProfile: onSendMessageFromProfile
+                    )
+                }
+            }
             .onAppear {
                 if viewModel.loadState == .idle {
                     viewModel.loadTopics()
@@ -125,15 +135,8 @@ struct ForumView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 ForEach(viewModel.topics) { topic in
-                    if let factory = topicDetailViewModelFactory {
-                        NavigationLink {
-                            TopicDetailView(
-                                viewModel: factory(topic),
-                                onLoginTapped: onLoginTapped,
-                                userProfileViewModelFactory: userProfileViewModelFactory,
-                                onSendMessageFromProfile: onSendMessageFromProfile
-                            )
-                        } label: {
+                    if topicDetailViewModelFactory != nil {
+                        NavigationLink(value: topic) {
                             TopicRow(topic: topic)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .contentShape(Rectangle())

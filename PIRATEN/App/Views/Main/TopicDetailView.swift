@@ -108,8 +108,15 @@ struct TopicDetailView: View {
             }
         }
         .onAppear {
-            if viewModel.loadState == .idle {
+            switch viewModel.loadState {
+            case .idle:
                 viewModel.loadPosts()
+            case .notAuthenticated, .authenticationFailed:
+                // Retry loading in case auth has been refreshed since last attempt
+                // (e.g., user went back and tapped "Forum verbinden")
+                viewModel.loadPosts()
+            default:
+                break
             }
         }
     }

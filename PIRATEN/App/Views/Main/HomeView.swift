@@ -85,6 +85,11 @@ struct HomeView: View {
                     }
                 }
             }
+            .navigationDestination(for: Topic.self) { topic in
+                if let factory = topicDetailViewModelFactory {
+                    TopicDetailView(viewModel: factory(topic))
+                }
+            }
             .onAppear {
                 if viewModel.loadState == .idle {
                     viewModel.loadDashboard()
@@ -257,10 +262,8 @@ struct HomeView: View {
                     .padding(.vertical, 8)
             } else {
                 ForEach(viewModel.recentTopics) { topic in
-                    if let factory = topicDetailViewModelFactory {
-                        NavigationLink {
-                            TopicDetailView(viewModel: factory(topic))
-                        } label: {
+                    if topicDetailViewModelFactory != nil {
+                        NavigationLink(value: topic) {
                             forumTopicRow(topic)
                         }
                         .buttonStyle(.plain)
