@@ -25,17 +25,8 @@ struct MessagesView: View {
     /// Callback for when user taps the compose FAB to create a new message
     var onComposeTapped: (() -> Void)?
 
-    /// Callback when user taps the profile toolbar button
-    var onProfileTapped: (() -> Void)?
-
-    /// Callback when user taps the notifications toolbar button
-    var onNotificationsTapped: (() -> Void)?
-
-    /// Whether to show a badge on the notification bell
-    var notificationsBadge: Bool = false
-
-    /// Callback when user taps the home button to navigate to Kajüte
-    var onHomeTapped: (() -> Void)?
+    /// Environment dismiss for sheet presentation
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
@@ -86,28 +77,12 @@ struct MessagesView: View {
             .navigationTitle("Nachrichten")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    PiratenIconButton(
-                        systemName: "house",
-                        accessibilityLabel: "Kajüte"
-                    ) {
-                        onHomeTapped?()
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
                     }
-                }
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    PiratenIconButton(
-                        systemName: notificationsBadge ? "bell.badge" : "bell",
-                        badge: notificationsBadge,
-                        accessibilityLabel: "Benachrichtigungen"
-                    ) {
-                        onNotificationsTapped?()
-                    }
-
-                    PiratenIconButton(
-                        systemName: "person.circle",
-                        accessibilityLabel: "Profil"
-                    ) {
-                        onProfileTapped?()
-                    }
+                    .accessibilityLabel("Schließen")
                 }
             }
             .onAppear {

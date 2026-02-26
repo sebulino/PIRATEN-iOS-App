@@ -28,6 +28,9 @@ struct TodosView: View {
     /// Callback when user taps the home button to navigate to Kajüte
     var onHomeTapped: (() -> Void)?
 
+    /// Callback when user taps the messages button to open Nachrichten
+    var onMessagesTapped: (() -> Void)?
+
     @State private var showingCreateSheet = false
 
     var body: some View {
@@ -56,34 +59,44 @@ struct TodosView: View {
             .navigationTitle("Todos")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    PiratenIconButton(
-                        systemName: "house",
-                        accessibilityLabel: "Kajüte"
-                    ) {
-                        onHomeTapped?()
+                    HStack(spacing: 2) {
+                        PiratenIconButton(
+                            systemName: "house",
+                            accessibilityLabel: "Kajüte"
+                        ) {
+                            onHomeTapped?()
+                        }
+                        PiratenIconButton(
+                            systemName: "envelope",
+                            accessibilityLabel: "Nachrichten"
+                        ) {
+                            onMessagesTapped?()
+                        }
                     }
                 }
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    PiratenIconButton(
-                        systemName: notificationsBadge ? "bell.badge" : "bell",
-                        badge: notificationsBadge,
-                        accessibilityLabel: "Benachrichtigungen"
-                    ) {
-                        onNotificationsTapped?()
-                    }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 2) {
+                        PiratenIconButton(
+                            systemName: notificationsBadge ? "bell.badge" : "bell",
+                            badge: notificationsBadge,
+                            accessibilityLabel: "Benachrichtigungen"
+                        ) {
+                            onNotificationsTapped?()
+                        }
 
-                    PiratenIconButton(
-                        systemName: "person.circle",
-                        accessibilityLabel: "Profil"
-                    ) {
-                        onProfileTapped?()
-                    }
+                        PiratenIconButton(
+                            systemName: "person.circle",
+                            accessibilityLabel: "Profil"
+                        ) {
+                            onProfileTapped?()
+                        }
 
-                    PiratenIconButton(
-                        systemName: "plus",
-                        accessibilityLabel: "Neue Aufgabe erstellen"
-                    ) {
-                        showingCreateSheet = true
+                        PiratenIconButton(
+                            systemName: "plus",
+                            accessibilityLabel: "Neue Aufgabe erstellen"
+                        ) {
+                            showingCreateSheet = true
+                        }
                     }
                 }
             }

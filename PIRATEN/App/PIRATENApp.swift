@@ -52,6 +52,7 @@ struct PIRATENApp: App {
                 authStateManager: container.authStateManager,
                 homeViewModel: container.homeViewModel,
                 forumViewModel: container.forumViewModel,
+                newsViewModel: container.newsViewModel,
                 messagesViewModel: container.messagesViewModel,
                 knowledgeViewModel: container.knowledgeViewModel,
                 calendarViewModel: container.calendarViewModel,

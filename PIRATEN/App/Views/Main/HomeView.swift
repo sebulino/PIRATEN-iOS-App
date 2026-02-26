@@ -31,6 +31,9 @@ struct HomeView: View {
     /// Whether to show a badge on the notification bell
     var notificationsBadge: Bool = false
 
+    /// Callback when user taps the messages button to open Nachrichten
+    var onMessagesTapped: (() -> Void)?
+
     /// Username of the contact whose profile is being shown
     @State private var selectedContactUsername: String?
 
@@ -55,21 +58,36 @@ struct HomeView: View {
             .piratenStyledBackground()
             .navigationTitle("Kajüte")
             .toolbar {
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     PiratenIconButton(
-                        systemName: notificationsBadge ? "bell.badge" : "bell",
-                        badge: notificationsBadge,
-                        accessibilityLabel: "Benachrichtigungen"
+                        systemName: "envelope",
+                        accessibilityLabel: "Nachrichten"
                     ) {
-                        onNotificationsTapped?()
+                        onMessagesTapped?()
                     }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 2) {
+                        PiratenIconButton(
+                            systemName: notificationsBadge ? "bell.badge" : "bell",
+                            badge: notificationsBadge,
+                            accessibilityLabel: "Benachrichtigungen"
+                        ) {
+                            onNotificationsTapped?()
+                        }
 
-                    PiratenIconButton(
-                        systemName: "person.circle",
-                        accessibilityLabel: "Profil"
-                    ) {
-                        onProfileTapped?()
+                        PiratenIconButton(
+                            systemName: "person.circle",
+                            accessibilityLabel: "Profil"
+                        ) {
+                            onProfileTapped?()
+                        }
                     }
+                }
+            }
+            .navigationDestination(for: Topic.self) { topic in
+                if let factory = topicDetailViewModelFactory {
+                    TopicDetailView(viewModel: factory(topic))
                 }
             }
             .onAppear {
@@ -244,10 +262,8 @@ struct HomeView: View {
                     .padding(.vertical, 8)
             } else {
                 ForEach(viewModel.recentTopics) { topic in
-                    if let factory = topicDetailViewModelFactory {
-                        NavigationLink {
-                            TopicDetailView(viewModel: factory(topic))
-                        } label: {
+                    if topicDetailViewModelFactory != nil {
+                        NavigationLink(value: topic) {
                             forumTopicRow(topic)
                         }
                         .buttonStyle(.plain)

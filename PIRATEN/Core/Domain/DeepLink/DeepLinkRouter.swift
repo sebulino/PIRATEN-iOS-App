@@ -18,7 +18,7 @@ final class DeepLinkRouter: ObservableObject {
     /// The pending deep link waiting to be handled
     @Published var pendingDeepLink: DeepLink?
 
-    /// Selected tab index (0: Kajüte, 1: Forum, 2: Nachrichten, 3: Wissen, 4: Termine, 5: ToDos)
+    /// Selected tab index (0: Kajüte, 1: Forum, 2: News, 3: Wissen, 4: Termine, 5: ToDos)
     @Published var selectedTab: Int = 0
 
     // MARK: - Public Methods
@@ -29,10 +29,11 @@ final class DeepLinkRouter: ObservableObject {
     func handle(_ deepLink: DeepLink) {
         self.pendingDeepLink = deepLink
 
-        // Switch to the appropriate tab
+        // Switch to the appropriate tab or trigger sheet
         switch deepLink {
         case .messageThread:
-            selectedTab = 2 // Nachrichten tab
+            // Messages are now presented as a sheet, handled by MainTabView's onChange
+            break
 
         case .todoDetail:
             selectedTab = 5 // ToDos tab

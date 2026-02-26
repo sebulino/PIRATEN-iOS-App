@@ -12,6 +12,7 @@ import UserNotifications
 struct MainTabView: View {
     @ObservedObject var homeViewModel: HomeViewModel
     @ObservedObject var forumViewModel: ForumViewModel
+    @ObservedObject var newsViewModel: NewsViewModel
     @ObservedObject var messagesViewModel: MessagesViewModel
     @ObservedObject var knowledgeViewModel: KnowledgeViewModel
     @ObservedObject var calendarViewModel: CalendarViewModel
@@ -62,6 +63,9 @@ struct MainTabView: View {
     /// Whether the notifications sheet is being shown
     @State private var showingNotifications = false
 
+    /// Whether the messages sheet is being shown
+    @State private var showingMessages = false
+
     /// Count of delivered notifications currently in the notification center
     @State private var deliveredNotificationsCount: Int = 0
 
@@ -100,7 +104,8 @@ struct MainTabView: View {
                 onProfileTapped: { showingProfile = true },
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
-                onHomeTapped: { deepLinkRouter.selectedTab = 0 }
+                onHomeTapped: { deepLinkRouter.selectedTab = 0 },
+                onMessagesTapped: { showingMessages = true }
             )
                 .background(
                     GeometryReader { geo in
@@ -116,23 +121,16 @@ struct MainTabView: View {
                 }
                 .tag(1)
 
-            MessagesView(
-                viewModel: messagesViewModel,
-                messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
-                userProfileViewModelFactory: userProfileViewModelFactory,
-                onSendMessageFromProfile: { profile in
-                    handleSendMessageFromProfile(profile)
-                },
-                onComposeTapped: {
-                    showingRecipientPicker = true
-                },
+            NewsView(
+                viewModel: newsViewModel,
                 onProfileTapped: { showingProfile = true },
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
-                onHomeTapped: { deepLinkRouter.selectedTab = 0 }
+                onHomeTapped: { deepLinkRouter.selectedTab = 0 },
+                onMessagesTapped: { showingMessages = true }
             )
                 .tabItem {
-                    Label("Nachrichten", systemImage: "envelope")
+                    Label("News", systemImage: "newspaper")
                 }
                 .tag(2)
 
@@ -142,7 +140,8 @@ struct MainTabView: View {
                 onProfileTapped: { showingProfile = true },
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
-                onHomeTapped: { deepLinkRouter.selectedTab = 0 }
+                onHomeTapped: { deepLinkRouter.selectedTab = 0 },
+                onMessagesTapped: { showingMessages = true }
             )
                 .tabItem {
                     Label("Wissen", systemImage: "book")
@@ -154,7 +153,8 @@ struct MainTabView: View {
                 onProfileTapped: { showingProfile = true },
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
-                onHomeTapped: { deepLinkRouter.selectedTab = 0 }
+                onHomeTapped: { deepLinkRouter.selectedTab = 0 },
+                onMessagesTapped: { showingMessages = true }
             )
                 .tabItem {
                     Label("Termine", systemImage: "calendar")
@@ -168,7 +168,8 @@ struct MainTabView: View {
                 onProfileTapped: { showingProfile = true },
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
-                onHomeTapped: { deepLinkRouter.selectedTab = 0 }
+                onHomeTapped: { deepLinkRouter.selectedTab = 0 },
+                onMessagesTapped: { showingMessages = true }
             )
                 .tabItem {
                     Label("ToDos", systemImage: "checklist")
@@ -189,7 +190,8 @@ struct MainTabView: View {
                             },
                             onProfileTapped: { showingProfile = true },
                             onNotificationsTapped: { showingNotifications = true },
-                            notificationsBadge: notificationsBadge
+                            notificationsBadge: notificationsBadge,
+                            onMessagesTapped: { showingMessages = true }
                         )
                         .frame(height: geo.size.height - tabContentBottomInset)
 
@@ -281,6 +283,21 @@ struct MainTabView: View {
                 }
             }
         }
+        .sheet(isPresented: $showingMessages) {
+            NavigationStack {
+                MessagesView(
+                    viewModel: messagesViewModel,
+                    messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
+                    userProfileViewModelFactory: userProfileViewModelFactory,
+                    onSendMessageFromProfile: { profile in
+                        handleSendMessageFromProfile(profile)
+                    },
+                    onComposeTapped: {
+                        showingRecipientPicker = true
+                    }
+                )
+            }
+        }
         .sheet(isPresented: $showingProfile) {
             NavigationStack {
                 ProfileView(
@@ -296,7 +313,7 @@ struct MainTabView: View {
         }) {
             NotificationsSheetView()
         }
-        .tint(Color.piratenPrimary)
+        .tint(deepLinkRouter.selectedTab == 0 ? Color(.tertiaryLabel) : Color.piratenPrimary)
         .onAppear {
             configureNavigationBarAppearance()
             configureTabBarAppearance()
@@ -310,7 +327,8 @@ struct MainTabView: View {
             // Handle the deep link based on type
             switch deepLink {
             case .messageThread(let topicId):
-                // Fetch thread data and present detail view
+                // Open messages sheet and present the deep-linked thread
+                showingMessages = true
                 Task {
                     messagesViewModel.loadMessages()
                     // Give a moment for messages to load
@@ -411,6 +429,7 @@ struct MainTabView: View {
             authRepository: authRepository
         ),
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
+        newsViewModel: NewsViewModel(newsRepository: FakeNewsRepository(), cache: NewsCacheStore()),
         messagesViewModel: MessagesViewModel(
             discourseRepository: fakeDiscourseRepo,
             authRepository: authRepository

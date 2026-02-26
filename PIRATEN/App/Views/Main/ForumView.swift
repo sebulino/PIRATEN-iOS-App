@@ -35,6 +35,9 @@ struct ForumView: View {
     /// Callback when user taps the home button to navigate to Kajüte
     var onHomeTapped: (() -> Void)?
 
+    /// Callback when user taps the messages button to open Nachrichten
+    var onMessagesTapped: (() -> Void)?
+
     /// The current window for presenting auth session
     @Environment(\.window) private var window: UIWindow?
 
@@ -71,28 +74,48 @@ struct ForumView: View {
             .navigationTitle("Forum")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    PiratenIconButton(
-                        systemName: "house",
-                        accessibilityLabel: "Kajüte"
-                    ) {
-                        onHomeTapped?()
+                    HStack(spacing: 2) {
+                        PiratenIconButton(
+                            systemName: "house",
+                            accessibilityLabel: "Kajüte"
+                        ) {
+                            onHomeTapped?()
+                        }
+                        PiratenIconButton(
+                            systemName: "envelope",
+                            accessibilityLabel: "Nachrichten"
+                        ) {
+                            onMessagesTapped?()
+                        }
                     }
                 }
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    PiratenIconButton(
-                        systemName: notificationsBadge ? "bell.badge" : "bell",
-                        badge: notificationsBadge,
-                        accessibilityLabel: "Benachrichtigungen"
-                    ) {
-                        onNotificationsTapped?()
-                    }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 2) {
+                        PiratenIconButton(
+                            systemName: notificationsBadge ? "bell.badge" : "bell",
+                            badge: notificationsBadge,
+                            accessibilityLabel: "Benachrichtigungen"
+                        ) {
+                            onNotificationsTapped?()
+                        }
 
-                    PiratenIconButton(
-                        systemName: "person.circle",
-                        accessibilityLabel: "Profil"
-                    ) {
-                        onProfileTapped?()
+                        PiratenIconButton(
+                            systemName: "person.circle",
+                            accessibilityLabel: "Profil"
+                        ) {
+                            onProfileTapped?()
+                        }
                     }
+                }
+            }
+            .navigationDestination(for: Topic.self) { topic in
+                if let factory = topicDetailViewModelFactory {
+                    TopicDetailView(
+                        viewModel: factory(topic),
+                        onLoginTapped: onLoginTapped,
+                        userProfileViewModelFactory: userProfileViewModelFactory,
+                        onSendMessageFromProfile: onSendMessageFromProfile
+                    )
                 }
             }
             .onAppear {
@@ -112,15 +135,8 @@ struct ForumView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 ForEach(viewModel.topics) { topic in
-                    if let factory = topicDetailViewModelFactory {
-                        NavigationLink {
-                            TopicDetailView(
-                                viewModel: factory(topic),
-                                onLoginTapped: onLoginTapped,
-                                userProfileViewModelFactory: userProfileViewModelFactory,
-                                onSendMessageFromProfile: onSendMessageFromProfile
-                            )
-                        } label: {
+                    if topicDetailViewModelFactory != nil {
+                        NavigationLink(value: topic) {
                             TopicRow(topic: topic)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .contentShape(Rectangle())
