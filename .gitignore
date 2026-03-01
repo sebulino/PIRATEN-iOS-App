@@ -4,13 +4,12 @@ CLAUDE.md
 /scripts/*
 !/scripts/ralph
 .mcp.json
-.claude 
+.claude/
 
 DerivedData/
 *.xcuserstate
 *.xcuserdata/
 .DS_Store
-
 
 # Secrets configuration (never commit)
 Config/Secrets.xcconfig
