@@ -28,6 +28,8 @@ enum HTMLContentParser {
 
     /// Attempts to parse HTML into an AttributedString using NSAttributedString.
     /// This preserves links and converts them to tappable links in SwiftUI.
+    /// Strips hardcoded foreground colors so SwiftUI's `.foregroundColor(.primary)`
+    /// can take effect, ensuring legibility in both light and dark mode.
     private static func parseHTML(_ html: String) -> AttributedString? {
         // Wrap in basic HTML structure for proper parsing
         let wrappedHTML = """
@@ -58,9 +60,18 @@ enum HTMLContentParser {
             return nil
         }
 
-        // Convert to SwiftUI AttributedString
-        // Links are automatically tappable in SwiftUI Text when using AttributedString
-        return AttributedString(nsAttributedString)
+        // Strip hardcoded foreground colors from non-link text.
+        // NSAttributedString HTML parsing bakes in black text color, which is
+        // invisible on dark backgrounds. By removing foregroundColor from runs
+        // that aren't links, SwiftUI's .foregroundColor(.primary) takes effect.
+        var attributed = AttributedString(nsAttributedString)
+        for run in attributed.runs {
+            let hasLink = run.link != nil
+            if !hasLink {
+                attributed[run.range].uiKit.foregroundColor = nil
+            }
+        }
+        return attributed
     }
 
     /// Strips HTML tags from content, preserving only plain text.
