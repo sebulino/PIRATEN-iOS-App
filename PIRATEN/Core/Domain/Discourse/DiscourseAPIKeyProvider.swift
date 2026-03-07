@@ -18,4 +18,8 @@ protocol DiscourseAPIKeyProvider: Sendable {
     /// Checks if a valid credential exists.
     /// - Returns: true if a credential is stored, false otherwise
     func hasValidCredential() -> Bool
+
+    /// Clears the stored credential.
+    /// Called when the server rejects the API key (401/403), indicating the key was revoked.
+    func clearCredential()
 }

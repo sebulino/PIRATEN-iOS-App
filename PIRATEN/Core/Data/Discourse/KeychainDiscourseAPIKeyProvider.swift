@@ -44,4 +44,8 @@ final class KeychainDiscourseAPIKeyProvider: DiscourseAPIKeyProvider, @unchecked
     func hasValidCredential() -> Bool {
         return credentialStore.contains(key: DiscourseAuthManager.discourseCredentialKey)
     }
+
+    func clearCredential() {
+        try? credentialStore.delete(forKey: DiscourseAuthManager.discourseCredentialKey)
+    }
 }

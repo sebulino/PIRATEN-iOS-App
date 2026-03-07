@@ -9,6 +9,10 @@ import SwiftUI
 
 struct MessagesView: View {
     @ObservedObject var viewModel: MessagesViewModel
+    @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
+
+    /// The current window for presenting auth session
+    @Environment(\.window) private var window: UIWindow?
 
     /// Optional callback for when user taps login button in unauthenticated state
     var onLoginTapped: (() -> Void)?
@@ -190,22 +194,57 @@ struct MessagesView: View {
     @ViewBuilder
     private var notAuthenticatedState: some View {
         VStack(spacing: 16) {
-            Image(systemName: "person.crop.circle.badge.questionmark")
-                .font(.system(size: 48))
-                .foregroundStyle(.blue)
-                .accessibilityHidden(true)
-            Text("Anmeldung erforderlich")
-                .font(.headline)
-            Text("Bitte melde dich an, um deine Nachrichten zu sehen.")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-            Button("Anmelden") {
-                onLoginTapped?()
+            switch discourseAuthCoordinator.authState {
+            case .idle, .failed:
+                Image(systemName: "envelope.badge.person.crop")
+                    .font(.system(size: 48))
+                    .foregroundStyle(Color.piratenPrimary)
+                    .accessibilityHidden(true)
+                Text("Nachrichten verbinden")
+                    .font(.headline)
+                Text("Um Nachrichten zu lesen und zu senden, muss die App mit dem Discourse-Forum verbunden werden.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+
+                if case .failed(let message) = discourseAuthCoordinator.authState {
+                    Text(message)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                }
+
+                Button {
+                    Task {
+                        await discourseAuthCoordinator.authenticate(from: window)
+                    }
+                } label: {
+                    Label("Mit Forum verbinden", systemImage: "link")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!discourseAuthCoordinator.isAuthAvailable)
+
+            case .authenticating:
+                ProgressView()
+                    .scaleEffect(1.5)
+                Text("Verbinde mit Forum...")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
+            case .authenticated:
+                ProgressView()
+                Text("Verbunden! Lade Nachrichten...")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
             }
-            .buttonStyle(.borderedProminent)
         }
         .padding()
+        .onChange(of: discourseAuthCoordinator.authState) { oldState, newState in
+            if newState == .authenticated {
+                discourseAuthCoordinator.reset()
+                viewModel.loadMessages()
+            }
+        }
     }
 
     @ViewBuilder
@@ -321,11 +360,17 @@ private struct MessageThreadRow: View {
     let credentialStore = KeychainCredentialStore()
     let fakeDiscourseRepo = FakeDiscourseRepository()
     let fakeAuthRepo = FakeAuthRepository(credentialStore: credentialStore)
+    let discourseAPIKeyProvider = KeychainDiscourseAPIKeyProvider(credentialStore: credentialStore)
 
     MessagesView(
         viewModel: MessagesViewModel(
             discourseRepository: fakeDiscourseRepo,
             authRepository: fakeAuthRepo
+        ),
+        discourseAuthCoordinator: DiscourseAuthCoordinator(
+            discourseAuthManager: nil,
+            discourseAPIKeyProvider: discourseAPIKeyProvider,
+            credentialStore: credentialStore
         ),
         messageThreadDetailViewModelFactory: { thread in
             MessageThreadDetailViewModel(thread: thread, discourseRepository: fakeDiscourseRepo)

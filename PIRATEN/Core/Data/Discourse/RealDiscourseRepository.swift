@@ -340,7 +340,7 @@ final class RealDiscourseRepository: DiscourseRepository {
         case .unauthorized:
             return .notAuthenticated
         case .forbidden:
-            return .authenticationFailed(message: error.localizedDescription)
+            return .notAuthenticated
         case .notFound, .rateLimited, .serverError, .networkError, .decodingError, .cancelled, .unknown:
             return .loadFailed(message: error.localizedDescription)
         }

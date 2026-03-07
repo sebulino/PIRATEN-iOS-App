@@ -287,6 +287,7 @@ struct MainTabView: View {
             NavigationStack {
                 MessagesView(
                     viewModel: messagesViewModel,
+                    discourseAuthCoordinator: discourseAuthCoordinator,
                     messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
                     userProfileViewModelFactory: userProfileViewModelFactory,
                     onSendMessageFromProfile: { profile in
