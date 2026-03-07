@@ -184,6 +184,7 @@ struct MainTabView: View {
                             viewModel: homeViewModel,
                             topicDetailViewModelFactory: topicDetailViewModelFactory,
                             knowledgeTopicDetailViewModelFactory: knowledgeTopicDetailViewModelFactory,
+                            todoDetailViewModelFactory: todoDetailViewModelFactory,
                             userProfileViewModelFactory: userProfileViewModelFactory,
                             onSendMessageFromProfile: { profile in
                                 handleSendMessageFromProfile(profile)
@@ -427,7 +428,8 @@ struct MainTabView: View {
             discourseRepository: fakeDiscourseRepo,
             knowledgeRepository: fakeKnowledgeRepo,
             readingProgressStorage: progressStore,
-            authRepository: authRepository
+            authRepository: authRepository,
+            todoRepository: FakeTodoRepository()
         ),
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
         newsViewModel: NewsViewModel(newsRepository: FakeNewsRepository(), cache: NewsCacheStore()),

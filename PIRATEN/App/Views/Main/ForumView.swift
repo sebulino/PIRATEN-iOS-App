@@ -285,16 +285,45 @@ private struct TopicRow: View {
     let topic: Topic
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(topic.title)
-                .font(.headline)
-                .lineLimit(2)
+        HStack(alignment: .top, spacing: 10) {
+            // Author avatar
+            if let avatarUrl = topic.createdBy.avatarUrl {
+                AsyncImage(url: avatarUrl) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Image(systemName: "person.circle.fill")
+                        .resizable()
+                        .foregroundColor(.secondary)
+                }
+                .frame(width: 36, height: 36)
+                .clipShape(Circle())
+            } else {
+                Image(systemName: "person.circle.fill")
+                    .resizable()
+                    .foregroundColor(.secondary)
+                    .frame(width: 36, height: 36)
+            }
 
-            HStack {
-                // Author name
-                Text(topic.createdBy.displayName ?? topic.createdBy.username)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    if topic.isClosed {
+                        Image(systemName: "lock.fill")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel("Geschlossen")
+                    }
+                    Text(topic.title)
+                        .font(.headline)
+                        .lineLimit(2)
+                }
+
+                HStack {
+                    // Author name
+                    Text(topic.createdBy.displayName ?? topic.createdBy.username)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
 
                 Spacer()
 
@@ -319,10 +348,11 @@ private struct TopicRow: View {
                     .accessibilityLabel("\(topic.viewCount) Aufrufe")
             }
 
-            // Time ago
-            Text(topic.createdAt, style: .relative)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+                // Time ago
+                Text(topic.createdAt, style: .relative)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)

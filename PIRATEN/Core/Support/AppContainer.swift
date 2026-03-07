@@ -387,7 +387,8 @@ final class AppContainer {
             discourseRepository: discourseRepository,
             knowledgeRepository: realKnowledgeRepository,
             readingProgressStorage: readingProgressStore,
-            authRepository: authRepository
+            authRepository: authRepository,
+            todoRepository: todoRepository
         )
         self.profileViewModel = ProfileViewModel(authRepository: authRepository, discourseRepository: discourseRepository)
     }
@@ -468,7 +469,8 @@ final class AppContainer {
             discourseRepository: self.discourseRepository,
             knowledgeRepository: self.knowledgeRepository,
             readingProgressStorage: readingProgressStore,
-            authRepository: self.authRepository
+            authRepository: self.authRepository,
+            todoRepository: self.todoRepository
         )
         self.profileViewModel = ProfileViewModel(authRepository: self.authRepository, discourseRepository: self.discourseRepository)
     }

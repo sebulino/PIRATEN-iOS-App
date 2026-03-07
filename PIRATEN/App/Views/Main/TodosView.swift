@@ -203,32 +203,51 @@ struct TodosView: View {
 /// Row view for displaying a single todo in the list.
 struct TodoRow: View {
     let todo: Todo
+    var categoryName: String?
+    var entityName: String?
+    var hideStatus: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Image(systemName: statusIcon)
-                    .foregroundStyle(statusColor)
-                    .font(.title3)
-                    .accessibilityHidden(true)
+                if !hideStatus {
+                    Image(systemName: statusIcon)
+                        .foregroundStyle(statusColor)
+                        .font(.title3)
+                        .accessibilityHidden(true)
+                }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(todo.title)
-                        .font(.headline)
+                        .font(hideStatus ? .subheadline : .headline)
+                        .fontWeight(hideStatus ? .medium : .regular)
                         .lineLimit(2)
                         .strikethrough(todo.status == .done)
                         .foregroundStyle(todo.status == .done ? .secondary : .primary)
-
-                    if let creatorName = todo.creatorName {
-                        Text(creatorName)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
                 }
 
                 Spacer()
 
-                statusBadge
+                if !hideStatus {
+                    statusBadge
+                }
+            }
+
+            // Metadata row: category, entity, time needed
+            if categoryName != nil || entityName != nil || todo.timeNeededInHours != nil {
+                HStack(spacing: 12) {
+                    if let name = categoryName {
+                        Label(name, systemImage: "tag")
+                    }
+                    if let name = entityName {
+                        Label(name, systemImage: "building.2")
+                    }
+                    if let hours = todo.timeNeededInHours {
+                        Label("\(hours) Std.", systemImage: "clock")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
 
             if let dueDate = todo.dueDate {

@@ -279,6 +279,9 @@ struct DiscoursePostDTO: Decodable {
     /// The post number this post is replying to (nil if top-level post)
     let replyToPostNumber: Int?
 
+    /// Whether the post was deleted by the author
+    let userDeleted: Bool?
+
     enum CodingKeys: String, CodingKey {
         case id
         case topicId = "topic_id"
@@ -293,11 +296,15 @@ struct DiscoursePostDTO: Decodable {
         case likeCount = "like_count"
         case actionsSummary = "actions_summary"
         case replyToPostNumber = "reply_to_post_number"
+        case userDeleted = "user_deleted"
     }
 
     /// Converts this DTO to a Domain Post model.
-    /// - Returns: A Domain Post, or nil if conversion fails
+    /// - Returns: A Domain Post, or nil if conversion fails (or if deleted by author)
     func toDomainModel() -> Post? {
+        // Skip posts deleted by the author
+        if userDeleted == true { return nil }
+
         // Parse the ISO 8601 date
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
