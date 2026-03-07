@@ -28,7 +28,8 @@ struct HomeViewModelTests {
             readingProgressStorage: ReadingProgressStore(
                 userDefaults: UserDefaults(suiteName: "test-home-\(UUID().uuidString)")!
             ),
-            authRepository: auth
+            authRepository: auth,
+            todoRepository: FakeTodoRepository()
         )
     }
 

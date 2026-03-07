@@ -33,10 +33,10 @@ final class RealDiscourseRepository: DiscourseRepository {
             let data = try await apiClient.fetchLatest()
             let response = try decodeLatestResponse(from: data)
 
-            // Map DTOs to domain models
+            // Map DTOs to domain models, filtering out deleted/invisible topics
             let topics = response.topicList.topics.compactMap { dto in
                 dto.toDomainModel(users: response.users)
-            }
+            }.filter { $0.isVisible }
 
             return topics
         } catch let error as DiscourseError {
@@ -340,7 +340,7 @@ final class RealDiscourseRepository: DiscourseRepository {
         case .unauthorized:
             return .notAuthenticated
         case .forbidden:
-            return .authenticationFailed(message: error.localizedDescription)
+            return .notAuthenticated
         case .notFound, .rateLimited, .serverError, .networkError, .decodingError, .cancelled, .unknown:
             return .loadFailed(message: error.localizedDescription)
         }

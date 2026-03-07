@@ -16,6 +16,9 @@ struct HomeView: View {
     /// Factory for creating KnowledgeTopicDetailViewModels
     var knowledgeTopicDetailViewModelFactory: ((KnowledgeTopic) -> KnowledgeTopicDetailViewModel)?
 
+    /// Factory for creating TodoDetailViewModels
+    var todoDetailViewModelFactory: ((Todo) -> TodoDetailViewModel)?
+
     /// Factory for creating UserProfileViewModels
     var userProfileViewModelFactory: ((String) -> UserProfileViewModel)?
 
@@ -119,13 +122,40 @@ struct HomeView: View {
     private var dashboardContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                // Greeting
+                if let firstName = viewModel.userFirstName {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Ahoi \(firstName)!")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.orange)
+
+                        if viewModel.unreadMessageCount == 0 {
+                            Text("Du hast keine neuen Nachrichten.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        } else if viewModel.unreadMessageCount == 1 {
+                            Text("Du hast eine neue Nachricht.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("Du hast \(viewModel.unreadMessageCount) neue Nachrichten.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
                 // Section 1: Recent Contacts
                 recentContactsSection
 
                 // Section 2: Knowledge Articles
                 knowledgeSection
 
-                // Section 3: Recent Forum Topics
+                // Section 3: Claimed Todos
+                claimedTodosSection
+
+                // Section 4: Recent Forum Topics
                 recentTopicsSection
             }
             .padding(.horizontal, 16)
@@ -142,7 +172,9 @@ struct HomeView: View {
     private var recentContactsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Letzte Kontakte")
-                .font(.headline)
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(.orange)
 
             if viewModel.recentContacts.isEmpty {
                 Text("Noch keine Nachrichten")
@@ -202,7 +234,9 @@ struct HomeView: View {
     private var knowledgeSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Weiterlesen")
-                .font(.headline)
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(.orange)
 
             if viewModel.knowledgeArticles.isEmpty {
                 Text("Entdecke den Wissensbereich")
@@ -247,13 +281,60 @@ struct HomeView: View {
         .padding(.vertical, 6)
     }
 
-    // MARK: - Section 3: Recent Forum Topics
+    // MARK: - Section 3: Claimed Todos
+
+    @ViewBuilder
+    private var claimedTodosSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Meine Aufgaben")
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(.orange)
+
+            if viewModel.claimedTodos.isEmpty {
+                Text("Du hast aktuell keine übernommenen ToDos.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 8)
+            } else {
+                ForEach(viewModel.claimedTodos) { todo in
+                    if let factory = todoDetailViewModelFactory {
+                        NavigationLink {
+                            TodoDetailView(viewModel: factory(todo))
+                        } label: {
+                            TodoRow(
+                                todo: todo,
+                                categoryName: viewModel.categoryName(for: todo),
+                                entityName: viewModel.entityName(for: todo),
+                                hideStatus: true
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        TodoRow(
+                            todo: todo,
+                            categoryName: viewModel.categoryName(for: todo),
+                            entityName: viewModel.entityName(for: todo),
+                            hideStatus: true
+                        )
+                    }
+                    if todo.id != viewModel.claimedTodos.last?.id {
+                        Divider()
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Section 4: Recent Forum Topics
 
     @ViewBuilder
     private var recentTopicsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Aktuelle Themen")
-                .font(.headline)
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(.orange)
 
             if viewModel.recentTopics.isEmpty {
                 Text("Keine Themen verfügbar")
@@ -334,7 +415,8 @@ private struct SelectedUsername: Identifiable {
             discourseRepository: fakeDiscourseRepo,
             knowledgeRepository: fakeKnowledgeRepo,
             readingProgressStorage: progressStore,
-            authRepository: authRepository
+            authRepository: authRepository,
+            todoRepository: FakeTodoRepository()
         )
     )
 }

@@ -52,14 +52,20 @@ struct TodoDetailView: View {
                         }
                     }
 
-                    LabeledContent("Erstellt") {
-                        Text(viewModel.todo.createdAt, style: .date)
+                    if let categoryName = viewModel.categoryName {
+                        LabeledContent("Kategorie") {
+                            Text(categoryName)
+                        }
                     }
 
-                    if let creatorName = viewModel.todo.creatorName {
-                        LabeledContent("Erstellt von") {
-                            Text(creatorName)
+                    if let entityName = viewModel.entityName {
+                        LabeledContent("Gliederung") {
+                            Text(entityName)
                         }
+                    }
+
+                    LabeledContent("Erstellt") {
+                        Text(viewModel.todo.createdAt, style: .date)
                     }
 
                     if viewModel.todo.urgent {
@@ -149,6 +155,7 @@ struct TodoDetailView: View {
         }
         .onAppear {
             viewModel.loadComments()
+            viewModel.loadReferenceData()
         }
     }
 

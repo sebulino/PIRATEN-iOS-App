@@ -57,6 +57,14 @@ final class DiscourseHTTPClient: HTTPClient, @unchecked Sendable {
             body: request.body
         )
 
-        return try await baseClient.execute(authenticatedRequest)
+        let response = try await baseClient.execute(authenticatedRequest)
+
+        // If the server rejects the API key (revoked by admin), clear the stored credential
+        // so the app falls back to the .notAuthenticated state for re-auth
+        if response.statusCode == 401 || response.statusCode == 403 {
+            apiKeyProvider.clearCredential()
+        }
+
+        return response
     }
 }

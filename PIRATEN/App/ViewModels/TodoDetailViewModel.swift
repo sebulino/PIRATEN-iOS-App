@@ -22,6 +22,8 @@ final class TodoDetailViewModel: ObservableObject {
     @Published private(set) var isLoadingComments: Bool = false
     @Published var commentText: String = ""
     @Published private(set) var isSendingComment: Bool = false
+    @Published private(set) var categoryName: String?
+    @Published private(set) var entityName: String?
 
     // MARK: - Dependencies
 
@@ -65,6 +67,18 @@ final class TodoDetailViewModel: ObservableObject {
     func unclaim() {
         performAction { [self] in
             try await todoRepository.unclaimTodo(id: todo.id)
+        }
+    }
+
+    // MARK: - Reference Data
+
+    /// Loads category and entity names for display.
+    func loadReferenceData() {
+        Task {
+            let categories = await todoRepository.fetchCategories()
+            let entities = await todoRepository.fetchEntities()
+            self.categoryName = categories.first { $0.id == todo.categoryId }?.name
+            self.entityName = entities.first { $0.id == todo.entityId }?.name
         }
     }
 

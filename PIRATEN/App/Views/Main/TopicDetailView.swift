@@ -147,6 +147,24 @@ struct TopicDetailView: View {
                     Divider()
                         .padding(.leading, 16)
                 }
+
+                // Closed topic indicator
+                if viewModel.topic.isClosed {
+                    HStack {
+                        Spacer()
+                        VStack(spacing: 6) {
+                            Image(systemName: "lock.fill")
+                                .font(.title2)
+                                .foregroundStyle(.secondary)
+                            Text("Dieses Thema ist geschlossen.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                    }
+                    .padding(.vertical, 20)
+                    .padding(.horizontal, 16)
+                }
             }
         }
     }
@@ -258,6 +276,9 @@ private struct PostRow: View {
     /// (spawns WebKit parser). Computed once via .task(id:) instead of on every render.
     @State private var parsedContent: AttributedString?
 
+    /// Image URLs extracted from the post HTML
+    @State private var imageURLs: [URL] = []
+
     /// Whether the content needs truncation (cached alongside parsed content)
     @State private var needsTruncation = false
 
@@ -299,6 +320,25 @@ private struct PostRow: View {
                     .foregroundColor(.primary)
             }
 
+            // Inline images from the post
+            ForEach(imageURLs, id: \.absoluteString) { url in
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxWidth: .infinity)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    case .failure:
+                        EmptyView()
+                    default:
+                        ProgressView()
+                            .frame(maxWidth: .infinity, minHeight: 100)
+                    }
+                }
+            }
+
             // Expand/collapse button (only shown if content is long enough)
             if needsTruncation {
                 Button {
@@ -337,11 +377,14 @@ private struct PostRow: View {
                 Button {
                     onLikeTapped?()
                 } label: {
-                    Label(
-                        post.likeCount > 0 ? "\(post.likeCount)" : "",
-                        systemImage: post.likedByCurrentUser ? "heart.fill" : "heart"
-                    )
-                    .font(.caption)
+                    HStack(spacing: 4) {
+                        Image(systemName: post.likedByCurrentUser ? "heart.fill" : "heart")
+                            .font(.title3)
+                        if post.likeCount > 0 {
+                            Text("\(post.likeCount)")
+                                .font(.subheadline)
+                        }
+                    }
                     .foregroundStyle(post.likedByCurrentUser ? Color.piratenPrimary : Color.secondary)
                     .accessibilityLabel(post.likedByCurrentUser ? "Gefällt mir entfernen" : "Gefällt mir")
                 }
@@ -352,9 +395,13 @@ private struct PostRow: View {
                     Button {
                         onReplyTapped()
                     } label: {
-                        Label("Antworten", systemImage: "arrowshape.turn.up.left")
-                            .font(.caption)
-                            .foregroundStyle(.blue)
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrowshape.turn.up.left")
+                                .font(.title3)
+                            Text("Antworten")
+                                .font(.subheadline)
+                        }
+                        .foregroundStyle(.blue)
                     }
                     .buttonStyle(.plain)
                 }
@@ -368,6 +415,7 @@ private struct PostRow: View {
             let content = HTMLContentParser.parseToAttributedString(post.content)
             let plainText = HTMLContentParser.stripHTML(from: post.content)
             parsedContent = content
+            imageURLs = HTMLContentParser.extractImageURLs(from: post.content)
             needsTruncation = plainText.count > 300
         }
     }

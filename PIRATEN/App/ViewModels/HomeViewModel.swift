@@ -26,8 +26,14 @@ final class HomeViewModel: ObservableObject {
 
     @Published private(set) var loadState: HomeLoadState = .idle
 
+    /// First name of the current user for the greeting
+    @Published private(set) var userFirstName: String?
+
     /// Recent contacts extracted from message thread participants
     @Published private(set) var recentContacts: [UserSummary] = []
+
+    /// Number of unread private message threads
+    @Published private(set) var unreadMessageCount: Int = 0
 
 
     /// Knowledge articles to continue reading or discover
@@ -36,12 +42,30 @@ final class HomeViewModel: ObservableObject {
     /// Recent forum topics
     @Published private(set) var recentTopics: [Topic] = []
 
+    /// Todos claimed by the current user
+    @Published private(set) var claimedTodos: [Todo] = []
+
+    /// Lookup dictionaries for todo reference data
+    private(set) var categoriesById: [Int: String] = [:]
+    private(set) var entitiesById: [Int: String] = [:]
+
+    /// Resolves the category name for a todo
+    func categoryName(for todo: Todo) -> String? {
+        categoriesById[todo.categoryId]
+    }
+
+    /// Resolves the entity name for a todo
+    func entityName(for todo: Todo) -> String? {
+        entitiesById[todo.entityId]
+    }
+
     // MARK: - Dependencies
 
     private let discourseRepository: DiscourseRepository
     private let knowledgeRepository: KnowledgeRepository
     private let readingProgressStorage: ReadingProgressStorage
     private let authRepository: AuthRepository
+    private let todoRepository: TodoRepository
 
     // MARK: - Initialization
 
@@ -49,12 +73,14 @@ final class HomeViewModel: ObservableObject {
         discourseRepository: DiscourseRepository,
         knowledgeRepository: KnowledgeRepository,
         readingProgressStorage: ReadingProgressStorage,
-        authRepository: AuthRepository
+        authRepository: AuthRepository,
+        todoRepository: TodoRepository
     ) {
         self.discourseRepository = discourseRepository
         self.knowledgeRepository = knowledgeRepository
         self.readingProgressStorage = readingProgressStorage
         self.authRepository = authRepository
+        self.todoRepository = todoRepository
     }
 
     // MARK: - Public Methods
@@ -65,17 +91,34 @@ final class HomeViewModel: ObservableObject {
         loadState = .loading
 
         Task {
+            // Load user's first name for greeting
+            // SSO may return "none" as displayName — fall back to Discourse profile
+            if let user = await authRepository.getCurrentUser() {
+                let resolvedName: String
+                if user.displayName.lowercased().contains("none"),
+                   let profile = try? await discourseRepository.fetchUserProfile(username: user.username) {
+                    resolvedName = profile.displayText
+                } else {
+                    resolvedName = user.displayName
+                }
+                self.userFirstName = resolvedName.components(separatedBy: " ").first
+            }
+
             async let contactsResult = loadRecentContacts()
             async let articlesResult = loadKnowledgeArticles()
             async let topicsResult = loadRecentTopics()
+            async let todosResult = loadClaimedTodos()
 
-            let contacts = await contactsResult
+            let contactsData = await contactsResult
             let articles = await articlesResult
             let topics = await topicsResult
+            let todos = await todosResult
 
-            self.recentContacts = contacts
+            self.recentContacts = contactsData.contacts
+            self.unreadMessageCount = contactsData.unreadCount
             self.knowledgeArticles = articles
             self.recentTopics = topics
+            self.claimedTodos = todos
             self.loadState = .loaded
         }
     }
@@ -87,11 +130,11 @@ final class HomeViewModel: ObservableObject {
 
     // MARK: - Private Section Loaders
 
-    /// Loads recent contacts from message threads.
+    /// Loads recent contacts and unread message count from message threads.
     /// Extracts unique participants from the most recent threads.
-    private func loadRecentContacts() async -> [UserSummary] {
+    private func loadRecentContacts() async -> (contacts: [UserSummary], unreadCount: Int) {
         guard let currentUser = await authRepository.getCurrentUser() else {
-            return []
+            return ([], 0)
         }
 
         do {
@@ -110,9 +153,10 @@ final class HomeViewModel: ObservableObject {
                 if contacts.count >= 10 { break }
             }
 
-            return contacts
+            let unreadCount = threads.filter { !$0.isRead }.count
+            return (contacts, unreadCount)
         } catch {
-            return []
+            return ([], 0)
         }
     }
 
@@ -141,6 +185,24 @@ final class HomeViewModel: ObservableObject {
             }
 
             return Array(articles.prefix(3))
+        } catch {
+            return []
+        }
+    }
+
+    /// Loads todos claimed by the current user, along with reference data.
+    private func loadClaimedTodos() async -> [Todo] {
+        do {
+            let todos = try await todoRepository.fetchTodos()
+            let claimed = todos.filter { $0.status == .claimed }
+
+            // Load reference data for name resolution
+            let categories = await todoRepository.fetchCategories()
+            let entities = await todoRepository.fetchEntities()
+            self.categoriesById = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0.name) })
+            self.entitiesById = Dictionary(uniqueKeysWithValues: entities.map { ($0.id, $0.name) })
+
+            return claimed
         } catch {
             return []
         }
