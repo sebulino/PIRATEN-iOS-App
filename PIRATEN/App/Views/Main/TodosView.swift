@@ -218,13 +218,6 @@ struct TodoRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                if !hideStatus {
-                    Image(systemName: statusIcon)
-                        .foregroundStyle(statusColor)
-                        .font(.title3)
-                        .accessibilityHidden(true)
-                }
-
                 VStack(alignment: .leading, spacing: 2) {
                     Text(todo.title)
                         .font(hideStatus ? .subheadline : .headline)
@@ -266,19 +259,6 @@ struct TodoRow: View {
             }
         }
         .padding(.vertical, 4)
-    }
-
-    private var statusIcon: String {
-        switch todo.status {
-        case .done:
-            return "checkmark.circle.fill"
-        case .completed:
-            return "checkmark.circle"
-        case .claimed:
-            return "person.circle"
-        case .open:
-            return todo.urgent ? "exclamationmark.circle" : "circle"
-        }
     }
 
     private var statusColor: Color {
