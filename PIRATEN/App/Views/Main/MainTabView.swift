@@ -288,7 +288,7 @@ struct MainTabView: View {
         }) {
             NotificationsSheetView()
         }
-        .tint(deepLinkRouter.selectedTab == 0 ? Color(.tertiaryLabel) : Color.piratenPrimary)
+        .tint(Color.piratenPrimary)
         .onAppear {
             configureNavigationBarAppearance()
             configureTabBarAppearance()
