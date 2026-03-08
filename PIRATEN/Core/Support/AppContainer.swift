@@ -133,6 +133,9 @@ final class AppContainer {
     /// Stores device tokens locally (non-sensitive data).
     let deviceTokenManager: DeviceTokenManager
 
+    /// Push notification registration service for syncing token + preferences to backend.
+    let pushRegistrationService: PushNotificationRegistrationService
+
     /// Notification settings manager for push notification preferences.
     /// Privacy-first: all notifications are opt-in (default off).
     let notificationSettingsManager: NotificationSettingsManager
@@ -265,7 +268,13 @@ final class AppContainer {
 
         // Push notification layer
         self.deviceTokenManager = DeviceTokenManager()
-        self.notificationSettingsManager = NotificationSettingsManager(deviceTokenManager: deviceTokenManager)
+        // TODO: Replace FakePushNotificationRegistrationService with BackendPushNotificationRegistrationService
+        // once the backend endpoint is confirmed (see Docs/OPEN_QUESTIONS.md Q-014).
+        self.pushRegistrationService = FakePushNotificationRegistrationService()
+        self.notificationSettingsManager = NotificationSettingsManager(
+            deviceTokenManager: deviceTokenManager,
+            registrationService: pushRegistrationService
+        )
         self.deepLinkRouter = DeepLinkRouter()
 
         // Presentation layer - auth state manager first (needed for HTTP client)
@@ -310,7 +319,8 @@ final class AppContainer {
         // Discourse API client and repository
         let discourseAPIClient = DiscourseAPIClient(
             httpClient: discourseHTTPClient,
-            baseURL: Self.discourseBaseURL
+            baseURL: Self.discourseBaseURL,
+            apiKeyProvider: discourseAPIKeyProvider
         )
         self.discourseRepository = RealDiscourseRepository(apiClient: discourseAPIClient)
 
@@ -446,7 +456,11 @@ final class AppContainer {
 
         // Push notification layer (testing)
         self.deviceTokenManager = DeviceTokenManager()
-        self.notificationSettingsManager = NotificationSettingsManager(deviceTokenManager: deviceTokenManager)
+        self.pushRegistrationService = FakePushNotificationRegistrationService()
+        self.notificationSettingsManager = NotificationSettingsManager(
+            deviceTokenManager: deviceTokenManager,
+            registrationService: pushRegistrationService
+        )
         self.deepLinkRouter = DeepLinkRouter()
 
         self.authStateManager = AuthStateManager(

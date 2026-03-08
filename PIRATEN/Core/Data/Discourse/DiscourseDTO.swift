@@ -589,6 +589,27 @@ struct DiscourseUserProfileResponse: Decodable {
 /// A full user profile from the Discourse API.
 /// Maps to the Domain UserProfile model via toDomainModel().
 ///
+/// Root response from Discourse GET /u/{username}/summary.json endpoint.
+/// Contains likes_given and likes_received stats.
+struct DiscourseUserSummaryResponse: Decodable {
+    let userSummary: DiscourseUserSummaryDTO
+
+    enum CodingKeys: String, CodingKey {
+        case userSummary = "user_summary"
+    }
+}
+
+/// User summary stats from the Discourse API.
+struct DiscourseUserSummaryDTO: Decodable {
+    let likesGiven: Int?
+    let likesReceived: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case likesGiven = "likes_given"
+        case likesReceived = "likes_received"
+    }
+}
+
 /// Note: Some stats fields (post_count, like_count, likes_received) may not be
 /// available for non-staff users. These are optional with defaults of 0.
 struct DiscourseUserProfileDTO: Decodable {

@@ -105,8 +105,17 @@ struct ProfileView: View {
                 )
             }
 
-            // Party membership section (SSO)
-            Section("Mitgliedschaft") {
+            // Party membership section (SSO) — only shown if at least one field is available
+            if user.memberNumber != nil || user.memberSince != nil || user.localGroupName != nil || user.stateAssociationName != nil {
+                Section("Mitgliedschaft") {
+                if let memberNumber = user.memberNumber {
+                    ProfileRow(
+                        icon: "number",
+                        label: "Mitgliedsnummer",
+                        value: memberNumber
+                    )
+                }
+
                 if let memberSince = user.memberSince {
                     ProfileRow(
                         icon: "calendar",
@@ -130,7 +139,8 @@ struct ProfileView: View {
                         value: stateAssociation
                     )
                 }
-            }
+                } // Section
+            } // if any membership field
 
             // Discourse stats section
             if let profile = viewModel.discourseProfile {
@@ -277,6 +287,21 @@ struct ProfileView: View {
                 }
             }
 
+            // Forum toggle
+            Toggle(isOn: $notificationSettings.forumEnabled) {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Forum")
+                        Text("Bei neuen Forenbeiträgen")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "bubble.left.and.bubble.right.fill")
+                        .foregroundColor(.piratenPrimary)
+                }
+            }
+
             // Todos toggle
             Toggle(isOn: $notificationSettings.todosEnabled) {
                 Label {
@@ -352,6 +377,9 @@ private struct ProfileRow: View {
             authRepository: FakeAuthRepository(credentialStore: KeychainCredentialStore()),
             discourseRepository: FakeDiscourseRepository()
         ),
-        notificationSettings: NotificationSettingsManager(deviceTokenManager: deviceTokenManager)
+        notificationSettings: NotificationSettingsManager(
+            deviceTokenManager: deviceTokenManager,
+            registrationService: FakePushNotificationRegistrationService()
+        )
     )
 }

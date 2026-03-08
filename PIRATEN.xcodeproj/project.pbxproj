@@ -31,9 +31,6 @@
 		0FE526D12F2BD101002C9449 /* PIRATEN.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PIRATEN.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FE526E02F2BD108002C9449 /* PIRATENTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PIRATENTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FE526EA2F2BD108002C9449 /* PIRATENUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PIRATENUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		0FE527002F2BD200002C9449 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
-		0FE527012F2BD200002C9449 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
-		0FE527022F2BD200002C9449 /* Secrets.sample.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.sample.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -117,9 +114,6 @@
 		0FE526FF2F2BD200002C9449 /* Config */ = {
 			isa = PBXGroup;
 			children = (
-				0FE527002F2BD200002C9449 /* Debug.xcconfig */,
-				0FE527012F2BD200002C9449 /* Release.xcconfig */,
-				0FE527022F2BD200002C9449 /* Secrets.sample.xcconfig */,
 			);
 			path = Config;
 			sourceTree = SOURCE_ROOT;
@@ -272,7 +266,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-			);
+);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		0FE526DC2F2BD108002C9449 /* Sources */ = {
@@ -307,7 +301,6 @@
 /* Begin XCBuildConfiguration section */
 		0FE526F22F2BD108002C9449 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0FE527002F2BD200002C9449 /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -373,7 +366,6 @@
 		};
 		0FE526F32F2BD108002C9449 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0FE527012F2BD200002C9449 /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;

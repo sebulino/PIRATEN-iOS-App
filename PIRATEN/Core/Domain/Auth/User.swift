@@ -37,4 +37,7 @@ struct User: Identifiable, Equatable {
 
     /// Name of the state association (e.g., "Landesverband Bayern")
     let stateAssociationName: String?
+
+    /// Party membership number (from Keycloak custom claim)
+    let memberNumber: String?
 }
