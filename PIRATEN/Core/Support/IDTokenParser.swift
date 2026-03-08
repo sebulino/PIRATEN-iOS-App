@@ -24,6 +24,9 @@ struct IDTokenClaims: Equatable {
 
     /// Whether email has been verified
     let emailVerified: Bool?
+
+    /// Party membership number (custom Keycloak claim)
+    let memberNumber: String?
 }
 
 /// Parses OIDC ID tokens (JWTs) to extract user claims.
@@ -72,13 +75,15 @@ enum IDTokenParser {
         let name = json["name"] as? String
         let email = json["email"] as? String
         let emailVerified = json["email_verified"] as? Bool
+        let memberNumber = json["member_number"] as? String
 
         return IDTokenClaims(
             sub: sub,
             preferredUsername: preferredUsername,
             name: name,
             email: email,
-            emailVerified: emailVerified
+            emailVerified: emailVerified,
+            memberNumber: memberNumber
         )
     }
 

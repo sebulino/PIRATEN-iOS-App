@@ -50,6 +50,20 @@ final class TodosViewModel: ObservableObject {
         return nil
     }
 
+    /// Lookup dictionaries for todo reference data
+    private(set) var categoriesById: [Int: String] = [:]
+    private(set) var entitiesById: [Int: String] = [:]
+
+    /// Resolves the category name for a todo
+    func categoryName(for todo: Todo) -> String? {
+        categoriesById[todo.categoryId]
+    }
+
+    /// Resolves the entity name (Gliederung) for a todo
+    func entityName(for todo: Todo) -> String? {
+        entitiesById[todo.entityId]
+    }
+
     // MARK: - Dependencies
 
     private let todoRepository: TodoRepository
@@ -72,6 +86,12 @@ final class TodosViewModel: ObservableObject {
         Task {
             do {
                 let fetchedTodos = try await todoRepository.fetchTodos()
+
+                let categories = await todoRepository.fetchCategories()
+                let entities = await todoRepository.fetchEntities()
+                self.categoriesById = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0.name) })
+                self.entitiesById = Dictionary(uniqueKeysWithValues: entities.map { ($0.id, $0.name) })
+
                 self.todos = fetchedTodos
                 self.loadState = .loaded
             } catch {

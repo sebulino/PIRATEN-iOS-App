@@ -192,10 +192,18 @@ struct TodosView: View {
             NavigationLink {
                 TodoDetailView(viewModel: factory(todo))
             } label: {
-                TodoRow(todo: todo)
+                TodoRow(
+                    todo: todo,
+                    categoryName: viewModel.categoryName(for: todo),
+                    entityName: viewModel.entityName(for: todo)
+                )
             }
         } else {
-            TodoRow(todo: todo)
+            TodoRow(
+                todo: todo,
+                categoryName: viewModel.categoryName(for: todo),
+                entityName: viewModel.entityName(for: todo)
+            )
         }
     }
 }

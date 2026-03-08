@@ -292,9 +292,30 @@ private struct PostRow: View {
                 Button {
                     onUsernameTapped?(post.author.username)
                 } label: {
-                    Text(post.author.displayName ?? post.author.username)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
+                    HStack(spacing: 8) {
+                        if let avatarUrl = post.author.avatarUrl {
+                            AsyncImage(url: avatarUrl) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                Image(systemName: "person.circle.fill")
+                                    .resizable()
+                                    .foregroundColor(.secondary)
+                            }
+                            .frame(width: 28, height: 28)
+                            .clipShape(Circle())
+                        } else {
+                            Image(systemName: "person.circle.fill")
+                                .resizable()
+                                .foregroundColor(.secondary)
+                                .frame(width: 28, height: 28)
+                        }
+
+                        Text(post.author.displayName ?? post.author.username)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                    }
                 }
                 .buttonStyle(.plain)
 

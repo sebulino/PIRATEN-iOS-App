@@ -251,9 +251,26 @@ final class RealDiscourseRepository: DiscourseRepository {
             let response = try decodeUserProfileResponse(from: data)
 
             // Map DTO to domain model
-            guard let profile = response.user.toDomainModel() else {
+            guard var profile = response.user.toDomainModel() else {
                 throw DiscourseRepositoryError.loadFailed(
                     message: "Benutzerprofil konnte nicht verarbeitet werden"
+                )
+            }
+
+            // Fetch likes from summary endpoint (public, uses URLSession directly
+            // to avoid credential-clearing side effects of DiscourseHTTPClient).
+            if let summaryData = await apiClient.fetchUserSummary(username: username),
+               let summary = try? decodeUserSummaryResponse(from: summaryData) {
+                profile = UserProfile(
+                    id: profile.id,
+                    username: profile.username,
+                    displayName: profile.displayName,
+                    avatarUrl: profile.avatarUrl,
+                    bio: profile.bio,
+                    joinedAt: profile.joinedAt,
+                    postCount: profile.postCount,
+                    likesGiven: summary.userSummary.likesGiven ?? profile.likesGiven,
+                    likesReceived: summary.userSummary.likesReceived ?? profile.likesReceived
                 )
             }
 
@@ -329,6 +346,16 @@ final class RealDiscourseRepository: DiscourseRepository {
         let decoder = JSONDecoder()
         do {
             return try decoder.decode(DiscourseUserProfileResponse.self, from: data)
+        } catch {
+            throw DiscourseError.decodingError(message: error.localizedDescription)
+        }
+    }
+
+    /// Decodes the GET /u/{username}/summary.json response.
+    private func decodeUserSummaryResponse(from data: Data) throws -> DiscourseUserSummaryResponse {
+        let decoder = JSONDecoder()
+        do {
+            return try decoder.decode(DiscourseUserSummaryResponse.self, from: data)
         } catch {
             throw DiscourseError.decodingError(message: error.localizedDescription)
         }

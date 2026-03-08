@@ -54,9 +54,6 @@ struct MainTabView: View {
 
     // MARK: - Toolbar Sheet State
 
-    /// Bottom safe area inset inside tab content (includes tab bar + home indicator)
-    @State private var tabContentBottomInset: CGFloat = 83
-
     /// Whether the profile sheet is being shown
     @State private var showingProfile = false
 
@@ -65,6 +62,9 @@ struct MainTabView: View {
 
     /// Whether the messages sheet is being shown
     @State private var showingMessages = false
+
+    /// Whether the news sheet is being shown
+    @State private var showingNews = false
 
     /// Count of delivered notifications currently in the notification center
     @State private var deliveredNotificationsCount: Int = 0
@@ -93,6 +93,26 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $deepLinkRouter.selectedTab) {
+            HomeView(
+                viewModel: homeViewModel,
+                topicDetailViewModelFactory: topicDetailViewModelFactory,
+                knowledgeTopicDetailViewModelFactory: knowledgeTopicDetailViewModelFactory,
+                todoDetailViewModelFactory: todoDetailViewModelFactory,
+                userProfileViewModelFactory: userProfileViewModelFactory,
+                onSendMessageFromProfile: { profile in
+                    handleSendMessageFromProfile(profile)
+                },
+                onProfileTapped: { showingProfile = true },
+                onNotificationsTapped: { showingNotifications = true },
+                notificationsBadge: notificationsBadge,
+                onMessagesTapped: { showingMessages = true },
+                onNewsTapped: { showingNews = true }
+            )
+                .tabItem {
+                    Label("Kajüte", systemImage: "house")
+                }
+                .tag(0)
+
             ForumView(
                 viewModel: forumViewModel,
                 discourseAuthCoordinator: discourseAuthCoordinator,
@@ -107,32 +127,10 @@ struct MainTabView: View {
                 onHomeTapped: { deepLinkRouter.selectedTab = 0 },
                 onMessagesTapped: { showingMessages = true }
             )
-                .background(
-                    GeometryReader { geo in
-                        Color.clear
-                            .onAppear { tabContentBottomInset = geo.safeAreaInsets.bottom }
-                            .onChange(of: geo.safeAreaInsets.bottom) { _, newValue in
-                                if newValue > 0 { tabContentBottomInset = newValue }
-                            }
-                    }
-                )
                 .tabItem {
                     Label("Forum", systemImage: "bubble.left.and.bubble.right")
                 }
                 .tag(1)
-
-            NewsView(
-                viewModel: newsViewModel,
-                onProfileTapped: { showingProfile = true },
-                onNotificationsTapped: { showingNotifications = true },
-                notificationsBadge: notificationsBadge,
-                onHomeTapped: { deepLinkRouter.selectedTab = 0 },
-                onMessagesTapped: { showingMessages = true }
-            )
-                .tabItem {
-                    Label("News", systemImage: "newspaper")
-                }
-                .tag(2)
 
             KnowledgeView(
                 viewModel: knowledgeViewModel,
@@ -175,34 +173,6 @@ struct MainTabView: View {
                     Label("ToDos", systemImage: "checklist")
                 }
                 .tag(5)
-        }
-        .overlay {
-            if deepLinkRouter.selectedTab == 0 {
-                GeometryReader { geo in
-                    VStack(spacing: 0) {
-                        HomeView(
-                            viewModel: homeViewModel,
-                            topicDetailViewModelFactory: topicDetailViewModelFactory,
-                            knowledgeTopicDetailViewModelFactory: knowledgeTopicDetailViewModelFactory,
-                            todoDetailViewModelFactory: todoDetailViewModelFactory,
-                            userProfileViewModelFactory: userProfileViewModelFactory,
-                            onSendMessageFromProfile: { profile in
-                                handleSendMessageFromProfile(profile)
-                            },
-                            onProfileTapped: { showingProfile = true },
-                            onNotificationsTapped: { showingNotifications = true },
-                            notificationsBadge: notificationsBadge,
-                            onMessagesTapped: { showingMessages = true }
-                        )
-                        .frame(height: geo.size.height - tabContentBottomInset)
-
-                        Color.clear
-                            .frame(height: tabContentBottomInset)
-                            .allowsHitTesting(false)
-                    }
-                }
-                .ignoresSafeArea()
-            }
         }
         .sheet(isPresented: $showingRecipientPicker, onDismiss: {
             // After recipient picker dismisses, show compose if we have a recipient
@@ -284,6 +254,9 @@ struct MainTabView: View {
                 }
             }
         }
+        .sheet(isPresented: $showingNews) {
+            NewsView(viewModel: newsViewModel)
+        }
         .sheet(isPresented: $showingMessages) {
             NavigationStack {
                 MessagesView(
@@ -352,6 +325,12 @@ struct MainTabView: View {
                     }
                     deepLinkRouter.clearPendingDeepLink()
                 }
+
+            case .forumTopic:
+                // DeepLinkRouter already switched to Forum tab (tag 1).
+                // The Forum tab will show the topic list; navigation to a specific
+                // topic within the tab is not yet implemented (see OPEN_QUESTIONS.md Q-014).
+                deepLinkRouter.clearPendingDeepLink()
             }
         }
     }
@@ -449,7 +428,10 @@ struct MainTabView: View {
             discourseAPIKeyProvider: discourseAPIKeyProvider,
             credentialStore: credentialStore
         ),
-        notificationSettings: NotificationSettingsManager(deviceTokenManager: deviceTokenManager),
+        notificationSettings: NotificationSettingsManager(
+            deviceTokenManager: deviceTokenManager,
+            registrationService: FakePushNotificationRegistrationService()
+        ),
         deepLinkRouter: DeepLinkRouter(),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)

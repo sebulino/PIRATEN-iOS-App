@@ -150,7 +150,10 @@ struct StartupContainerView: View {
             discourseAPIKeyProvider: discourseAPIKeyProvider,
             credentialStore: credentialStore
         ),
-        notificationSettings: NotificationSettingsManager(deviceTokenManager: deviceTokenManager),
+        notificationSettings: NotificationSettingsManager(
+            deviceTokenManager: deviceTokenManager,
+            registrationService: FakePushNotificationRegistrationService()
+        ),
         deepLinkRouter: DeepLinkRouter(),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)

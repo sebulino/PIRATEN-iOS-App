@@ -36,15 +36,20 @@ final class DiscourseAPIClient {
     /// Base URL for all Discourse API requests
     private let baseURL: URL
 
+    /// API key provider for direct auth header injection (used by summary endpoint)
+    private let apiKeyProvider: DiscourseAPIKeyProvider?
+
     // MARK: - Initialization
 
     /// Creates a Discourse API client.
     /// - Parameters:
     ///   - httpClient: An authenticated HTTP client (should be AuthenticatedHTTPClient)
     ///   - baseURL: Base URL of the Discourse instance (e.g., https://diskussion.piratenpartei.de)
-    init(httpClient: HTTPClient, baseURL: URL) {
+    ///   - apiKeyProvider: Optional provider for direct auth header injection
+    init(httpClient: HTTPClient, baseURL: URL, apiKeyProvider: DiscourseAPIKeyProvider? = nil) {
         self.httpClient = httpClient
         self.baseURL = baseURL
+        self.apiKeyProvider = apiKeyProvider
     }
 
     // MARK: - Request Helpers
@@ -235,6 +240,34 @@ final class DiscourseAPIClient {
         } catch let error as DiscourseAuthError {
             throw mapDiscourseAuthError(error)
         }
+    }
+
+    /// Fetches a user's summary stats (likes given/received).
+    /// Endpoint: GET /u/{username}/summary.json
+    ///
+    /// Uses URLSession directly (not the auth'd DiscourseHTTPClient) to avoid
+    /// credential clearing on 403. The summary endpoint is publicly accessible
+    /// on Discourse without authentication.
+    ///
+    /// - Parameter username: The username to fetch the summary for
+    /// - Returns: Raw response data, or nil if the request fails
+    func fetchUserSummary(username: String) async -> Data? {
+        let summaryURL = url(for: "/u/\(username)/summary.json")
+        var request = URLRequest(url: summaryURL)
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        // Add Discourse auth headers manually (bypassing DiscourseHTTPClient
+        // to avoid credential clearing on 403)
+        if let credential = try? await apiKeyProvider?.getAPIKey() {
+            request.setValue(credential.apiKey, forHTTPHeaderField: "User-Api-Key")
+            request.setValue(credential.clientId, forHTTPHeaderField: "User-Api-Client-Id")
+        }
+
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              (response as? HTTPURLResponse)?.statusCode == 200 else {
+            return nil
+        }
+        return data
     }
 
     /// Creates a new private message thread.

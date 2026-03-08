@@ -13,12 +13,17 @@ import UIKit
 /// Manages notification permissions and user preferences.
 /// Privacy-first: All notifications are opt-in (default off).
 /// No tracking or analytics data is collected.
+///
+/// Syncs device token + preferences to the backend via
+/// PushNotificationRegistrationService whenever either changes.
 @MainActor
 final class NotificationSettingsManager: ObservableObject {
 
     // MARK: - Dependencies
 
     private let deviceTokenManager: DeviceTokenManager
+    private let registrationService: PushNotificationRegistrationService
+    private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Published State
 
@@ -29,6 +34,7 @@ final class NotificationSettingsManager: ObservableObject {
             if messagesEnabled {
                 requestPermissionIfNeeded()
             }
+            syncRegistration()
         }
     }
 
@@ -39,6 +45,18 @@ final class NotificationSettingsManager: ObservableObject {
             if todosEnabled {
                 requestPermissionIfNeeded()
             }
+            syncRegistration()
+        }
+    }
+
+    /// Whether forum post notifications are enabled by the user
+    @Published var forumEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(forumEnabled, forKey: Keys.forumEnabled)
+            if forumEnabled {
+                requestPermissionIfNeeded()
+            }
+            syncRegistration()
         }
     }
 
@@ -53,21 +71,36 @@ final class NotificationSettingsManager: ObservableObject {
     private enum Keys {
         static let messagesEnabled = "notification_messages_enabled"
         static let todosEnabled = "notification_todos_enabled"
+        static let forumEnabled = "notification_forum_enabled"
     }
 
     // MARK: - Initialization
 
-    init(deviceTokenManager: DeviceTokenManager) {
+    init(
+        deviceTokenManager: DeviceTokenManager,
+        registrationService: PushNotificationRegistrationService
+    ) {
         self.deviceTokenManager = deviceTokenManager
+        self.registrationService = registrationService
 
         // Load saved preferences (default to false for privacy)
         self.messagesEnabled = UserDefaults.standard.bool(forKey: Keys.messagesEnabled)
         self.todosEnabled = UserDefaults.standard.bool(forKey: Keys.todosEnabled)
+        self.forumEnabled = UserDefaults.standard.bool(forKey: Keys.forumEnabled)
 
         // Check current authorization status
         Task {
             await refreshAuthorizationStatus()
         }
+
+        // Observe device token changes — sync when a new token arrives
+        deviceTokenManager.$deviceToken
+            .dropFirst() // skip the initial value (already synced on startup if needed)
+            .sink { [weak self] token in
+                guard token != nil else { return }
+                self?.syncRegistration()
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Public Methods
@@ -80,7 +113,7 @@ final class NotificationSettingsManager: ObservableObject {
 
     /// Whether any notification type is enabled
     var hasAnyNotificationsEnabled: Bool {
-        messagesEnabled || todosEnabled
+        messagesEnabled || todosEnabled || forumEnabled
     }
 
     /// Whether system permission has been granted
@@ -132,12 +165,54 @@ final class NotificationSettingsManager: ObservableObject {
     /// Disables all notifications and clears preferences.
     /// Called on logout to respect privacy.
     func clearAllSettings() {
+        // Unregister from backend before clearing token
+        if let token = deviceTokenManager.deviceTokenString {
+            Task {
+                try? await registrationService.unregister(token: token)
+            }
+        }
+
         messagesEnabled = false
         todosEnabled = false
+        forumEnabled = false
         UserDefaults.standard.removeObject(forKey: Keys.messagesEnabled)
         UserDefaults.standard.removeObject(forKey: Keys.todosEnabled)
+        UserDefaults.standard.removeObject(forKey: Keys.forumEnabled)
 
         // Clear device token on logout
         deviceTokenManager.clearDeviceToken()
+    }
+
+    // MARK: - Private Helpers
+
+    /// Syncs the current token and preferences to the backend.
+    /// Called whenever a toggle changes or a new device token is received.
+    /// Failures are logged but not surfaced to the user.
+    private func syncRegistration() {
+        guard let token = deviceTokenManager.deviceTokenString else {
+            // No token yet — will sync once token is received via Combine observer
+            return
+        }
+
+        let preferences = PushNotificationPreferences(
+            messagesEnabled: messagesEnabled,
+            todosEnabled: todosEnabled,
+            forumEnabled: forumEnabled
+        )
+
+        Task {
+            do {
+                if hasAnyNotificationsEnabled {
+                    try await registrationService.register(token: token, preferences: preferences)
+                } else {
+                    try await registrationService.unregister(token: token)
+                }
+            } catch {
+                // Sync failures are non-fatal — user's local preferences remain correct
+                #if DEBUG
+                print("[NotificationSettingsManager] Sync failed: \(error)")
+                #endif
+            }
+        }
     }
 }

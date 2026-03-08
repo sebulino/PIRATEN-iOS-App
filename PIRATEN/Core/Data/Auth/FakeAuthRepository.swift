@@ -34,7 +34,8 @@ final class FakeAuthRepository: AuthRepository {
         avatarUrl: nil,
         memberSince: Calendar.current.date(from: DateComponents(year: 2019, month: 3, day: 15)),
         localGroupName: "Kreisverband München",
-        stateAssociationName: "Landesverband Bayern"
+        stateAssociationName: "Landesverband Bayern",
+        memberNumber: "12345"
     )
 
     /// Initializes the fake auth repository with a credential store.

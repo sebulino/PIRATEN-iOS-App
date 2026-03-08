@@ -8,20 +8,7 @@ import SwiftUI
 struct NewsView: View {
     @ObservedObject var viewModel: NewsViewModel
 
-    /// Callback when user taps the profile toolbar button
-    var onProfileTapped: (() -> Void)?
-
-    /// Callback when user taps the notifications toolbar button
-    var onNotificationsTapped: (() -> Void)?
-
-    /// Whether to show a badge on the notification bell
-    var notificationsBadge: Bool = false
-
-    /// Callback when user taps the home button to navigate to Kajüte
-    var onHomeTapped: (() -> Void)?
-
-    /// Callback when user taps the messages button to open Nachrichten
-    var onMessagesTapped: (() -> Void)?
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
@@ -44,38 +31,12 @@ struct NewsView: View {
             .navigationTitle("News")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    HStack(spacing: 2) {
-                        PiratenIconButton(
-                            systemName: "house",
-                            accessibilityLabel: "Kajüte"
-                        ) {
-                            onHomeTapped?()
-                        }
-                        PiratenIconButton(
-                            systemName: "envelope",
-                            accessibilityLabel: "Nachrichten"
-                        ) {
-                            onMessagesTapped?()
-                        }
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
                     }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 2) {
-                        PiratenIconButton(
-                            systemName: notificationsBadge ? "bell.badge" : "bell",
-                            badge: notificationsBadge,
-                            accessibilityLabel: "Benachrichtigungen"
-                        ) {
-                            onNotificationsTapped?()
-                        }
-
-                        PiratenIconButton(
-                            systemName: "person.circle",
-                            accessibilityLabel: "Profil"
-                        ) {
-                            onProfileTapped?()
-                        }
-                    }
+                    .accessibilityLabel("Schließen")
                 }
             }
             .onAppear {

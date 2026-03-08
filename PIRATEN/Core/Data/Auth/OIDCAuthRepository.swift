@@ -185,7 +185,8 @@ final class OIDCAuthRepository: AuthRepository {
                 avatarUrl: nil,
                 memberSince: nil,
                 localGroupName: nil,
-                stateAssociationName: nil
+                stateAssociationName: nil,
+                memberNumber: claims.memberNumber
             )
         } catch {
             return nil

@@ -143,7 +143,7 @@ struct UserProfileView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.accentColor)
+                    .background(Color.piratenPrimary)
                     .foregroundColor(.white)
                     .cornerRadius(12)
             }

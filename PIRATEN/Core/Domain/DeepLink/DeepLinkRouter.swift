@@ -32,11 +32,14 @@ final class DeepLinkRouter: ObservableObject {
         // Switch to the appropriate tab or trigger sheet
         switch deepLink {
         case .messageThread:
-            // Messages are now presented as a sheet, handled by MainTabView's onChange
+            // Messages are presented as a sheet, handled by MainTabView's onChange
             break
 
         case .todoDetail:
             selectedTab = 5 // ToDos tab
+
+        case .forumTopic:
+            selectedTab = 1 // Forum tab
         }
     }
 

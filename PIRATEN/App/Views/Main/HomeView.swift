@@ -37,6 +37,9 @@ struct HomeView: View {
     /// Callback when user taps the messages button to open Nachrichten
     var onMessagesTapped: (() -> Void)?
 
+    /// Callback when user taps the news toolbar button
+    var onNewsTapped: (() -> Void)?
+
     /// Username of the contact whose profile is being shown
     @State private var selectedContactUsername: String?
 
@@ -62,11 +65,19 @@ struct HomeView: View {
             .navigationTitle("Kajüte")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    PiratenIconButton(
-                        systemName: "envelope",
-                        accessibilityLabel: "Nachrichten"
-                    ) {
-                        onMessagesTapped?()
+                    HStack(spacing: 2) {
+                        PiratenIconButton(
+                            systemName: "envelope",
+                            accessibilityLabel: "Nachrichten"
+                        ) {
+                            onMessagesTapped?()
+                        }
+                        PiratenIconButton(
+                            systemName: "newspaper",
+                            accessibilityLabel: "News"
+                        ) {
+                            onNewsTapped?()
+                        }
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
