@@ -125,7 +125,8 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onHomeTapped: { deepLinkRouter.selectedTab = 0 },
-                onMessagesTapped: { showingMessages = true }
+                onMessagesTapped: { showingMessages = true },
+                onNewsTapped: { showingNews = true }
             )
                 .tabItem {
                     Label("Forum", systemImage: "bubble.left.and.bubble.right")
@@ -139,7 +140,8 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onHomeTapped: { deepLinkRouter.selectedTab = 0 },
-                onMessagesTapped: { showingMessages = true }
+                onMessagesTapped: { showingMessages = true },
+                onNewsTapped: { showingNews = true }
             )
                 .tabItem {
                     Label("Wissen", systemImage: "book")
@@ -152,7 +154,8 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onHomeTapped: { deepLinkRouter.selectedTab = 0 },
-                onMessagesTapped: { showingMessages = true }
+                onMessagesTapped: { showingMessages = true },
+                onNewsTapped: { showingNews = true }
             )
                 .tabItem {
                     Label("Termine", systemImage: "calendar")
@@ -167,7 +170,8 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onHomeTapped: { deepLinkRouter.selectedTab = 0 },
-                onMessagesTapped: { showingMessages = true }
+                onMessagesTapped: { showingMessages = true },
+                onNewsTapped: { showingNews = true }
             )
                 .tabItem {
                     Label("ToDos", systemImage: "checklist")
@@ -242,7 +246,10 @@ struct MainTabView: View {
             // Present message thread detail from deep link
             if let factory = messageThreadDetailViewModelFactory {
                 NavigationStack {
-                    MessageThreadDetailView(viewModel: factory(thread))
+                    MessageThreadDetailView(
+                        viewModel: factory(thread),
+                        discourseAuthCoordinator: discourseAuthCoordinator
+                    )
                 }
             }
         }

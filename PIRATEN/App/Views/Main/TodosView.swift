@@ -31,6 +31,9 @@ struct TodosView: View {
     /// Callback when user taps the messages button to open Nachrichten
     var onMessagesTapped: (() -> Void)?
 
+    /// Callback when user taps the news button to open News
+    var onNewsTapped: (() -> Void)?
+
     @State private var showingCreateSheet = false
 
     var body: some View {
@@ -71,6 +74,12 @@ struct TodosView: View {
                             accessibilityLabel: "Nachrichten"
                         ) {
                             onMessagesTapped?()
+                        }
+                        PiratenIconButton(
+                            systemName: "newspaper",
+                            accessibilityLabel: "News"
+                        ) {
+                            onNewsTapped?()
                         }
                     }
                 }
@@ -294,7 +303,7 @@ struct TodoRow: View {
         HStack(spacing: 4) {
             Image(systemName: isOverdue ? "clock.badge.exclamationmark" : "calendar")
                 .accessibilityHidden(true)
-            Text(date, style: .date)
+            Text(date, format: .dateTime.day().month(.wide).year())
         }
         .font(.caption)
         .foregroundStyle(isOverdue ? .red : .secondary)

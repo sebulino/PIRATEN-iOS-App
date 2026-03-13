@@ -25,6 +25,9 @@ struct CalendarView: View {
     /// Callback when user taps the messages button to open Nachrichten
     var onMessagesTapped: (() -> Void)?
 
+    /// Callback when user taps the news button to open News
+    var onNewsTapped: (() -> Void)?
+
     var body: some View {
         NavigationStack {
             Group {
@@ -63,6 +66,12 @@ struct CalendarView: View {
                             accessibilityLabel: "Nachrichten"
                         ) {
                             onMessagesTapped?()
+                        }
+                        PiratenIconButton(
+                            systemName: "newspaper",
+                            accessibilityLabel: "News"
+                        ) {
+                            onNewsTapped?()
                         }
                     }
                 }

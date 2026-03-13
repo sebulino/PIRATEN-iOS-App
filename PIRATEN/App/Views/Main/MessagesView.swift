@@ -14,9 +14,6 @@ struct MessagesView: View {
     /// The current window for presenting auth session
     @Environment(\.window) private var window: UIWindow?
 
-    /// Optional callback for when user taps login button in unauthenticated state
-    var onLoginTapped: (() -> Void)?
-
     /// Factory for creating MessageThreadDetailViewModels
     var messageThreadDetailViewModelFactory: ((MessageThread) -> MessageThreadDetailViewModel)?
 
@@ -146,7 +143,7 @@ struct MessagesView: View {
                         NavigationLink {
                             MessageThreadDetailView(
                                 viewModel: factory(thread),
-                                onLoginTapped: onLoginTapped,
+                                discourseAuthCoordinator: discourseAuthCoordinator,
                                 userProfileViewModelFactory: userProfileViewModelFactory,
                                 onSendMessageFromProfile: onSendMessageFromProfile
                             )
@@ -250,22 +247,58 @@ struct MessagesView: View {
     @ViewBuilder
     private func authenticationFailedState(message: String) -> some View {
         VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.lock")
-                .font(.system(size: 48))
-                .foregroundStyle(Color.piratenPrimary)
-                .accessibilityHidden(true)
-            Text("Nachrichten nicht verfügbar")
-                .font(.headline)
-            Text("Die Verbindung zu den Nachrichten konnte nicht hergestellt werden. Die Nachrichten-Authentifizierung wird noch konfiguriert.")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-            Button("Erneut versuchen") {
-                viewModel.loadMessages()
+            switch discourseAuthCoordinator.authState {
+            case .idle, .failed:
+                Image(systemName: "exclamationmark.lock")
+                    .font(.system(size: 48))
+                    .foregroundStyle(Color.piratenPrimary)
+                    .accessibilityHidden(true)
+                Text("Sitzung abgelaufen")
+                    .font(.headline)
+                Text("Die Verbindung zu den Nachrichten ist abgelaufen. Bitte erneut verbinden.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+
+                if case .failed(let authMessage) = discourseAuthCoordinator.authState {
+                    Text(authMessage)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                }
+
+                Button {
+                    Task {
+                        await discourseAuthCoordinator.authenticate(from: window)
+                    }
+                } label: {
+                    Label("Erneut verbinden", systemImage: "link")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!discourseAuthCoordinator.isAuthAvailable)
+
+            case .authenticating:
+                ProgressView()
+                    .scaleEffect(1.5)
+                Text("Verbindung wird hergestellt...")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
+            case .authenticated:
+                ProgressView()
+                Text("Verbunden! Lade Nachrichten...")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
             }
-            .buttonStyle(.bordered)
         }
         .padding()
+        .onChange(of: discourseAuthCoordinator.authState) { oldState, newState in
+            if newState == .authenticated {
+                discourseAuthCoordinator.reset()
+                viewModel.loadMessages()
+            }
+        }
     }
 
     @ViewBuilder

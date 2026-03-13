@@ -47,7 +47,7 @@ struct TodoDetailView: View {
 
                     if let dueDate = viewModel.todo.dueDate {
                         LabeledContent("Fällig") {
-                            Text(dueDate, style: .date)
+                            Text(dueDate, format: .dateTime.day().month(.wide).year())
                                 .foregroundColor(dueDate < Date() && viewModel.todo.status != .done ? .red : .primary)
                         }
                     }
@@ -65,7 +65,7 @@ struct TodoDetailView: View {
                     }
 
                     LabeledContent("Erstellt") {
-                        Text(viewModel.todo.createdAt, style: .date)
+                        Text(viewModel.todo.createdAt, format: .dateTime.day().month(.wide).year())
                     }
 
                     if viewModel.todo.urgent {
@@ -92,7 +92,6 @@ struct TodoDetailView: View {
                 if viewModel.todo.status != .done {
                     GroupBox("Aktionen") {
                         actionsForStatus
-                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
 
@@ -161,36 +160,43 @@ struct TodoDetailView: View {
 
     @ViewBuilder
     private var actionsForStatus: some View {
-        switch viewModel.todo.status {
-        case .open:
-            Button {
-                viewModel.claim()
-            } label: {
-                Label("Übernehmen", systemImage: "person.badge.plus")
+        HStack(spacing: 12) {
+            switch viewModel.todo.status {
+            case .open:
+                actionButton("Übernehmen", icon: "person.badge.plus", color: .piratenPrimary) {
+                    viewModel.claim()
+                }
+            case .claimed:
+                actionButton("Bearbeitet", icon: "checkmark.circle", color: .green) {
+                    viewModel.complete()
+                }
+                actionButton("Freigeben", icon: "person.badge.minus", color: .piratenPrimary) {
+                    viewModel.unclaim()
+                }
+            case .completed:
+                actionButton("Nicht bearbeitet", icon: "arrow.uturn.backward", color: .piratenPrimary) {
+                    viewModel.uncomplete()
+                }
+            case .done:
+                EmptyView()
             }
-        case .claimed:
-            Button {
-                viewModel.complete()
-            } label: {
-                Label("Als bearbeitet markieren", systemImage: "checkmark.circle")
-            }
-            .tint(.green)
-            Button {
-                viewModel.unclaim()
-            } label: {
-                Label("Freigeben", systemImage: "person.badge.minus")
-            }
-            .tint(.piratenPrimary)
-        case .completed:
-            Button {
-                viewModel.uncomplete()
-            } label: {
-                Label("Nicht bearbeitet", systemImage: "arrow.uturn.backward")
-            }
-            .tint(.piratenPrimary)
-        case .done:
-            EmptyView()
         }
+    }
+
+    @ViewBuilder
+    private func actionButton(_ title: String, icon: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: icon)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+        }
+        .foregroundStyle(color)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(color, lineWidth: 1.5)
+        )
     }
 
     private var statusColor: Color {

@@ -28,6 +28,9 @@ struct KnowledgeView: View {
     /// Callback when user taps the messages button to open Nachrichten
     var onMessagesTapped: (() -> Void)?
 
+    /// Callback when user taps the news button to open News
+    var onNewsTapped: (() -> Void)?
+
     private let categoryColumns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12)
@@ -70,6 +73,12 @@ struct KnowledgeView: View {
                             accessibilityLabel: "Nachrichten"
                         ) {
                             onMessagesTapped?()
+                        }
+                        PiratenIconButton(
+                            systemName: "newspaper",
+                            accessibilityLabel: "News"
+                        ) {
+                            onNewsTapped?()
                         }
                     }
                 }
