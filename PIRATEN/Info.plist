@@ -2,6 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>UIAppFonts</key>
+	<array>
+		<string>DejaRip.otf</string>
+		<string>DejaRip-Bold.otf</string>
+		<string>DejaRip-BoldItalic.otf</string>
+		<string>DejaRip-Italic.otf</string>
+		<string>PoliticsHead.otf</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

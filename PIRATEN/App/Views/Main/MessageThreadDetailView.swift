@@ -16,8 +16,11 @@ struct MessageThreadDetailView: View {
     @ObservedObject var viewModel: MessageThreadDetailViewModel
     @FocusState private var isComposerFocused: Bool
 
-    /// Optional callback for when user taps login button in unauthenticated state
-    var onLoginTapped: (() -> Void)?
+    /// Discourse auth coordinator for re-authentication
+    var discourseAuthCoordinator: DiscourseAuthCoordinator?
+
+    /// The current window for presenting auth session
+    @Environment(\.window) private var window: UIWindow?
 
     /// Factory for creating UserProfileViewModel instances
     var userProfileViewModelFactory: ((String) -> UserProfileViewModel)?
@@ -100,7 +103,6 @@ struct MessageThreadDetailView: View {
                     viewModel: factory(selected.username),
                     onLoginTapped: {
                         selectedUsername = nil
-                        onLoginTapped?()
                     },
                     onSendMessageTapped: { profile in
                         selectedUsername = nil
@@ -223,43 +225,139 @@ struct MessageThreadDetailView: View {
     @ViewBuilder
     private var notAuthenticatedState: some View {
         VStack(spacing: 16) {
-            Image(systemName: "person.crop.circle.badge.questionmark")
-                .font(.system(size: 48))
-                .foregroundStyle(.blue)
-                .accessibilityHidden(true)
-            Text("Anmeldung erforderlich")
-                .font(.headline)
-            Text("Bitte melde dich an, um die Nachrichten zu sehen.")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-            Button("Anmelden") {
-                onLoginTapped?()
+            if let coordinator = discourseAuthCoordinator {
+                switch coordinator.authState {
+                case .idle, .failed:
+                    Image(systemName: "person.crop.circle.badge.questionmark")
+                        .font(.system(size: 48))
+                        .foregroundStyle(.blue)
+                        .accessibilityHidden(true)
+                    Text("Anmeldung erforderlich")
+                        .font(.headline)
+                    Text("Bitte melde dich an, um die Nachrichten zu sehen.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+
+                    if case .failed(let authMessage) = coordinator.authState {
+                        Text(authMessage)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    Button {
+                        Task {
+                            await coordinator.authenticate(from: window)
+                        }
+                    } label: {
+                        Label("Mit Forum verbinden", systemImage: "link")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!coordinator.isAuthAvailable)
+
+                case .authenticating:
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    Text("Verbindung wird hergestellt...")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+
+                case .authenticated:
+                    ProgressView()
+                        .onAppear {
+                            viewModel.loadPosts()
+                        }
+                }
+            } else {
+                Image(systemName: "person.crop.circle.badge.questionmark")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.blue)
+                    .accessibilityHidden(true)
+                Text("Anmeldung erforderlich")
+                    .font(.headline)
+                Text("Bitte melde dich an, um die Nachrichten zu sehen.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
             }
-            .buttonStyle(.borderedProminent)
         }
         .padding()
+        .onChange(of: discourseAuthCoordinator?.authState) { oldState, newState in
+            if newState == .authenticated {
+                discourseAuthCoordinator?.reset()
+                viewModel.loadPosts()
+            }
+        }
     }
 
     @ViewBuilder
     private func authenticationFailedState(message: String) -> some View {
         VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.lock")
-                .font(.system(size: 48))
-                .foregroundStyle(Color.piratenPrimary)
-                .accessibilityHidden(true)
-            Text("Sitzung abgelaufen")
-                .font(.headline)
-            Text(message)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-            Button("Erneut anmelden") {
-                onLoginTapped?()
+            if let coordinator = discourseAuthCoordinator {
+                switch coordinator.authState {
+                case .idle, .failed:
+                    Image(systemName: "exclamationmark.lock")
+                        .font(.system(size: 48))
+                        .foregroundStyle(Color.piratenPrimary)
+                        .accessibilityHidden(true)
+                    Text("Sitzung abgelaufen")
+                        .font(.headline)
+                    Text("Die Verbindung ist abgelaufen. Bitte erneut verbinden.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+
+                    if case .failed(let authMessage) = coordinator.authState {
+                        Text(authMessage)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    Button {
+                        Task {
+                            await coordinator.authenticate(from: window)
+                        }
+                    } label: {
+                        Label("Erneut verbinden", systemImage: "link")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!coordinator.isAuthAvailable)
+
+                case .authenticating:
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    Text("Verbindung wird hergestellt...")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+
+                case .authenticated:
+                    ProgressView()
+                        .onAppear {
+                            viewModel.loadPosts()
+                        }
+                }
+            } else {
+                Image(systemName: "exclamationmark.lock")
+                    .font(.system(size: 48))
+                    .foregroundStyle(Color.piratenPrimary)
+                    .accessibilityHidden(true)
+                Text("Sitzung abgelaufen")
+                    .font(.headline)
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
             }
-            .buttonStyle(.borderedProminent)
         }
         .padding()
+        .onChange(of: discourseAuthCoordinator?.authState) { oldState, newState in
+            if newState == .authenticated {
+                discourseAuthCoordinator?.reset()
+                viewModel.loadPosts()
+            }
+        }
     }
 
     @ViewBuilder

@@ -32,11 +32,11 @@ struct ForumView: View {
     /// Whether to show a badge on the notification bell
     var notificationsBadge: Bool = false
 
-    /// Callback when user taps the home button to navigate to Kajüte
-    var onHomeTapped: (() -> Void)?
-
     /// Callback when user taps the messages button to open Nachrichten
     var onMessagesTapped: (() -> Void)?
+
+    /// Callback when user taps the news button to open News
+    var onNewsTapped: (() -> Void)?
 
     /// The current window for presenting auth session
     @Environment(\.window) private var window: UIWindow?
@@ -76,16 +76,16 @@ struct ForumView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     HStack(spacing: 2) {
                         PiratenIconButton(
-                            systemName: "house",
-                            accessibilityLabel: "Kajüte"
-                        ) {
-                            onHomeTapped?()
-                        }
-                        PiratenIconButton(
                             systemName: "envelope",
                             accessibilityLabel: "Nachrichten"
                         ) {
                             onMessagesTapped?()
+                        }
+                        PiratenIconButton(
+                            systemName: "newspaper",
+                            accessibilityLabel: "News"
+                        ) {
+                            onNewsTapped?()
                         }
                     }
                 }
@@ -239,22 +239,58 @@ struct ForumView: View {
     @ViewBuilder
     private func authenticationFailedState(message: String) -> some View {
         VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.lock")
-                .font(.system(size: 48))
-                .foregroundStyle(Color.piratenPrimary)
-                .accessibilityHidden(true)
-            Text("Forum nicht verfügbar")
-                .font(.headline)
-            Text("Die Verbindung zum Forum konnte nicht hergestellt werden. Die Forum-Authentifizierung wird noch konfiguriert.")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-            Button("Erneut versuchen") {
-                viewModel.loadTopics()
+            switch discourseAuthCoordinator.authState {
+            case .idle, .failed:
+                Image(systemName: "exclamationmark.lock")
+                    .font(.system(size: 48))
+                    .foregroundStyle(Color.piratenPrimary)
+                    .accessibilityHidden(true)
+                Text("Sitzung abgelaufen")
+                    .font(.headline)
+                Text("Die Verbindung zum Forum ist abgelaufen. Bitte erneut verbinden.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+
+                if case .failed(let authMessage) = discourseAuthCoordinator.authState {
+                    Text(authMessage)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                }
+
+                Button {
+                    Task {
+                        await discourseAuthCoordinator.authenticate(from: window)
+                    }
+                } label: {
+                    Label("Erneut verbinden", systemImage: "link")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!discourseAuthCoordinator.isAuthAvailable)
+
+            case .authenticating:
+                ProgressView()
+                    .scaleEffect(1.5)
+                Text("Verbindung wird hergestellt...")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
+            case .authenticated:
+                ProgressView()
+                    .onAppear {
+                        viewModel.loadTopics()
+                    }
             }
-            .buttonStyle(.bordered)
         }
         .padding()
+        .onChange(of: discourseAuthCoordinator.authState) { oldState, newState in
+            if newState == .authenticated {
+                discourseAuthCoordinator.reset()
+                viewModel.loadTopics()
+            }
+        }
     }
 
     @ViewBuilder
