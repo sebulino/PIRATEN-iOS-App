@@ -47,7 +47,7 @@ struct TodoDetailView: View {
 
                     if let dueDate = viewModel.todo.dueDate {
                         LabeledContent("Fällig") {
-                            Text(dueDate, format: .dateTime.day().month(.wide).year())
+                            Text(dueDate, format: .dateTime.locale(Locale(identifier: "de_DE")).day().month(.wide).year())
                                 .foregroundColor(dueDate < Date() && viewModel.todo.status != .done ? .red : .primary)
                         }
                     }
@@ -65,7 +65,7 @@ struct TodoDetailView: View {
                     }
 
                     LabeledContent("Erstellt") {
-                        Text(viewModel.todo.createdAt, format: .dateTime.day().month(.wide).year())
+                        Text(viewModel.todo.createdAt, format: .dateTime.locale(Locale(identifier: "de_DE")).day().month(.wide).year())
                     }
 
                     if viewModel.todo.urgent {

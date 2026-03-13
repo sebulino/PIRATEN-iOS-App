@@ -294,7 +294,7 @@ struct TodoRow: View {
         HStack(spacing: 4) {
             Image(systemName: isOverdue ? "clock.badge.exclamationmark" : "calendar")
                 .accessibilityHidden(true)
-            Text(date, format: .dateTime.day().month(.wide).year())
+            Text(date, format: .dateTime.locale(Locale(identifier: "de_DE")).day().month(.wide).year())
         }
         .font(.caption)
         .foregroundStyle(isOverdue ? .red : .secondary)
