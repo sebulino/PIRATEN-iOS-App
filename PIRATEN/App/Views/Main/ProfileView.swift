@@ -371,6 +371,27 @@ struct ProfileView: View {
             Text("Mitteilungen werden nur für die aktivierten Kategorien gesendet. Es werden keine Nachrichteninhalte übertragen – nur ein allgemeiner Hinweis. Es werden keine Tracking-Daten erfasst.")
                 .font(.piratenCaption)
         }
+
+        #if DEBUG
+        if let token = notificationSettings.debugDeviceTokenString {
+            Section("Debug: Device Token") {
+                Button {
+                    UIPasteboard.general.string = token
+                    
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(token)
+                            .font(.system(.caption2, design: .monospaced))
+                            .lineLimit(nil)
+                        Text("Tap to copy")
+                            .font(.piratenCaption)
+                            .foregroundColor(.piratenPrimary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        #endif
     }
 }
 

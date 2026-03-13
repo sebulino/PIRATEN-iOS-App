@@ -126,6 +126,14 @@ final class NotificationSettingsManager: ObservableObject {
         hasAnyNotificationsEnabled && !isSystemPermissionGranted
     }
 
+    #if DEBUG
+    /// Device token hex string for testing via Apple Push Notification Console.
+    /// Only available in debug builds.
+    var debugDeviceTokenString: String? {
+        deviceTokenManager.deviceTokenString
+    }
+    #endif
+
     /// Requests system notification permission if not already granted.
     /// Only called when user explicitly enables a notification toggle.
     func requestPermissionIfNeeded() {

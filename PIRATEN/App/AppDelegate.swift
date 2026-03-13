@@ -39,6 +39,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     ) {
         // Forward to device token manager for storage
         deviceTokenManager?.didReceiveDeviceToken(deviceToken)
+        let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
+        print("tokenString: \(tokenString)")
+        
     }
 
     func application(
@@ -86,4 +89,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         completionHandler()
     }
 }
+
+
 
