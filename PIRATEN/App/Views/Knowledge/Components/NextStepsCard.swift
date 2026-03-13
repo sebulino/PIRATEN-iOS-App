@@ -12,16 +12,16 @@ struct NextStepsCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Nächste Schritte", systemImage: "arrow.right.circle.fill")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
                 .foregroundColor(.piratenPrimary)
 
             ForEach(topicIds, id: \.self) { topicId in
                 HStack(spacing: 8) {
                     Image(systemName: "book")
                         .foregroundColor(.secondary)
-                        .font(.subheadline)
+                        .font(.piratenSubheadline)
                     Text(topicId)
-                        .font(.subheadline)
+                        .font(.piratenSubheadline)
                         .foregroundColor(.primary)
                 }
             }

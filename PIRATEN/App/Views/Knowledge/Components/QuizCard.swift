@@ -26,7 +26,7 @@ struct QuizCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Label("Mini-Quiz", systemImage: "questionmark.circle.fill")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
                 .foregroundColor(.piratenPrimary)
 
             ForEach(questions) { question in
@@ -81,7 +81,7 @@ struct QuizCard: View {
                 Image(systemName: optionIcon(isSelected: isSelected, isCorrect: isCorrect))
                     .foregroundColor(optionColor(isSelected: isSelected, isCorrect: isCorrect))
                 Text(option)
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }

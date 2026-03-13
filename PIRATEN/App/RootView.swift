@@ -114,7 +114,7 @@ struct ErrorView: View {
                 .foregroundColor(.red)
 
             Text("Fehler")
-                .font(.title)
+                .font(.piratenTitle)
                 .fontWeight(.bold)
 
             Text(error.localizedDescription)
@@ -143,11 +143,11 @@ struct SessionExpiredView: View {
                 .foregroundColor(.piratenPrimary)
 
             Text("Sitzung abgelaufen")
-                .font(.title)
+                .font(.piratenTitle)
                 .fontWeight(.bold)
 
             Text("Deine Sitzung ist abgelaufen. Bitte melde dich erneut an, um fortzufahren.")
-                .font(.body)
+                .font(.piratenBodyDefault)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)

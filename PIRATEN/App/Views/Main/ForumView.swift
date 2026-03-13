@@ -35,8 +35,14 @@ struct ForumView: View {
     /// Callback when user taps the messages button to open Nachrichten
     var onMessagesTapped: (() -> Void)?
 
+    /// Whether to show a badge on the messages toolbar button
+    var messagesBadge: Bool = false
+
     /// Callback when user taps the news button to open News
     var onNewsTapped: (() -> Void)?
+
+    /// Whether to show a badge on the news toolbar button
+    var newsBadge: Bool = false
 
     /// The current window for presenting auth session
     @Environment(\.window) private var window: UIWindow?
@@ -76,13 +82,15 @@ struct ForumView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     HStack(spacing: 2) {
                         PiratenIconButton(
-                            systemName: "envelope",
+                            imageName: "nachrichten",
+                            badge: messagesBadge,
                             accessibilityLabel: "Nachrichten"
                         ) {
                             onMessagesTapped?()
                         }
                         PiratenIconButton(
-                            systemName: "newspaper",
+                            imageName: "neuigkeiten",
+                            badge: newsBadge,
                             accessibilityLabel: "News"
                         ) {
                             onNewsTapped?()
@@ -91,16 +99,16 @@ struct ForumView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 2) {
-                        PiratenIconButton(
-                            systemName: notificationsBadge ? "bell.badge" : "bell",
-                            badge: notificationsBadge,
-                            accessibilityLabel: "Benachrichtigungen"
-                        ) {
-                            onNotificationsTapped?()
-                        }
+//                        PiratenIconButton(
+//                            imageName: "benachrichtigungen",
+//                            badge: notificationsBadge,
+//                            accessibilityLabel: "Benachrichtigungen"
+//                        ) {
+//                            onNotificationsTapped?()
+//                        }
 
                         PiratenIconButton(
-                            systemName: "person.circle",
+                            imageName: "profil",
                             accessibilityLabel: "Profil"
                         ) {
                             onProfileTapped?()
@@ -164,9 +172,9 @@ struct ForumView: View {
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             Text("Keine Themen")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
             Text("Es wurden noch keine Themen gepostet.")
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             Button("Aktualisieren") {
@@ -187,16 +195,16 @@ struct ForumView: View {
                     .foregroundStyle(Color.piratenPrimary)
                     .accessibilityHidden(true)
                 Text("Forum verbinden")
-                    .font(.headline)
+                    .font(.piratenHeadlineBody)
                 Text("Um das Forum zu nutzen, muss die App mit dem Discourse-Forum verbunden werden.")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
 
                 if case .failed(let message) = discourseAuthCoordinator.authState {
                     Text(message)
-                        .font(.caption)
+                        .font(.piratenCaption)
                         .foregroundColor(.red)
                         .multilineTextAlignment(.center)
                 }
@@ -215,7 +223,7 @@ struct ForumView: View {
                 ProgressView()
                     .scaleEffect(1.5)
                 Text("Verbindung wird hergestellt...")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
 
             case .authenticated:
@@ -246,16 +254,16 @@ struct ForumView: View {
                     .foregroundStyle(Color.piratenPrimary)
                     .accessibilityHidden(true)
                 Text("Sitzung abgelaufen")
-                    .font(.headline)
+                    .font(.piratenHeadlineBody)
                 Text("Die Verbindung zum Forum ist abgelaufen. Bitte erneut verbinden.")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
 
                 if case .failed(let authMessage) = discourseAuthCoordinator.authState {
                     Text(authMessage)
-                        .font(.caption)
+                        .font(.piratenCaption)
                         .foregroundColor(.red)
                         .multilineTextAlignment(.center)
                 }
@@ -274,7 +282,7 @@ struct ForumView: View {
                 ProgressView()
                     .scaleEffect(1.5)
                 Text("Verbindung wird hergestellt...")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
 
             case .authenticated:
@@ -301,9 +309,9 @@ struct ForumView: View {
                 .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Fehler beim Laden")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
             Text(message)
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Erneut versuchen") {
@@ -346,51 +354,56 @@ private struct TopicRow: View {
                 HStack(spacing: 4) {
                     if topic.isClosed {
                         Image(systemName: "lock.fill")
-                            .font(.subheadline)
+                            .font(.piratenSubheadline)
                             .foregroundStyle(.secondary)
                             .accessibilityLabel("Geschlossen")
                     }
                     Text(topic.title)
-                        .font(.headline)
+                        .font(.piratenHeadlineBody)
                         .lineLimit(2)
                 }
 
                 HStack {
                     // Author name
                     Text(topic.createdBy.displayName ?? topic.createdBy.username)
-                        .font(.subheadline)
+                        .font(.piratenSubheadline)
                         .foregroundStyle(.secondary)
 
                 Spacer()
 
                 // Reply count (postsCount includes the original post, so subtract 1)
                 Label("\(max(0, topic.postsCount - 1))", systemImage: "bubble.left")
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .foregroundStyle(.secondary)
                     .accessibilityLabel("\(max(0, topic.postsCount - 1)) Antworten")
 
                 // Like count
 //                if topic.likeCount > 0 {
 //                    Label("\(topic.likeCount)", systemImage: "heart")
-//                        .font(.caption)
+//                        .font(.piratenCaption)
 //                        .foregroundStyle(.secondary)
 //                        .accessibilityLabel("\(topic.likeCount) Likes")
 //                }
 
                 // View count
                 Label("\(topic.viewCount)", systemImage: "eye")
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .foregroundStyle(.secondary)
                     .accessibilityLabel("\(topic.viewCount) Aufrufe")
             }
 
                 // Time ago
                 Text(topic.createdAt, style: .relative)
-                    .font(.caption2)
+                    .font(.piratenCaption2)
                     .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 4)
+        .padding(.horizontal, 8)
+        .background(
+            topic.isRead ? Color.clear : Color.piratenUnreadBackground
+        )
+        .cornerRadius(8)
         .accessibilityElement(children: .combine)
     }
 }

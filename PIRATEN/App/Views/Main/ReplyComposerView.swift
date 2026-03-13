@@ -87,7 +87,7 @@ struct ReplyComposerView: View {
                     onCancel()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.title2)
+                        .font(.piratenTitle2)
                         .foregroundStyle(.secondary)
                 }
                 .disabled(composerState == .sending)
@@ -120,7 +120,7 @@ struct ReplyComposerView: View {
                             Image(systemName: "paperplane.fill")
                         }
                     }
-                    .font(.title2)
+                    .font(.piratenTitle2)
                 }
                 .disabled(!canSend)
                 .accessibilityLabel("Senden")
@@ -137,7 +137,7 @@ struct ReplyComposerView: View {
             Image(systemName: "arrowshape.turn.up.left")
                 .foregroundColor(.blue)
             Text(text)
-                .font(.caption)
+                .font(.piratenCaption)
                 .foregroundColor(.primary)
             Spacer()
         }
@@ -151,7 +151,7 @@ struct ReplyComposerView: View {
         HStack {
             Spacer()
             Text("\(characterCount.current)/\(characterCount.max)")
-                .font(.caption2)
+                .font(.piratenCaption2)
                 .foregroundColor(characterCount.isOverLimit ? .red : .secondary)
         }
         .padding(.horizontal, 16)
@@ -164,7 +164,7 @@ struct ReplyComposerView: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundColor(.white)
             Text(message)
-                .font(.caption)
+                .font(.piratenCaption)
                 .foregroundColor(.white)
             Spacer()
             Button {
@@ -185,7 +185,7 @@ struct ReplyComposerView: View {
             Image(systemName: "info.circle.fill")
                 .foregroundColor(.piratenPrimary)
             Text(message)
-                .font(.caption)
+                .font(.piratenCaption)
                 .foregroundColor(.primary)
             Spacer()
         }
@@ -200,7 +200,7 @@ struct ReplyComposerView: View {
             Image(systemName: "checkmark.circle.fill")
                 .foregroundColor(.white)
             Text("Nachricht gesendet")
-                .font(.caption)
+                .font(.piratenCaption)
                 .foregroundColor(.white)
             Spacer()
         }

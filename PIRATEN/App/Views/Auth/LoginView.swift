@@ -24,12 +24,12 @@ struct LoginView: View {
                 .accessibilityIdentifier("loginLogo")
 
             Text("PIRATEN")
-                .font(.largeTitle)
+                .font(.piratenLargeTitle)
                 .fontWeight(.bold)
                 .accessibilityIdentifier("loginTitle")
 
             // Text("Mitglieder-App")
-            //    .font(.subheadline)
+            //    .font(.piratenSubheadline)
             //    .foregroundColor(.secondary)
 
             Spacer()
@@ -37,7 +37,7 @@ struct LoginView: View {
             // Show error message if authentication failed
             if case .failed(let error) = authStateManager.currentState {
                 Text(error.localizedDescription)
-                    .font(.footnote)
+                    .font(.piratenFootnote)
                     .foregroundColor(.red)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
@@ -48,14 +48,14 @@ struct LoginView: View {
                 ProgressView()
                     .scaleEffect(1.5)
                 Text("Anmeldung wird vorbereitet...")
-                    .font(.footnote)
+                    .font(.piratenFootnote)
                     .foregroundColor(.secondary)
             } else {
                 Button(action: {
                     authStateManager.authenticate()
                 }) {
                     Text("Mit Piratenlogin anmelden")
-                        .font(.headline)
+                        .font(.piratenHeadlineBody)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -69,7 +69,7 @@ struct LoginView: View {
                     openURL(url)
                 }) {
                     Text("Mitglied werden")
-                        .font(.headline)
+                        .font(.piratenHeadlineBody)
                         .foregroundColor(.piratenPrimary)
                         .frame(maxWidth: .infinity)
                         .padding()

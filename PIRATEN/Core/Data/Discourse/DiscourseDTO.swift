@@ -47,6 +47,9 @@ struct DiscourseTopicDTO: Decodable {
     let archived: Bool
     let createdAt: String
 
+    /// Whether the topic is unseen by the current user
+    let unseen: Bool?
+
     /// Array of poster references. The first one is typically the OP (original poster).
     let posters: [DiscoursePosterDTO]
 
@@ -61,6 +64,7 @@ struct DiscourseTopicDTO: Decodable {
         case closed
         case archived
         case createdAt = "created_at"
+        case unseen
         case posters
     }
 
@@ -100,7 +104,8 @@ struct DiscourseTopicDTO: Decodable {
             categoryId: categoryId,
             isVisible: visible,
             isClosed: closed,
-            isArchived: archived
+            isArchived: archived,
+            isRead: unseen != true
         )
     }
 }
@@ -227,7 +232,8 @@ struct DiscourseTopicDetailResponse: Decodable {
             categoryId: categoryId ?? 0,  // PMs don't have categories
             isVisible: visible ?? true,
             isClosed: closed ?? false,
-            isArchived: archived ?? false
+            isArchived: archived ?? false,
+            isRead: true
         )
     }
 }

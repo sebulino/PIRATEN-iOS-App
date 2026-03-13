@@ -80,13 +80,13 @@ struct NewsView: View {
             Image(systemName: "exclamationmark.triangle")
                 .foregroundStyle(.orange)
             Text(message)
-                .font(.caption)
+                .font(.piratenCaption)
                 .foregroundStyle(.secondary)
             Spacer()
             Button("Retry") {
                 viewModel.refresh()
             }
-            .font(.caption)
+            .font(.piratenCaption)
             .buttonStyle(.bordered)
         }
         .padding(.horizontal, 16)

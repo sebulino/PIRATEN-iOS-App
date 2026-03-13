@@ -28,7 +28,7 @@ struct ProfileView: View {
                 } else if let error = viewModel.errorMessage {
                     VStack(spacing: 16) {
                         Image(systemName: "exclamationmark.triangle")
-                            .font(.largeTitle)
+                            .font(.piratenLargeTitle)
                             .foregroundStyle(Color.piratenPrimary)
                             .accessibilityHidden(true)
                         Text(error)
@@ -49,7 +49,7 @@ struct ProfileView: View {
                             .foregroundStyle(.secondary)
                             .accessibilityHidden(true)
                         Text("Kein Profil verfügbar")
-                            .font(.headline)
+                            .font(.piratenHeadlineBody)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -78,11 +78,11 @@ struct ProfileView: View {
                                 ? (viewModel.discourseProfile?.displayText ?? user.displayName)
                                 : user.displayName
                         )
-                        .font(.title2)
+                        .font(.piratenTitle2)
                         .fontWeight(.semibold)
 
                         Text("@\(user.username)")
-                            .font(.subheadline)
+                            .font(.piratenSubheadline)
                             .foregroundColor(.secondary)
                     }
                 }
@@ -94,7 +94,7 @@ struct ProfileView: View {
             if let bio = viewModel.discourseProfile?.bio, !bio.isEmpty {
                 Section("Über mich") {
                     Text(bio)
-                        .font(.body)
+                        .font(.piratenBodyDefault)
                 }
             }
 
@@ -227,7 +227,7 @@ struct ProfileView: View {
                         Image(systemName: "info.circle")
                             .foregroundColor(.blue)
                         Text("Forum-Statistiken konnten nicht geladen werden.")
-                            .font(.caption)
+                            .font(.piratenCaption)
                             .foregroundColor(.secondary)
                     }
                 }
@@ -305,7 +305,7 @@ struct ProfileView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Nachrichten")
                         Text("Bei neuen privaten Nachrichten")
-                            .font(.caption)
+                            .font(.piratenCaption)
                             .foregroundColor(.secondary)
                     }
                 } icon: {
@@ -320,7 +320,7 @@ struct ProfileView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Forum")
                         Text("Bei neuen Forenbeiträgen")
-                            .font(.caption)
+                            .font(.piratenCaption)
                             .foregroundColor(.secondary)
                     }
                 } icon: {
@@ -335,7 +335,7 @@ struct ProfileView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Aufgaben")
                         Text("Bei neuen oder geänderten Aufgaben")
-                            .font(.caption)
+                            .font(.piratenCaption)
                             .foregroundColor(.secondary)
                     }
                 } icon: {
@@ -356,7 +356,7 @@ struct ProfileView: View {
                             Text("Mitteilungen deaktiviert")
                                 .foregroundColor(.primary)
                             Text("In den Einstellungen aktivieren")
-                                .font(.caption)
+                                .font(.piratenCaption)
                                 .foregroundColor(.secondary)
                         }
                         Spacer()
@@ -369,7 +369,7 @@ struct ProfileView: View {
             Text("Mitteilungen")
         } footer: {
             Text("Mitteilungen werden nur für die aktivierten Kategorien gesendet. Es werden keine Nachrichteninhalte übertragen – nur ein allgemeiner Hinweis. Es werden keine Tracking-Daten erfasst.")
-                .font(.caption)
+                .font(.piratenCaption)
         }
     }
 }

@@ -43,6 +43,11 @@ final class MessagesViewModel: ObservableObject {
     /// The current load state of the messages
     @Published private(set) var loadState: MessagesLoadState = .idle
 
+    /// Whether there are unread message threads
+    var hasNewContent: Bool {
+        messageThreads.contains { !$0.isRead }
+    }
+
     /// Convenience property for backward compatibility
     var isLoading: Bool {
         loadState == .loading

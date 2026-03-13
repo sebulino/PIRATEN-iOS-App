@@ -17,7 +17,7 @@ struct AdminRequestView: View {
             Form {
                 Section {
                     Text("Du kannst Admin-Rechte beantragen, um Aufgaben erstellen und verwalten zu können.")
-                        .font(.subheadline)
+                        .font(.piratenSubheadline)
                         .foregroundStyle(.secondary)
                 }
 
@@ -30,7 +30,7 @@ struct AdminRequestView: View {
                     Section {
                         Text(error)
                             .foregroundStyle(.red)
-                            .font(.caption)
+                            .font(.piratenCaption)
                     }
                 }
             }

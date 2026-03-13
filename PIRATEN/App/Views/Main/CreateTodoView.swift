@@ -77,7 +77,7 @@ struct CreateTodoView: View {
                     Section {
                         Text(error)
                             .foregroundColor(.red)
-                            .font(.callout)
+                            .font(.piratenCallout)
                     }
                 }
             }

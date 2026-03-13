@@ -38,13 +38,13 @@ struct CalloutView: View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: iconName)
                 .foregroundColor(accentColor)
-                .font(.title3)
+                .font(.piratenTitle3)
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(accentColor)
                 MarkdownTextView(markdown: text)
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
             }
         }
         .padding()

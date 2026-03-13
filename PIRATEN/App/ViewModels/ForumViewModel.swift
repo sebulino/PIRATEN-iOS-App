@@ -43,6 +43,11 @@ final class ForumViewModel: ObservableObject {
     /// The current load state of the forum
     @Published private(set) var loadState: ForumLoadState = .idle
 
+    /// Whether there are new topics since the user last viewed the Forum tab
+    @Published private(set) var hasNewContent: Bool = false
+
+    private static let lastSeenTopicKey = "forum_last_seen_topic_id"
+
     /// Convenience property for backward compatibility
     var isLoading: Bool {
         loadState == .loading
@@ -82,6 +87,7 @@ final class ForumViewModel: ObservableObject {
                 let fetchedTopics = try await discourseRepository.fetchTopics()
                 self.topics = fetchedTopics
                 self.loadState = .loaded
+                self.updateNewContentFlag()
             } catch let error as DiscourseRepositoryError {
                 handleError(error)
             } catch {
@@ -96,6 +102,19 @@ final class ForumViewModel: ObservableObject {
     }
 
     // MARK: - Private Helpers
+
+    /// Marks the Forum tab as viewed, clearing the new content indicator.
+    func markAsViewed() {
+        guard let firstId = topics.first?.id else { return }
+        UserDefaults.standard.set(firstId, forKey: Self.lastSeenTopicKey)
+        hasNewContent = false
+    }
+
+    private func updateNewContentFlag() {
+        guard let newestId = topics.first?.id else { return }
+        let lastSeen = UserDefaults.standard.integer(forKey: Self.lastSeenTopicKey)
+        hasNewContent = lastSeen != 0 && newestId != lastSeen
+    }
 
     private func handleError(_ error: DiscourseRepositoryError) {
         switch error {

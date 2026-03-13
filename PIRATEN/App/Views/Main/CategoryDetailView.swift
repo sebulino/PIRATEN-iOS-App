@@ -44,15 +44,15 @@ struct CategoryDetailView: View {
     private var categoryHeader: some View {
         VStack(spacing: 8) {
             Image(systemName: category.icon)
-                .font(.largeTitle)
+                .font(.piratenLargeTitle)
                 .foregroundColor(.accentColor)
 
             Text(category.title)
-                .font(.title2)
+                .font(.piratenTitle2)
                 .fontWeight(.bold)
 
             Text(category.description)
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -85,21 +85,21 @@ struct CategoryDetailView: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(topic.title)
-                    .font(.headline)
+                    .font(.piratenHeadlineBody)
                     .lineLimit(2)
 
                 Text(topic.summary)
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
                     .lineLimit(2)
 
                 HStack(spacing: 8) {
                     Label("\(topic.readingMinutes) Min.", systemImage: "clock")
-                        .font(.caption)
+                        .font(.piratenCaption)
                         .foregroundColor(.secondary)
 
                     Text(topic.level)
-                        .font(.caption)
+                        .font(.piratenCaption)
                         .fontWeight(.medium)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 1)
@@ -145,7 +145,7 @@ struct CategoryDetailView: View {
                 .font(.system(size: 36))
                 .foregroundColor(.secondary)
             Text("Keine Themen in dieser Kategorie")
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)

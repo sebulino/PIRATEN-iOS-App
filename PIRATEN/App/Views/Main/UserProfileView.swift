@@ -91,12 +91,12 @@ struct UserProfileView: View {
 
                     // Display name
                     Text(profile.displayText)
-                        .font(.title2)
+                        .font(.piratenTitle2)
                         .fontWeight(.bold)
 
                     // @username
                     Text("@\(profile.username)")
-                        .font(.subheadline)
+                        .font(.piratenSubheadline)
                         .foregroundStyle(.secondary)
                 }
                 .padding(.top, 24)
@@ -104,7 +104,7 @@ struct UserProfileView: View {
                 // Stats Section
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Statistiken")
-                        .font(.headline)
+                        .font(.piratenHeadlineBody)
                         .foregroundColor(.primary)
 
                     VStack(spacing: 8) {
@@ -121,11 +121,11 @@ struct UserProfileView: View {
                 if let bio = profile.bio, !bio.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Bio")
-                            .font(.headline)
+                            .font(.piratenHeadlineBody)
                             .foregroundColor(.primary)
 
                         Text(bio)
-                            .font(.body)
+                            .font(.piratenBodyDefault)
                             .foregroundColor(.primary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -140,7 +140,7 @@ struct UserProfileView: View {
                 onSendMessageTapped(profile)
             } label: {
                 Text("Nachricht senden")
-                    .font(.headline)
+                    .font(.piratenHeadlineBody)
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.piratenPrimary)
@@ -157,11 +157,11 @@ struct UserProfileView: View {
     private func statsRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
-                .font(.body)
+                .font(.piratenBodyDefault)
                 .foregroundStyle(.secondary)
             Spacer()
             Text(value)
-                .font(.body)
+                .font(.piratenBodyDefault)
                 .fontWeight(.medium)
                 .foregroundStyle(.primary)
         }
@@ -178,10 +178,10 @@ struct UserProfileView: View {
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             Text("Nicht angemeldet")
-                .font(.title3)
+                .font(.piratenTitle3)
                 .fontWeight(.semibold)
             Text("Melde dich an, um Profile anzusehen.")
-                .font(.body)
+                .font(.piratenBodyDefault)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Zum Login") {
@@ -200,10 +200,10 @@ struct UserProfileView: View {
                 .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Authentifizierung fehlgeschlagen")
-                .font(.title3)
+                .font(.piratenTitle3)
                 .fontWeight(.semibold)
             Text(message)
-                .font(.body)
+                .font(.piratenBodyDefault)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Zum Login") {
@@ -222,10 +222,10 @@ struct UserProfileView: View {
                 .foregroundStyle(.red)
                 .accessibilityHidden(true)
             Text("Fehler")
-                .font(.title3)
+                .font(.piratenTitle3)
                 .fontWeight(.semibold)
             Text(message)
-                .font(.body)
+                .font(.piratenBodyDefault)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Erneut versuchen") {

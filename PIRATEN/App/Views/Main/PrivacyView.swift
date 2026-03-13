@@ -17,7 +17,7 @@ struct PrivacyView: View {
                 // Overview
                 PrivacySection(title: "Überblick") {
                     Text("Diese App wird von der Piratenpartei für ihre Mitglieder bereitgestellt. Datenschutz und Privatsphäre sind zentrale Werte der Piratenpartei – das gilt auch für diese App.")
-                        .font(.body)
+                        .font(.piratenBodyDefault)
                 }
 
                 // No tracking
@@ -130,7 +130,7 @@ struct PrivacyView: View {
 
                 // Contact
                 Text("Bei Fragen zum Datenschutz wende dich an die Piratenpartei.")
-                    .font(.footnote)
+                    .font(.piratenFootnote)
                     .foregroundColor(.secondary)
                     .padding(.horizontal)
             }
@@ -157,7 +157,7 @@ private struct PrivacySection<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.footnote)
+                .font(.piratenFootnote)
                 .foregroundColor(.secondary)
                 .textCase(.uppercase)
                 .padding(.horizontal)
@@ -173,7 +173,7 @@ private struct PrivacySection<Content: View>: View {
 
             if let footer {
                 Text(footer)
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .foregroundColor(.secondary)
                     .padding(.horizontal)
             }
@@ -191,7 +191,7 @@ private struct PrivacyRow: View {
         VStack(alignment: .leading, spacing: 6) {
             Label {
                 Text(title)
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .fontWeight(.medium)
             } icon: {
                 Image(systemName: icon)
@@ -199,7 +199,7 @@ private struct PrivacyRow: View {
             }
 
             Text(detail)
-                .font(.caption)
+                .font(.piratenCaption)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }

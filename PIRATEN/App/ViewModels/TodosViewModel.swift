@@ -37,6 +37,11 @@ final class TodosViewModel: ObservableObject {
     /// The current load state of the todos
     @Published private(set) var loadState: TodosLoadState = .idle
 
+    /// Whether there are new todos since the user last viewed the Todos tab
+    @Published private(set) var hasNewContent: Bool = false
+
+    private static let lastSeenTodoKey = "todos_last_seen_todo_id"
+
     /// Convenience property for backward compatibility
     var isLoading: Bool {
         loadState == .loading
@@ -94,6 +99,7 @@ final class TodosViewModel: ObservableObject {
 
                 self.todos = fetchedTodos
                 self.loadState = .loaded
+                self.updateNewContentFlag()
             } catch {
                 self.loadState = .error(message: "Aufgaben konnten nicht geladen werden. Bitte überprüfe deine Verbindung.")
             }
@@ -115,5 +121,20 @@ final class TodosViewModel: ObservableObject {
     /// Returns only completed (done) todos
     var completedTodos: [Todo] {
         todos.filter { $0.status == .done }
+    }
+
+    /// Marks the Todos tab as viewed, clearing the new content indicator.
+    func markAsViewed() {
+        guard let newestId = todos.first?.id else { return }
+        UserDefaults.standard.set(newestId, forKey: Self.lastSeenTodoKey)
+        hasNewContent = false
+    }
+
+    // MARK: - Private Helpers
+
+    private func updateNewContentFlag() {
+        guard let newestId = todos.first?.id else { return }
+        let lastSeen = UserDefaults.standard.integer(forKey: Self.lastSeenTodoKey)
+        hasNewContent = lastSeen != 0 && newestId != lastSeen
     }
 }

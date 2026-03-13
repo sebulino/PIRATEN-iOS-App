@@ -154,10 +154,10 @@ struct TopicDetailView: View {
                         Spacer()
                         VStack(spacing: 6) {
                             Image(systemName: "lock.fill")
-                                .font(.title2)
+                                .font(.piratenTitle2)
                                 .foregroundStyle(.secondary)
                             Text("Dieses Thema ist geschlossen.")
-                                .font(.subheadline)
+                                .font(.piratenSubheadline)
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -177,9 +177,9 @@ struct TopicDetailView: View {
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             Text("Keine Beiträge")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
             Text("Dieses Thema enthält noch keine Beiträge.")
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             Button("Aktualisieren") {
@@ -198,9 +198,9 @@ struct TopicDetailView: View {
                 .foregroundStyle(.blue)
                 .accessibilityHidden(true)
             Text("Anmeldung erforderlich")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
             Text("Bitte melde dich an, um die Beiträge zu sehen.")
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             Button("Anmelden") {
@@ -219,9 +219,9 @@ struct TopicDetailView: View {
                 .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Sitzung abgelaufen")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
             Text(message)
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             Button("Erneut anmelden") {
@@ -240,9 +240,9 @@ struct TopicDetailView: View {
                 .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Fehler beim Laden")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
             Text(message)
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Erneut versuchen") {
@@ -313,7 +313,7 @@ private struct PostRow: View {
                         }
 
                         Text(post.author.displayName ?? post.author.username)
-                            .font(.subheadline)
+                            .font(.piratenSubheadline)
                             .fontWeight(.semibold)
                     }
                 }
@@ -322,21 +322,21 @@ private struct PostRow: View {
                 Spacer()
 
                 Text("#\(post.postNumber)")
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .foregroundColor(.secondary)
             }
 
             // Post content with clickable links
             if let content = parsedContent {
                 Text(content)
-                    .font(.body)
+                    .font(.piratenBodyDefault)
                     .lineLimit(isExpanded ? nil : collapsedLineLimit)
                     .foregroundColor(.primary)
                     .tint(.blue)
             } else {
                 // Brief placeholder while HTML is being parsed
                 Text(HTMLContentParser.stripHTML(from: post.content))
-                    .font(.body)
+                    .font(.piratenBodyDefault)
                     .lineLimit(collapsedLineLimit)
                     .foregroundColor(.primary)
             }
@@ -371,7 +371,7 @@ private struct PostRow: View {
                         Text(isExpanded ? "Weniger anzeigen" : "Mehr anzeigen")
                         Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                     }
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .foregroundColor(.blue)
                 }
                 .buttonStyle(.plain)
@@ -381,7 +381,7 @@ private struct PostRow: View {
             HStack {
                 // Time
                 Text(post.createdAt, style: .relative)
-                    .font(.caption2)
+                    .font(.piratenCaption2)
                     .foregroundStyle(.secondary)
 
                 Spacer()
@@ -389,7 +389,7 @@ private struct PostRow: View {
                 // Reply count
                 if post.replyCount > 0 {
                     Label("\(post.replyCount)", systemImage: "arrowshape.turn.up.left")
-                        .font(.caption)
+                        .font(.piratenCaption)
                         .foregroundStyle(.secondary)
                         .accessibilityLabel("\(post.replyCount) Antworten")
                 }
@@ -400,10 +400,10 @@ private struct PostRow: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: post.likedByCurrentUser ? "heart.fill" : "heart")
-                            .font(.title3)
+                            .font(.piratenTitle3)
                         if post.likeCount > 0 {
                             Text("\(post.likeCount)")
-                                .font(.subheadline)
+                                .font(.piratenSubheadline)
                         }
                     }
                     .foregroundStyle(post.likedByCurrentUser ? Color.piratenPrimary : Color.secondary)
@@ -418,9 +418,9 @@ private struct PostRow: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "arrowshape.turn.up.left")
-                                .font(.title3)
+                                .font(.piratenTitle3)
                             Text("Antworten")
-                                .font(.subheadline)
+                                .font(.piratenSubheadline)
                         }
                         .foregroundStyle(.blue)
                     }
@@ -463,7 +463,8 @@ private struct SelectedUsername: Identifiable {
                     categoryId: 1,
                     isVisible: true,
                     isClosed: false,
-                    isArchived: false
+                    isArchived: false,
+                    isRead: true
                 ),
                 discourseRepository: FakeDiscourseRepository()
             )
