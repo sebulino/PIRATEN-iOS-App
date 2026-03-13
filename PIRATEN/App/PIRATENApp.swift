@@ -90,6 +90,12 @@ struct PIRATENApp: App {
                 },
                 checkAdminStatus: { [container] in
                     await container.todoRepository.checkAdminStatus()
+                },
+                onLogout: { [container] in
+                    // Clear Discourse API key from Keychain
+                    container.discourseAPIKeyProvider.clearCredential()
+                    // Logout from PiratenSSO (clears OIDC tokens + local data)
+                    container.authStateManager.logout()
                 }
             )
             .onOpenURL { url in

@@ -52,6 +52,9 @@ struct MainTabView: View {
     /// Closure to check the current user's admin status
     var checkAdminStatus: (() async -> Bool?)?
 
+    /// Callback when user taps the logout button
+    var onLogout: (() -> Void)?
+
     // MARK: - Toolbar Sheet State
 
     /// Whether the profile sheet is being shown
@@ -282,7 +285,8 @@ struct MainTabView: View {
                     viewModel: profileViewModel,
                     notificationSettings: notificationSettings,
                     adminRequestViewModelFactory: adminRequestViewModelFactory,
-                    checkAdminStatus: checkAdminStatus
+                    checkAdminStatus: checkAdminStatus,
+                    onLogout: onLogout
                 )
             }
         }

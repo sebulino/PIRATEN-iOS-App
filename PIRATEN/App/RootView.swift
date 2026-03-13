@@ -51,6 +51,9 @@ struct RootView: View {
     /// Closure to check the current user's admin status
     var checkAdminStatus: (() async -> Bool?)?
 
+    /// Callback when user taps the logout button
+    var onLogout: (() -> Void)?
+
     var body: some View {
         Group {
             switch authStateManager.currentState {
@@ -82,7 +85,8 @@ struct RootView: View {
                     knowledgeTopicDetailViewModelFactory: knowledgeTopicDetailViewModelFactory,
                     todoDetailViewModelFactory: todoDetailViewModelFactory,
                     adminRequestViewModelFactory: adminRequestViewModelFactory,
-                    checkAdminStatus: checkAdminStatus
+                    checkAdminStatus: checkAdminStatus,
+                    onLogout: onLogout
                 )
                 .provideWindow()
             case .failed(let error):
