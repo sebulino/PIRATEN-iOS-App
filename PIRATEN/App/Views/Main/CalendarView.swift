@@ -19,9 +19,6 @@ struct CalendarView: View {
     /// Whether to show a badge on the notification bell
     var notificationsBadge: Bool = false
 
-    /// Callback when user taps the home button to navigate to Kajüte
-    var onHomeTapped: (() -> Void)?
-
     /// Callback when user taps the messages button to open Nachrichten
     var onMessagesTapped: (() -> Void)?
 
@@ -55,12 +52,6 @@ struct CalendarView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     HStack(spacing: 2) {
-                        PiratenIconButton(
-                            systemName: "house",
-                            accessibilityLabel: "Kajüte"
-                        ) {
-                            onHomeTapped?()
-                        }
                         PiratenIconButton(
                             systemName: "envelope",
                             accessibilityLabel: "Nachrichten"

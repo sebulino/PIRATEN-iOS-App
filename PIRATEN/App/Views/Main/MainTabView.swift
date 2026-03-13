@@ -124,7 +124,6 @@ struct MainTabView: View {
                 onProfileTapped: { showingProfile = true },
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
-                onHomeTapped: { deepLinkRouter.selectedTab = 0 },
                 onMessagesTapped: { showingMessages = true },
                 onNewsTapped: { showingNews = true }
             )
@@ -139,7 +138,6 @@ struct MainTabView: View {
                 onProfileTapped: { showingProfile = true },
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
-                onHomeTapped: { deepLinkRouter.selectedTab = 0 },
                 onMessagesTapped: { showingMessages = true },
                 onNewsTapped: { showingNews = true }
             )
@@ -153,7 +151,6 @@ struct MainTabView: View {
                 onProfileTapped: { showingProfile = true },
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
-                onHomeTapped: { deepLinkRouter.selectedTab = 0 },
                 onMessagesTapped: { showingMessages = true },
                 onNewsTapped: { showingNews = true }
             )
@@ -169,7 +166,6 @@ struct MainTabView: View {
                 onProfileTapped: { showingProfile = true },
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
-                onHomeTapped: { deepLinkRouter.selectedTab = 0 },
                 onMessagesTapped: { showingMessages = true },
                 onNewsTapped: { showingNews = true }
             )
