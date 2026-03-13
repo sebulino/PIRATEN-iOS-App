@@ -58,6 +58,9 @@ struct StartupContainerView: View {
     /// Closure to check the current user's admin status
     var checkAdminStatus: (() async -> Bool?)?
 
+    /// Callback when user taps the logout button
+    var onLogout: (() -> Void)?
+
     // MARK: - Splash Screen State
 
     /// Whether to show the startup splash screen
@@ -90,7 +93,8 @@ struct StartupContainerView: View {
                 knowledgeTopicDetailViewModelFactory: knowledgeTopicDetailViewModelFactory,
                 todoDetailViewModelFactory: todoDetailViewModelFactory,
                 adminRequestViewModelFactory: adminRequestViewModelFactory,
-                checkAdminStatus: checkAdminStatus
+                checkAdminStatus: checkAdminStatus,
+                onLogout: onLogout
             )
 
             // Startup splash screen overlay (dismisses after delay)

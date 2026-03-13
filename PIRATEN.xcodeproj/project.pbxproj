@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0FDDAB2B2F2E0E2200207967 /* AppAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A1B2C3D4E5F60002 /* AppAuth */; };
+		0FE7A8492F641F0400524C3E /* Secrets.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 0FE7A8482F641F0400524C3E /* Secrets.xcconfig */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -31,6 +32,7 @@
 		0FE526D12F2BD101002C9449 /* PIRATEN.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PIRATEN.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FE526E02F2BD108002C9449 /* PIRATENTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PIRATENTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FE526EA2F2BD108002C9449 /* PIRATENUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PIRATENUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0FE7A8482F641F0400524C3E /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -114,6 +116,7 @@
 		0FE526FF2F2BD200002C9449 /* Config */ = {
 			isa = PBXGroup;
 			children = (
+				0FE7A8482F641F0400524C3E /* Secrets.xcconfig */,
 			);
 			path = Config;
 			sourceTree = SOURCE_ROOT;
@@ -242,6 +245,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0FE7A8492F641F0400524C3E /* Secrets.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -301,6 +305,7 @@
 /* Begin XCBuildConfiguration section */
 		0FE526F22F2BD108002C9449 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0FE7A8482F641F0400524C3E /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -366,6 +371,7 @@
 		};
 		0FE526F32F2BD108002C9449 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0FE7A8482F641F0400524C3E /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;

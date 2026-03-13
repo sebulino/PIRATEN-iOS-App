@@ -14,9 +14,11 @@ struct ProfileView: View {
     @ObservedObject var notificationSettings: NotificationSettingsManager
     var adminRequestViewModelFactory: (() -> AdminRequestViewModel)?
     var checkAdminStatus: (() async -> Bool?)?
+    var onLogout: (() -> Void)?
 
     @State private var showAdminRequest = false
     @State private var adminStatus: Bool?
+    @State private var showLogoutConfirmation = false
 
     var body: some View {
         NavigationStack {
@@ -205,6 +207,19 @@ struct ProfileView: View {
                 Text("Diese App verwendet kein Tracking und keine Analytics.")
             }
 
+            // Logout section
+            if onLogout != nil {
+                Section {
+                    Button(role: .destructive) {
+                        showLogoutConfirmation = true
+                    } label: {
+                        Label("Abmelden", systemImage: "rectangle.portrait.and.arrow.right")
+                    }
+                } footer: {
+                    Text("Meldet dich von PiratenSSO und dem Forum ab.")
+                }
+            }
+
             // Discourse load failure note (non-blocking)
             if viewModel.discourseLoadFailed {
                 Section {
@@ -233,6 +248,18 @@ struct ProfileView: View {
             if let factory = adminRequestViewModelFactory {
                 AdminRequestView(viewModel: factory())
             }
+        }
+        .confirmationDialog(
+            "Abmelden",
+            isPresented: $showLogoutConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Abmelden", role: .destructive) {
+                onLogout?()
+            }
+            Button("Abbrechen", role: .cancel) {}
+        } message: {
+            Text("Du wirst von PiratenSSO und dem Forum abgemeldet.")
         }
     }
 
