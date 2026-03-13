@@ -297,7 +297,7 @@ struct HomeView: View {
     @ViewBuilder
     private var claimedTodosSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Meine Aufgaben")
+            Text("Übernommene Aufgaben")
                 .font(.title3)
                 .fontWeight(.bold)
                 .foregroundColor(.orange)
