@@ -22,7 +22,7 @@ extension Color {
     static let piratenBackground = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.110, green: 0.102, blue: 0.090, alpha: 1.0)  // #1C1A17
-            : UIColor(red: 252/255, green: 248/255, blue: 244/255, alpha: 1.0)    // #fcf8f4
+        : UIColor(red: 252/255, green: 248/255, blue: 244/255, alpha: 0.5)    // #fcf8f4
     })
 
     /// Surface color for cards and elevated areas
@@ -30,6 +30,13 @@ extension Color {
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.173, green: 0.165, blue: 0.153, alpha: 1.0)  // #2C2A27
             : UIColor.white
+    })
+
+    /// Light orange background for unread items (forum topics, messages)
+    static let piratenUnreadBackground = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.200, green: 0.150, blue: 0.080, alpha: 1.0)  // warm dark tint
+            : UIColor(red: 1.0, green: 0.953, blue: 0.910, alpha: 1.0)    // #FFF3E8
     })
 
     /// Icon button background — peach tint for toolbar icon circles

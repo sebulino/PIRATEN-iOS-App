@@ -130,11 +130,11 @@ private struct RecipientRow: View {
             // Name and username
             VStack(alignment: .leading, spacing: 2) {
                 Text(user.displayText)
-                    .font(.body)
+                    .font(.piratenBodyDefault)
                     .foregroundColor(.primary)
 
                 Text("@\(user.username)")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
             }
 

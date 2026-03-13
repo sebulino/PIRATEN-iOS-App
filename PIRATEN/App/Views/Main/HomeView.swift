@@ -37,8 +37,14 @@ struct HomeView: View {
     /// Callback when user taps the messages button to open Nachrichten
     var onMessagesTapped: (() -> Void)?
 
+    /// Whether to show a badge on the messages toolbar button
+    var messagesBadge: Bool = false
+
     /// Callback when user taps the news toolbar button
     var onNewsTapped: (() -> Void)?
+
+    /// Whether to show a badge on the news toolbar button
+    var newsBadge: Bool = false
 
     /// Username of the contact whose profile is being shown
     @State private var selectedContactUsername: String?
@@ -67,13 +73,15 @@ struct HomeView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     HStack(spacing: 2) {
                         PiratenIconButton(
-                            systemName: "envelope",
+                            imageName: "nachrichten",
+                            badge: messagesBadge,
                             accessibilityLabel: "Nachrichten"
                         ) {
                             onMessagesTapped?()
                         }
                         PiratenIconButton(
-                            systemName: "newspaper",
+                            imageName: "neuigkeiten",
+                            badge: newsBadge,
                             accessibilityLabel: "News"
                         ) {
                             onNewsTapped?()
@@ -82,16 +90,16 @@ struct HomeView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 2) {
-                        PiratenIconButton(
-                            systemName: notificationsBadge ? "bell.badge" : "bell",
-                            badge: notificationsBadge,
-                            accessibilityLabel: "Benachrichtigungen"
-                        ) {
-                            onNotificationsTapped?()
-                        }
+//                        PiratenIconButton(
+//                            imageName: "benachrichtigungen",
+//                            badge: notificationsBadge,
+//                            accessibilityLabel: "Benachrichtigungen"
+//                        ) {
+//                            onNotificationsTapped?()
+//                        }
 
                         PiratenIconButton(
-                            systemName: "person.circle",
+                            imageName: "profil",
                             accessibilityLabel: "Profil"
                         ) {
                             onProfileTapped?()
@@ -137,21 +145,21 @@ struct HomeView: View {
                 if let firstName = viewModel.userFirstName {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Ahoi \(firstName)!")
-                            .font(.title2)
+                            .font(.piratenTitle2)
                             .fontWeight(.bold)
                             .foregroundColor(.orange)
 
                         if viewModel.unreadMessageCount == 0 {
                             Text("Du hast keine neuen Nachrichten.")
-                                .font(.subheadline)
+                                .font(.piratenSubheadline)
                                 .foregroundColor(.secondary)
                         } else if viewModel.unreadMessageCount == 1 {
                             Text("Du hast eine neue Nachricht.")
-                                .font(.subheadline)
+                                .font(.piratenSubheadline)
                                 .foregroundColor(.secondary)
                         } else {
                             Text("Du hast \(viewModel.unreadMessageCount) neue Nachrichten.")
-                                .font(.subheadline)
+                                .font(.piratenSubheadline)
                                 .foregroundColor(.secondary)
                         }
                     }
@@ -183,13 +191,13 @@ struct HomeView: View {
     private var recentContactsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Letzte Kontakte")
-                .font(.title3)
+                .font(.piratenTitle3)
                 .fontWeight(.bold)
                 .foregroundColor(.orange)
 
             if viewModel.recentContacts.isEmpty {
                 Text("Noch keine Nachrichten")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 8)
             } else {
@@ -233,7 +241,7 @@ struct HomeView: View {
             }
 
             Text(contact.displayName ?? contact.username)
-                .font(.caption)
+                .font(.piratenCaption)
                 .lineLimit(1)
                 .frame(width: 56)
         }
@@ -245,13 +253,13 @@ struct HomeView: View {
     private var knowledgeSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Weiterlesen")
-                .font(.title3)
+                .font(.piratenTitle3)
                 .fontWeight(.bold)
                 .foregroundColor(.orange)
 
             if viewModel.knowledgeArticles.isEmpty {
                 Text("Entdecke den Wissensbereich")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 8)
             } else {
@@ -276,17 +284,17 @@ struct HomeView: View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(topic.title)
-                    .font(.subheadline)
+                    .font(.piratenCallout)
                     .fontWeight(.medium)
                     .lineLimit(2)
                 Text(topic.summary)
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
             }
             Spacer()
             Image(systemName: "chevron.right")
-                .font(.caption)
+                .font(.piratenCaption)
                 .foregroundColor(.secondary)
         }
         .padding(.vertical, 6)
@@ -298,13 +306,13 @@ struct HomeView: View {
     private var claimedTodosSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Übernommene Aufgaben")
-                .font(.title3)
+                .font(.piratenTitle3)
                 .fontWeight(.bold)
                 .foregroundColor(.orange)
 
             if viewModel.claimedTodos.isEmpty {
                 Text("Du hast aktuell keine übernommenen ToDos.")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 8)
             } else {
@@ -343,13 +351,13 @@ struct HomeView: View {
     private var recentTopicsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Aktuelle Themen")
-                .font(.title3)
+                .font(.piratenTitle3)
                 .fontWeight(.bold)
                 .foregroundColor(.orange)
 
             if viewModel.recentTopics.isEmpty {
                 Text("Keine Themen verfügbar")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 8)
             } else {
@@ -374,17 +382,17 @@ struct HomeView: View {
     private func forumTopicRow(_ topic: Topic) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(topic.title)
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .fontWeight(.medium)
                 .lineLimit(2)
 
             HStack(spacing: 12) {
                 Label("\(max(0, topic.postsCount - 1))", systemImage: "bubble.right")
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .foregroundColor(.secondary)
 
                 Text(topic.createdAt, style: .relative)
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .foregroundColor(.secondary)
             }
         }

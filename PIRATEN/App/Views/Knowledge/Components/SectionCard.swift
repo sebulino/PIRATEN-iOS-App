@@ -18,11 +18,11 @@ struct SectionCard<Content: View>: View {
             Button(action: onToggle) {
                 HStack {
                     Text(heading)
-                        .font(.headline)
+                        .font(.piratenHeadlineBody)
                         .foregroundColor(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Image(systemName: "chevron.right")
-                        .font(.caption)
+                        .font(.piratenCaption)
                         .foregroundColor(.secondary)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                         .animation(.spring(response: 0.3), value: isExpanded)

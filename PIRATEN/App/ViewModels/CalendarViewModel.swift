@@ -36,6 +36,11 @@ final class CalendarViewModel: ObservableObject {
     /// The current load state
     @Published private(set) var loadState: CalendarLoadState = .idle
 
+    /// Whether there are new events since the user last viewed the Termine tab
+    @Published private(set) var hasNewContent: Bool = false
+
+    private static let lastSeenEventCountKey = "calendar_last_seen_event_count"
+
     // MARK: - Computed Properties
 
     /// Upcoming events (startDate >= now), sorted ascending by start date
@@ -76,6 +81,7 @@ final class CalendarViewModel: ObservableObject {
                 let fetchedEvents = try await calendarRepository.fetchEvents()
                 self.events = fetchedEvents
                 self.loadState = .loaded
+                self.updateNewContentFlag()
             } catch let error as CalendarError {
                 self.loadState = .error(message: error.localizedDescription)
             } catch {
@@ -87,5 +93,21 @@ final class CalendarViewModel: ObservableObject {
     /// Refreshes the event list.
     func refresh() {
         loadEvents()
+    }
+
+    /// Marks the Termine tab as viewed, clearing the new content indicator.
+    func markAsViewed() {
+        let count = upcomingEvents.count
+        UserDefaults.standard.set(count, forKey: Self.lastSeenEventCountKey)
+        hasNewContent = false
+    }
+
+    // MARK: - Private Helpers
+
+    private func updateNewContentFlag() {
+        let currentCount = upcomingEvents.count
+        let lastSeenCount = UserDefaults.standard.integer(forKey: Self.lastSeenEventCountKey)
+        // Show as new if we have events and the count changed since last viewed
+        hasNewContent = lastSeenCount != 0 && currentCount != lastSeenCount
     }
 }

@@ -25,6 +25,11 @@ final class NewsViewModel: ObservableObject {
     @Published private(set) var loadState: NewsLoadState = .idle
     @Published var errorMessage: String?
 
+    /// Whether there are new news items since the user last viewed the News tab
+    @Published private(set) var hasNewContent: Bool = false
+
+    private static let lastSeenNewsKey = "news_last_seen_message_id"
+
     // MARK: - Dependencies
 
     private let newsRepository: NewsRepository
@@ -57,6 +62,7 @@ final class NewsViewModel: ObservableObject {
                 self.items = fetched
                 self.loadState = .loaded
                 self.errorMessage = nil
+                self.updateNewContentFlag()
             } catch {
                 if self.items.isEmpty {
                     self.loadState = .error(message: "News konnten nicht geladen werden. Bitte überprüfe deine Verbindung.")
@@ -75,6 +81,7 @@ final class NewsViewModel: ObservableObject {
                 self.items = fetched
                 self.loadState = .loaded
                 self.errorMessage = nil
+                self.updateNewContentFlag()
             } catch {
                 if self.items.isEmpty {
                     self.loadState = .error(message: "News konnten nicht geladen werden. Bitte überprüfe deine Verbindung.")
@@ -83,5 +90,20 @@ final class NewsViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    /// Marks the News tab as viewed, clearing the new content indicator.
+    func markAsViewed() {
+        guard let newestId = items.first?.messageId else { return }
+        UserDefaults.standard.set(newestId, forKey: Self.lastSeenNewsKey)
+        hasNewContent = false
+    }
+
+    // MARK: - Private Helpers
+
+    private func updateNewContentFlag() {
+        guard let newestId = items.first?.messageId else { return }
+        let lastSeen = Int64(UserDefaults.standard.integer(forKey: Self.lastSeenNewsKey))
+        hasNewContent = lastSeen != 0 && newestId != lastSeen
     }
 }

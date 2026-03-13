@@ -58,7 +58,8 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 categoryId: 1,
                 isVisible: true,
                 isClosed: false,
-                isArchived: false
+                isArchived: false,
+                isRead: true
             ),
             Topic(
                 id: 2,
@@ -71,7 +72,8 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 categoryId: 2,
                 isVisible: true,
                 isClosed: false,
-                isArchived: false
+                isArchived: false,
+                isRead: true
             ),
             Topic(
                 id: 3,
@@ -84,7 +86,8 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 categoryId: 3,
                 isVisible: true,
                 isClosed: false,
-                isArchived: false
+                isArchived: false,
+                isRead: true
             ),
             Topic(
                 id: 4,
@@ -97,7 +100,8 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 categoryId: 1,
                 isVisible: true,
                 isClosed: false,
-                isArchived: false
+                isArchived: false,
+                isRead: true
             ),
             Topic(
                 id: 5,
@@ -110,7 +114,8 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 categoryId: 4,
                 isVisible: true,
                 isClosed: false,
-                isArchived: false
+                isArchived: false,
+                isRead: true
             )
         ]
     }

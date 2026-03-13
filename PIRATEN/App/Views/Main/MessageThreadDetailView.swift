@@ -180,7 +180,7 @@ struct MessageThreadDetailView: View {
                 .accessibilityHidden(true)
 
             Text("Tippe auf das Symbol oben, um zu antworten")
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundColor(.primary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -209,9 +209,9 @@ struct MessageThreadDetailView: View {
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             Text("Keine Nachrichten")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
             Text("Diese Unterhaltung enthält noch keine Nachrichten.")
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             Button("Aktualisieren") {
@@ -233,15 +233,15 @@ struct MessageThreadDetailView: View {
                         .foregroundStyle(.blue)
                         .accessibilityHidden(true)
                     Text("Anmeldung erforderlich")
-                        .font(.headline)
+                        .font(.piratenHeadlineBody)
                     Text("Bitte melde dich an, um die Nachrichten zu sehen.")
-                        .font(.subheadline)
+                        .font(.piratenSubheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
 
                     if case .failed(let authMessage) = coordinator.authState {
                         Text(authMessage)
-                            .font(.caption)
+                            .font(.piratenCaption)
                             .foregroundColor(.red)
                             .multilineTextAlignment(.center)
                     }
@@ -260,7 +260,7 @@ struct MessageThreadDetailView: View {
                     ProgressView()
                         .scaleEffect(1.5)
                     Text("Verbindung wird hergestellt...")
-                        .font(.subheadline)
+                        .font(.piratenSubheadline)
                         .foregroundColor(.secondary)
 
                 case .authenticated:
@@ -275,9 +275,9 @@ struct MessageThreadDetailView: View {
                     .foregroundStyle(.blue)
                     .accessibilityHidden(true)
                 Text("Anmeldung erforderlich")
-                    .font(.headline)
+                    .font(.piratenHeadlineBody)
                 Text("Bitte melde dich an, um die Nachrichten zu sehen.")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -302,15 +302,15 @@ struct MessageThreadDetailView: View {
                         .foregroundStyle(Color.piratenPrimary)
                         .accessibilityHidden(true)
                     Text("Sitzung abgelaufen")
-                        .font(.headline)
+                        .font(.piratenHeadlineBody)
                     Text("Die Verbindung ist abgelaufen. Bitte erneut verbinden.")
-                        .font(.subheadline)
+                        .font(.piratenSubheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
 
                     if case .failed(let authMessage) = coordinator.authState {
                         Text(authMessage)
-                            .font(.caption)
+                            .font(.piratenCaption)
                             .foregroundColor(.red)
                             .multilineTextAlignment(.center)
                     }
@@ -329,7 +329,7 @@ struct MessageThreadDetailView: View {
                     ProgressView()
                         .scaleEffect(1.5)
                     Text("Verbindung wird hergestellt...")
-                        .font(.subheadline)
+                        .font(.piratenSubheadline)
                         .foregroundColor(.secondary)
 
                 case .authenticated:
@@ -344,9 +344,9 @@ struct MessageThreadDetailView: View {
                     .foregroundStyle(Color.piratenPrimary)
                     .accessibilityHidden(true)
                 Text("Sitzung abgelaufen")
-                    .font(.headline)
+                    .font(.piratenHeadlineBody)
                 Text(message)
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -368,9 +368,9 @@ struct MessageThreadDetailView: View {
                 .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Fehler beim Laden")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
             Text(message)
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Erneut versuchen") {
@@ -440,7 +440,7 @@ private struct MessagePostRow: View {
                         onUsernameTapped?(post.author.username)
                     } label: {
                         Text(post.author.displayName ?? post.author.username)
-                            .font(.subheadline)
+                            .font(.piratenSubheadline)
                             .fontWeight(.semibold)
                             .foregroundStyle(.primary)
                     }
@@ -450,20 +450,20 @@ private struct MessagePostRow: View {
 
                     // Timestamp - use relative for recent, date for older
                     Text(formatTimestamp(post.createdAt))
-                        .font(.caption2)
+                        .font(.piratenCaption2)
                         .foregroundStyle(.secondary)
                 }
 
                 // Message body with clickable links
                 if let content = parsedContent {
                     Text(content)
-                        .font(.body)
+                        .font(.piratenBodyDefault)
                         .foregroundColor(.primary)
                         .tint(.blue)
                 } else {
                     // Brief placeholder while HTML is being parsed
                     Text(HTMLContentParser.stripHTML(from: post.content))
-                        .font(.body)
+                        .font(.piratenBodyDefault)
                         .foregroundColor(.primary)
                 }
             }

@@ -45,4 +45,7 @@ struct Topic: Identifiable, Equatable, Hashable {
 
     /// Whether the topic has been archived
     let isArchived: Bool
+
+    /// Whether the topic has been read by the current user
+    let isRead: Bool
 }

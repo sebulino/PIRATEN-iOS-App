@@ -17,6 +17,9 @@ struct PIRATENApp: App {
     private let container: AppContainer
 
     init() {
+        // Configure custom fonts for navigation bars
+        PiratenAppearance.configure()
+
         // Check for UI testing mode - reset auth state for clean test environment
         if CommandLine.arguments.contains("-UITestMode") {
             Self.resetAuthStateForUITesting()

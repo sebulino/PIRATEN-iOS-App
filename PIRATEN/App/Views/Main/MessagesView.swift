@@ -175,9 +175,9 @@ struct MessagesView: View {
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             Text("Keine Nachrichten")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
             Text("Du hast noch keine privaten Nachrichten.")
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             Button("Aktualisieren") {
@@ -198,16 +198,16 @@ struct MessagesView: View {
                     .foregroundStyle(Color.piratenPrimary)
                     .accessibilityHidden(true)
                 Text("Nachrichten verbinden")
-                    .font(.headline)
+                    .font(.piratenHeadlineBody)
                 Text("Um Nachrichten zu lesen und zu senden, muss die App mit dem Discourse-Forum verbunden werden.")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
 
                 if case .failed(let message) = discourseAuthCoordinator.authState {
                     Text(message)
-                        .font(.caption)
+                        .font(.piratenCaption)
                         .foregroundColor(.red)
                 }
 
@@ -225,13 +225,13 @@ struct MessagesView: View {
                 ProgressView()
                     .scaleEffect(1.5)
                 Text("Verbinde mit Forum...")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
 
             case .authenticated:
                 ProgressView()
                 Text("Verbunden! Lade Nachrichten...")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
             }
         }
@@ -254,16 +254,16 @@ struct MessagesView: View {
                     .foregroundStyle(Color.piratenPrimary)
                     .accessibilityHidden(true)
                 Text("Sitzung abgelaufen")
-                    .font(.headline)
+                    .font(.piratenHeadlineBody)
                 Text("Die Verbindung zu den Nachrichten ist abgelaufen. Bitte erneut verbinden.")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
 
                 if case .failed(let authMessage) = discourseAuthCoordinator.authState {
                     Text(authMessage)
-                        .font(.caption)
+                        .font(.piratenCaption)
                         .foregroundColor(.red)
                         .multilineTextAlignment(.center)
                 }
@@ -282,13 +282,13 @@ struct MessagesView: View {
                 ProgressView()
                     .scaleEffect(1.5)
                 Text("Verbindung wird hergestellt...")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
 
             case .authenticated:
                 ProgressView()
                 Text("Verbunden! Lade Nachrichten...")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
             }
         }
@@ -309,9 +309,9 @@ struct MessagesView: View {
                 .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Fehler beim Laden")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
             Text(message)
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Erneut versuchen") {
@@ -332,15 +332,14 @@ private struct MessageThreadRow: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(thread.title)
-                    .font(.headline)
+                    .font(.piratenHeadlineBody)
                     .lineLimit(2)
-                    .foregroundStyle(thread.isRead ? .primary : Color.blue)
 
                 Spacer()
 
                 if !thread.isRead {
                     Circle()
-                        .fill(.blue)
+                        .fill(Color.piratenPrimary)
                         .frame(width: 8, height: 8)
                         .accessibilityLabel("Ungelesen")
                 }
@@ -348,14 +347,14 @@ private struct MessageThreadRow: View {
 
             // Participants
             Text(participantsText)
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
 
             HStack {
                 // Reply count (postsCount includes the original post, so subtract 1)
                 Label("\(max(0, thread.postsCount - 1))", systemImage: "bubble.left")
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .foregroundStyle(.secondary)
                     .accessibilityLabel("\(max(0, thread.postsCount - 1)) Antworten")
 
@@ -363,11 +362,16 @@ private struct MessageThreadRow: View {
 
                 // Last activity time
                 Text(thread.lastActivityAt, style: .relative)
-                    .font(.caption2)
+                    .font(.piratenCaption2)
                     .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 4)
+        .padding(.horizontal, 8)
+        .background(
+            thread.isRead ? Color.clear : Color.piratenUnreadBackground
+        )
+        .cornerRadius(8)
         .accessibilityElement(children: .combine)
     }
 

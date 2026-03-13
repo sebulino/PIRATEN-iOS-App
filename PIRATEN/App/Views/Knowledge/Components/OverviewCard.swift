@@ -12,7 +12,7 @@ struct OverviewCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Kurzüberblick", systemImage: "list.bullet")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
                 .foregroundColor(.piratenPrimary)
 
             ForEach(Array(bullets.enumerated()), id: \.offset) { _, bullet in
@@ -20,7 +20,7 @@ struct OverviewCard: View {
                     Text("•")
                         .foregroundColor(.piratenPrimary)
                     MarkdownTextView(markdown: bullet)
-                        .font(.subheadline)
+                        .font(.piratenSubheadline)
                 }
             }
         }

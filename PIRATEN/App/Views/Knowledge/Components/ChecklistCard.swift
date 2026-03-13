@@ -19,11 +19,11 @@ struct ChecklistCard: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Label("Checkliste", systemImage: "checklist")
-                    .font(.headline)
+                    .font(.piratenHeadlineBody)
                     .foregroundColor(.piratenPrimary)
                 Spacer()
                 Text("\(completedCount)/\(items.count)")
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .foregroundColor(.secondary)
             }
 
@@ -34,9 +34,9 @@ struct ChecklistCard: View {
                     HStack(alignment: .top, spacing: 10) {
                         Image(systemName: isCompleted(item.id) ? "checkmark.square.fill" : "square")
                             .foregroundColor(isCompleted(item.id) ? .piratenPrimary : .secondary)
-                            .font(.title3)
+                            .font(.piratenTitle3)
                         Text(item.text)
-                            .font(.subheadline)
+                            .font(.piratenSubheadline)
                             .foregroundColor(.primary)
                             .strikethrough(isCompleted(item.id))
                             .frame(maxWidth: .infinity, alignment: .leading)

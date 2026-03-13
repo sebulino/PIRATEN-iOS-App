@@ -11,32 +11,66 @@ struct NewsDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(item.postedAt, format: .dateTime.day().month(.wide).year().hour().minute())
-                    .font(.subheadline)
+            VStack(alignment: .leading, spacing: 0) {
+                // Header with date and headline
+                VStack(alignment: .leading, spacing: 8) {
+                    Label {
+                        Text(item.postedAt, format: .dateTime.day().month(.wide).year())
+                            .font(.piratenSubheadline)
+                    } icon: {
+                        Image(systemName: "calendar")
+                            .font(.piratenSubheadline)
+                    }
                     .foregroundStyle(.secondary)
 
-                Text(item.text)
-                    .font(.body)
+                    Text(item.headline)
+                        .font(.piratenTitle3)
+                        .fontWeight(.bold)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 12)
 
+                Divider()
+                    .padding(.horizontal, 16)
+
+                // Full text body
+                Text(item.text)
+                    .font(.piratenBodyDefault)
+                    .lineSpacing(4)
+                    .padding(16)
+
+                // Links section
                 let urls = Self.detectURLs(in: item.text)
                 if !urls.isEmpty {
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Links")
-                            .font(.subheadline)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label("Links", systemImage: "link")
+                            .font(.piratenSubheadline)
                             .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
 
                         ForEach(urls, id: \.self) { url in
-                            Link(url.absoluteString, destination: url)
-                                .font(.subheadline)
+                            Link(destination: url) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "arrow.up.right.square")
+                                        .font(.piratenSubheadline)
+                                    Text(Self.displayHost(for: url))
+                                        .font(.piratenSubheadline)
+                                        .lineLimit(1)
+                                    Spacer()
+                                }
+                                .padding(12)
+                                .background(Color.piratenSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
                         }
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
                 }
             }
-            .padding(16)
         }
+        .piratenStyledBackground()
         .navigationTitle("News")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -50,10 +84,26 @@ struct NewsDetailView: View {
         let matches = detector.matches(in: text, range: range)
         return matches.compactMap { $0.url }
     }
+
+    /// Returns a readable display string for a URL (host + path).
+    static func displayHost(for url: URL) -> String {
+        var display = url.host ?? url.absoluteString
+        let path = url.path
+        if !path.isEmpty && path != "/" {
+            display += path
+        }
+        return display
+    }
 }
 
-#Preview {
+#Preview("With links") {
     NavigationStack {
         NewsDetailView(item: FakeNewsRepository.sampleItems.last!)
+    }
+}
+
+#Preview("Plain text") {
+    NavigationStack {
+        NewsDetailView(item: FakeNewsRepository.sampleItems.first!)
     }
 }

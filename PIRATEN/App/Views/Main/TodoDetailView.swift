@@ -23,11 +23,11 @@ struct TodoDetailView: View {
                 GroupBox("Aufgabe") {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(viewModel.todo.title)
-                            .font(.headline)
+                            .font(.piratenHeadlineBody)
 
                         if let description = viewModel.todo.description {
                             Text(description)
-                                .font(.body)
+                                .font(.piratenBodyDefault)
                                 .foregroundColor(.secondary)
                         }
                     }
@@ -102,21 +102,21 @@ struct TodoDetailView: View {
                     } else if viewModel.comments.isEmpty {
                         Text("Noch keine Kommentare.")
                             .foregroundColor(.secondary)
-                            .font(.callout)
+                            .font(.piratenCallout)
                     } else {
                         ForEach(viewModel.comments) { comment in
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
                                     Text(comment.authorName)
-                                        .font(.caption)
+                                        .font(.piratenCaption)
                                         .fontWeight(.semibold)
                                     Spacer()
                                     Text(comment.createdAt, style: .relative)
-                                        .font(.caption2)
+                                        .font(.piratenCaption2)
                                         .foregroundColor(.secondary)
                                 }
                                 Text(comment.text)
-                                    .font(.callout)
+                                    .font(.piratenCallout)
                             }
                         }
                     }
@@ -138,7 +138,7 @@ struct TodoDetailView: View {
                 if let error = viewModel.errorMessage {
                     Text(error)
                         .foregroundColor(.red)
-                        .font(.callout)
+                        .font(.piratenCallout)
                         .padding(.horizontal)
                 }
             }
@@ -187,7 +187,7 @@ struct TodoDetailView: View {
     private func actionButton(_ title: String, icon: String, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Label(title, systemImage: icon)
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .fontWeight(.medium)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)

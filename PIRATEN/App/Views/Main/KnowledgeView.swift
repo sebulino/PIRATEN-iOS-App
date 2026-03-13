@@ -25,8 +25,14 @@ struct KnowledgeView: View {
     /// Callback when user taps the messages button to open Nachrichten
     var onMessagesTapped: (() -> Void)?
 
+    /// Whether to show a badge on the messages toolbar button
+    var messagesBadge: Bool = false
+
     /// Callback when user taps the news button to open News
     var onNewsTapped: (() -> Void)?
+
+    /// Whether to show a badge on the news toolbar button
+    var newsBadge: Bool = false
 
     private let categoryColumns = [
         GridItem(.flexible(), spacing: 12),
@@ -60,13 +66,15 @@ struct KnowledgeView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     HStack(spacing: 2) {
                         PiratenIconButton(
-                            systemName: "envelope",
+                            imageName: "nachrichten",
+                            badge: messagesBadge,
                             accessibilityLabel: "Nachrichten"
                         ) {
                             onMessagesTapped?()
                         }
                         PiratenIconButton(
-                            systemName: "newspaper",
+                            imageName: "neuigkeiten",
+                            badge: newsBadge,
                             accessibilityLabel: "News"
                         ) {
                             onNewsTapped?()
@@ -75,16 +83,16 @@ struct KnowledgeView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 2) {
-                        PiratenIconButton(
-                            systemName: notificationsBadge ? "bell.badge" : "bell",
-                            badge: notificationsBadge,
-                            accessibilityLabel: "Benachrichtigungen"
-                        ) {
-                            onNotificationsTapped?()
-                        }
+//                        PiratenIconButton(
+//                            imageName: "benachrichtigungen",
+//                            badge: notificationsBadge,
+//                            accessibilityLabel: "Benachrichtigungen"
+//                        ) {
+//                            onNotificationsTapped?()
+//                        }
 
                         PiratenIconButton(
-                            systemName: "person.circle",
+                            imageName: "profil",
                             accessibilityLabel: "Profil"
                         ) {
                             onProfileTapped?()
@@ -133,7 +141,7 @@ struct KnowledgeView: View {
     private var featuredSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Empfohlen")
-                .font(.title2)
+                .font(.piratenTitle2)
                 .fontWeight(.bold)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -157,7 +165,7 @@ struct KnowledgeView: View {
     private var inProgressSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Weiterlesen")
-                .font(.title2)
+                .font(.piratenTitle2)
                 .fontWeight(.bold)
 
             ForEach(viewModel.inProgressTopics) { topic in
@@ -178,7 +186,7 @@ struct KnowledgeView: View {
     private var categoriesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Kategorien")
-                .font(.title2)
+                .font(.piratenTitle2)
                 .fontWeight(.bold)
 
             LazyVGrid(columns: categoryColumns, spacing: 12) {
@@ -209,9 +217,9 @@ struct KnowledgeView: View {
                     .font(.system(size: 48))
                     .foregroundColor(.secondary)
                 Text("Keine Ergebnisse")
-                    .font(.headline)
+                    .font(.piratenHeadlineBody)
                 Text("Für \"\(viewModel.searchQuery)\" wurden keine Themen gefunden.")
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -244,9 +252,9 @@ struct KnowledgeView: View {
                 .font(.system(size: 48))
                 .foregroundColor(.secondary)
             Text("Keine Inhalte")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
             Text("Es sind noch keine Wissensartikel verfügbar.")
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             Button("Aktualisieren") {
@@ -264,9 +272,9 @@ struct KnowledgeView: View {
                 .font(.system(size: 48))
                 .foregroundColor(.piratenPrimary)
             Text("Fehler beim Laden")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
             Text(message)
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             Button("Erneut versuchen") {
@@ -318,7 +326,7 @@ private struct FeaturedTopicCard: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(topic.level)
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .fontWeight(.medium)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
@@ -332,12 +340,12 @@ private struct FeaturedTopicCard: View {
             }
 
             Text(topic.title)
-                .font(.headline)
+                .font(.piratenHeadlineBody)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
 
             Text(topic.summary)
-                .font(.caption)
+                .font(.piratenCaption)
                 .foregroundColor(.secondary)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
@@ -346,7 +354,7 @@ private struct FeaturedTopicCard: View {
 
             HStack {
                 Label("\(topic.readingMinutes) Min.", systemImage: "clock")
-                    .font(.caption2)
+                    .font(.piratenCaption2)
                     .foregroundColor(.secondary)
             }
         }
@@ -363,12 +371,12 @@ private struct FeaturedTopicCard: View {
             case .completed:
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .accessibilityLabel("Abgeschlossen")
             case .started:
                 Image(systemName: "book.fill")
                     .foregroundColor(.accentColor)
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .accessibilityLabel("Angefangen")
             case .unread:
                 EmptyView()
@@ -387,21 +395,21 @@ private struct TopicListRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(topic.title)
-                    .font(.headline)
+                    .font(.piratenHeadlineBody)
                     .lineLimit(2)
 
                 Text(topic.summary)
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
                     .lineLimit(2)
 
                 HStack(spacing: 8) {
                     Label("\(topic.readingMinutes) Min.", systemImage: "clock")
-                        .font(.caption)
+                        .font(.piratenCaption)
                         .foregroundColor(.secondary)
 
                     Text(topic.level)
-                        .font(.caption)
+                        .font(.piratenCaption)
                         .fontWeight(.medium)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 1)
@@ -445,17 +453,17 @@ private struct CategoryCard: View {
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: category.icon)
-                .font(.title2)
+                .font(.piratenTitle2)
                 .foregroundColor(.accentColor)
 
             Text(category.title)
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .fontWeight(.medium)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
 
             Text(category.description)
-                .font(.caption)
+                .font(.piratenCaption)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)

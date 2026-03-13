@@ -58,9 +58,9 @@ struct NotificationsSheetView: View {
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             Text("Keine Benachrichtigungen")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
             Text("Du hast derzeit keine neuen Benachrichtigungen.")
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -100,15 +100,15 @@ private struct NotificationRow: View {
         VStack(alignment: .leading, spacing: 4) {
             if !notification.request.content.title.isEmpty {
                 Text(notification.request.content.title)
-                    .font(.headline)
+                    .font(.piratenHeadlineBody)
             }
             if !notification.request.content.body.isEmpty {
                 Text(notification.request.content.body)
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .foregroundStyle(.secondary)
             }
             Text(notification.date, style: .relative)
-                .font(.caption2)
+                .font(.piratenCaption2)
                 .foregroundStyle(.tertiary)
         }
         .padding(.vertical, 4)

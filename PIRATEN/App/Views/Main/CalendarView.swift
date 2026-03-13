@@ -22,8 +22,14 @@ struct CalendarView: View {
     /// Callback when user taps the messages button to open Nachrichten
     var onMessagesTapped: (() -> Void)?
 
+    /// Whether to show a badge on the messages toolbar button
+    var messagesBadge: Bool = false
+
     /// Callback when user taps the news button to open News
     var onNewsTapped: (() -> Void)?
+
+    /// Whether to show a badge on the news toolbar button
+    var newsBadge: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -53,13 +59,15 @@ struct CalendarView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     HStack(spacing: 2) {
                         PiratenIconButton(
-                            systemName: "envelope",
+                            imageName: "nachrichten",
+                            badge: messagesBadge,
                             accessibilityLabel: "Nachrichten"
                         ) {
                             onMessagesTapped?()
                         }
                         PiratenIconButton(
-                            systemName: "newspaper",
+                            imageName: "neuigkeiten",
+                            badge: newsBadge,
                             accessibilityLabel: "News"
                         ) {
                             onNewsTapped?()
@@ -68,16 +76,16 @@ struct CalendarView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 2) {
-                        PiratenIconButton(
-                            systemName: notificationsBadge ? "bell.badge" : "bell",
-                            badge: notificationsBadge,
-                            accessibilityLabel: "Benachrichtigungen"
-                        ) {
-                            onNotificationsTapped?()
-                        }
+//                        PiratenIconButton(
+//                            imageName: "benachrichtigungen",
+//                            badge: notificationsBadge,
+//                            accessibilityLabel: "Benachrichtigungen"
+//                        ) {
+//                            onNotificationsTapped?()
+//                        }
 
                         PiratenIconButton(
-                            systemName: "person.circle",
+                            imageName: "profil",
                             accessibilityLabel: "Profil"
                         ) {
                             onProfileTapped?()
@@ -106,7 +114,7 @@ struct CalendarView: View {
                         }
                     } header: {
                         Text("Kommende Termine")
-                            .font(.headline)
+                            .font(.piratenHeadlineBody)
                             .padding(.top, 8)
                     }
                 }
@@ -119,7 +127,7 @@ struct CalendarView: View {
                         }
                     } header: {
                         Text("Vergangene Woche")
-                            .font(.headline)
+                            .font(.piratenHeadlineBody)
                             .padding(.top, 8)
                     }
                 }
@@ -184,26 +192,26 @@ private struct CalendarEventRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(event.title)
-                .font(.body)
+                .font(.piratenBodyDefault)
                 .fontWeight(.medium)
                 .lineLimit(2)
 
             HStack(spacing: 4) {
                 Image(systemName: "calendar")
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .foregroundColor(.secondary)
                 Text(formattedDate)
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .foregroundColor(.secondary)
             }
 
             if let location = event.location, !location.isEmpty {
                 HStack(spacing: 4) {
                     Image(systemName: "mappin.and.ellipse")
-                        .font(.caption)
+                        .font(.piratenCaption)
                         .foregroundColor(.secondary)
                     Text(location)
-                        .font(.caption)
+                        .font(.piratenCaption)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                 }
@@ -213,7 +221,7 @@ private struct CalendarEventRow: View {
                 HStack(spacing: 4) {
                     ForEach(event.categories, id: \.self) { category in
                         Text(category)
-                            .font(.caption2)
+                            .font(.piratenCaption2)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(Color.accentColor.opacity(0.15))

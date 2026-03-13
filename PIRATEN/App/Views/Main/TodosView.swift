@@ -28,8 +28,14 @@ struct TodosView: View {
     /// Callback when user taps the messages button to open Nachrichten
     var onMessagesTapped: (() -> Void)?
 
+    /// Whether to show a badge on the messages toolbar button
+    var messagesBadge: Bool = false
+
     /// Callback when user taps the news button to open News
     var onNewsTapped: (() -> Void)?
+
+    /// Whether to show a badge on the news toolbar button
+    var newsBadge: Bool = false
 
     @State private var showingCreateSheet = false
 
@@ -61,13 +67,15 @@ struct TodosView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     HStack(spacing: 2) {
                         PiratenIconButton(
-                            systemName: "envelope",
+                            imageName: "nachrichten",
+                            badge: messagesBadge,
                             accessibilityLabel: "Nachrichten"
                         ) {
                             onMessagesTapped?()
                         }
                         PiratenIconButton(
-                            systemName: "newspaper",
+                            imageName: "neuigkeiten",
+                            badge: newsBadge,
                             accessibilityLabel: "News"
                         ) {
                             onNewsTapped?()
@@ -76,16 +84,16 @@ struct TodosView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 2) {
-                        PiratenIconButton(
-                            systemName: notificationsBadge ? "bell.badge" : "bell",
-                            badge: notificationsBadge,
-                            accessibilityLabel: "Benachrichtigungen"
-                        ) {
-                            onNotificationsTapped?()
-                        }
+//                        PiratenIconButton(
+//                            imageName: "benachrichtigungen",
+//                            badge: notificationsBadge,
+//                            accessibilityLabel: "Benachrichtigungen"
+//                        ) {
+//                            onNotificationsTapped?()
+//                        }
 
                         PiratenIconButton(
-                            systemName: "person.circle",
+                            imageName: "profil",
                             accessibilityLabel: "Profil"
                         ) {
                             onProfileTapped?()
@@ -127,9 +135,9 @@ struct TodosView: View {
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             Text("Keine Aufgaben")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
             Text("Es sind noch keine Aufgaben vorhanden.")
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             Button("Aktualisieren") {
@@ -148,9 +156,9 @@ struct TodosView: View {
                 .foregroundStyle(Color.piratenPrimary)
                 .accessibilityHidden(true)
             Text("Fehler beim Laden")
-                .font(.headline)
+                .font(.piratenHeadlineBody)
             Text(message)
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Erneut versuchen") {
@@ -220,7 +228,7 @@ struct TodoRow: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(todo.title)
-                        .font(hideStatus ? .subheadline : .headline)
+                        .font(hideStatus ? .piratenCallout : .piratenHeadlineBody)
                         .fontWeight(hideStatus ? .medium : .regular)
                         .lineLimit(2)
                         .strikethrough(todo.status == .done)
@@ -247,7 +255,7 @@ struct TodoRow: View {
                         Label("\(hours) Std.", systemImage: "clock")
                     }
                 }
-                .font(.caption)
+                .font(.piratenCaption)
                 .foregroundStyle(.secondary)
             }
 
@@ -277,7 +285,7 @@ struct TodoRow: View {
     @ViewBuilder
     private var statusBadge: some View {
         Text(todo.status.displayName)
-            .font(.caption2)
+            .font(.piratenCaption2)
             .fontWeight(.medium)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
@@ -296,7 +304,7 @@ struct TodoRow: View {
                 .accessibilityHidden(true)
             Text(date, format: .dateTime.day().month(.wide).year())
         }
-        .font(.caption)
+        .font(.piratenCaption)
         .foregroundStyle(isOverdue ? .red : .secondary)
         .accessibilityLabel(isOverdue ? "Überfällig: \(date.formatted(date: .long, time: .omitted))" : "Fällig: \(date.formatted(date: .long, time: .omitted))")
     }

@@ -109,10 +109,17 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onMessagesTapped: { showingMessages = true },
-                onNewsTapped: { showingNews = true }
+                messagesBadge: messagesViewModel.hasNewContent,
+                onNewsTapped: { showingNews = true },
+                newsBadge: newsViewModel.hasNewContent
             )
                 .tabItem {
-                    Label("Kajüte", systemImage: "house")
+                    Label {
+                        Text("Kajüte")
+                    } icon: {
+                        Image("kajuete")
+                            .renderingMode(.template)
+                    }
                 }
                 .tag(0)
 
@@ -128,12 +135,20 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onMessagesTapped: { showingMessages = true },
-                onNewsTapped: { showingNews = true }
+                messagesBadge: messagesViewModel.hasNewContent,
+                onNewsTapped: { showingNews = true },
+                newsBadge: newsViewModel.hasNewContent
             )
                 .tabItem {
-                    Label("Forum", systemImage: "bubble.left.and.bubble.right")
+                    Label {
+                        Text("Forum")
+                    } icon: {
+                        Image("forum")
+                            .renderingMode(.template)
+                    }
                 }
                 .tag(1)
+                .badge(forumViewModel.hasNewContent ? Text(" ") : nil)
 
             KnowledgeView(
                 viewModel: knowledgeViewModel,
@@ -142,10 +157,17 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onMessagesTapped: { showingMessages = true },
-                onNewsTapped: { showingNews = true }
+                messagesBadge: messagesViewModel.hasNewContent,
+                onNewsTapped: { showingNews = true },
+                newsBadge: newsViewModel.hasNewContent
             )
                 .tabItem {
-                    Label("Wissen", systemImage: "book")
+                    Label {
+                        Text("Wissen")
+                    } icon: {
+                        Image("wissen")
+                            .renderingMode(.template)
+                    }
                 }
                 .tag(3)
 
@@ -155,12 +177,20 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onMessagesTapped: { showingMessages = true },
-                onNewsTapped: { showingNews = true }
+                messagesBadge: messagesViewModel.hasNewContent,
+                onNewsTapped: { showingNews = true },
+                newsBadge: newsViewModel.hasNewContent
             )
                 .tabItem {
-                    Label("Termine", systemImage: "calendar")
+                    Label {
+                        Text("Termine")
+                    } icon: {
+                        Image("termine")
+                            .renderingMode(.template)
+                    }
                 }
                 .tag(4)
+                .badge(calendarViewModel.hasNewContent ? Text(" ") : nil)
 
             TodosView(
                 viewModel: todosViewModel,
@@ -170,12 +200,20 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onMessagesTapped: { showingMessages = true },
-                onNewsTapped: { showingNews = true }
+                messagesBadge: messagesViewModel.hasNewContent,
+                onNewsTapped: { showingNews = true },
+                newsBadge: newsViewModel.hasNewContent
             )
                 .tabItem {
-                    Label("ToDos", systemImage: "checklist")
+                    Label {
+                        Text("ToDos")
+                    } icon: {
+                        Image("todos")
+                            .renderingMode(.template)
+                    }
                 }
                 .tag(5)
+                .badge(todosViewModel.hasNewContent ? Text(" ") : nil)
         }
         .sheet(isPresented: $showingRecipientPicker, onDismiss: {
             // After recipient picker dismisses, show compose if we have a recipient
@@ -260,7 +298,9 @@ struct MainTabView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingNews) {
+        .sheet(isPresented: $showingNews, onDismiss: {
+            newsViewModel.markAsViewed()
+        }) {
             NewsView(viewModel: newsViewModel)
         }
         .sheet(isPresented: $showingMessages) {
@@ -296,6 +336,14 @@ struct MainTabView: View {
             NotificationsSheetView()
         }
         .tint(Color.piratenPrimary)
+        .onChange(of: deepLinkRouter.selectedTab) { _, newTab in
+            switch newTab {
+            case 1: forumViewModel.markAsViewed()
+            case 4: calendarViewModel.markAsViewed()
+            case 5: todosViewModel.markAsViewed()
+            default: break
+            }
+        }
         .onAppear {
             configureNavigationBarAppearance()
             configureTabBarAppearance()
@@ -372,6 +420,9 @@ struct MainTabView: View {
         tabAppearance.configureWithDefaultBackground()
         UITabBar.appearance().standardAppearance = tabAppearance
         UITabBar.appearance().scrollEdgeAppearance = tabAppearance
+
+        // Orange badge dot for new content indicators
+        UITabBarItem.appearance().badgeColor = UIColor(Color.piratenPrimary)
     }
 
     // MARK: - Profile Messaging Helper

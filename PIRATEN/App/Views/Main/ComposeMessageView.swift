@@ -148,7 +148,7 @@ struct ComposeMessageView: View {
                     Spacer()
 
                     Image(systemName: "chevron.right")
-                        .font(.caption)
+                        .font(.piratenCaption)
                         .foregroundColor(.secondary)
                 } else {
                     Text("Empfänger wählen...")
@@ -157,7 +157,7 @@ struct ComposeMessageView: View {
                     Spacer()
 
                     Image(systemName: "chevron.right")
-                        .font(.caption)
+                        .font(.piratenCaption)
                         .foregroundColor(.secondary)
                 }
             }
@@ -198,7 +198,7 @@ struct ComposeMessageView: View {
             // Error message
             if let error = viewModel.validationErrorMessage {
                 Text(error)
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .foregroundColor(.red)
             }
 
@@ -206,7 +206,7 @@ struct ComposeMessageView: View {
             if viewModel.shouldShowCharacterCount {
                 let info = viewModel.characterCountInfo
                 Text("\(info.current)/\(info.max)")
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .foregroundColor(info.isOverLimit ? .red : .secondary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
@@ -222,7 +222,7 @@ struct ComposeMessageView: View {
                     }
                     .buttonStyle(.bordered)
                 }
-                .font(.caption)
+                .font(.piratenCaption)
                 .foregroundColor(.red)
                 .padding(.top, 8)
             }

@@ -35,7 +35,7 @@ struct KnowledgeTopicDetailView: View {
     private var headerView: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(viewModel.topic.title)
-                .font(.title2)
+                .font(.piratenTitle2)
                 .fontWeight(.bold)
 
             // Tags
@@ -44,7 +44,7 @@ struct KnowledgeTopicDetailView: View {
                     HStack(spacing: 6) {
                         ForEach(viewModel.topic.tags, id: \.self) { tag in
                             Text(tag)
-                                .font(.caption)
+                                .font(.piratenCaption)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
                                 .background(Color.accentColor.opacity(0.12))
@@ -58,7 +58,7 @@ struct KnowledgeTopicDetailView: View {
             // Level + reading time
             HStack(spacing: 12) {
                 Text(viewModel.topic.level)
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .fontWeight(.medium)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
@@ -67,7 +67,7 @@ struct KnowledgeTopicDetailView: View {
                     .clipShape(Capsule())
 
                 Label("\(viewModel.topic.readingMinutes) Min.", systemImage: "clock")
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .foregroundColor(.secondary)
             }
         }
@@ -110,7 +110,7 @@ struct KnowledgeTopicDetailView: View {
                 onToggle: { viewModel.toggleSection(index) }
             ) {
                 MarkdownTextView(markdown: body)
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
             }
 
         case .checklist(let items):
@@ -146,7 +146,7 @@ struct KnowledgeTopicDetailView: View {
         VStack(spacing: 12) {
             ProgressView()
             Text("Inhalt wird geladen...")
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -161,7 +161,7 @@ struct KnowledgeTopicDetailView: View {
                 .font(.system(size: 36))
                 .foregroundColor(.secondary)
             Text(message)
-                .font(.subheadline)
+                .font(.piratenSubheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             Button("Erneut versuchen") {

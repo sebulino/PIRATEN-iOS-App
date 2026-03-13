@@ -13,19 +13,19 @@ struct NewsCardView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(item.headline)
-                    .font(.subheadline)
+                    .font(.piratenSubheadline)
                     .fontWeight(.bold)
                     .lineLimit(2)
 
                 Spacer()
 
                 Text(item.postedAt, style: .relative)
-                    .font(.caption)
+                    .font(.piratenCaption)
                     .foregroundStyle(.tertiary)
             }
 
             Text(item.previewText)
-                .font(.body)
+                .font(.piratenBodyDefault)
                 .lineLimit(4)
                 .foregroundStyle(.secondary)
         }
