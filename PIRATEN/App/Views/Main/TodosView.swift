@@ -294,19 +294,12 @@ struct TodoRow: View {
         HStack(spacing: 4) {
             Image(systemName: isOverdue ? "clock.badge.exclamationmark" : "calendar")
                 .accessibilityHidden(true)
-            Text(Self.germanDateFormatter.string(from: date))
+            Text(date, format: .dateTime.day().month(.wide).year())
         }
         .font(.caption)
         .foregroundStyle(isOverdue ? .red : .secondary)
-        .accessibilityLabel(isOverdue ? "Überfällig: \(Self.germanDateFormatter.string(from: date))" : "Fällig: \(Self.germanDateFormatter.string(from: date))")
+        .accessibilityLabel(isOverdue ? "Überfällig: \(date.formatted(date: .long, time: .omitted))" : "Fällig: \(date.formatted(date: .long, time: .omitted))")
     }
-
-    private static let germanDateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "de_DE")
-        f.dateFormat = "d. MMMM yyyy"
-        return f
-    }()
 }
 
 #Preview {
