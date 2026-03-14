@@ -400,37 +400,29 @@ private struct MessagePostRow: View {
     /// (spawns WebKit parser). Computed once via .task(id:) instead of on every render.
     @State private var parsedContent: AttributedString?
 
-    /// Extracts initials from the display name or username
-    private var authorInitials: String {
-        let name = post.author.displayName ?? post.author.username
-        let words = name.split(separator: " ")
-        if words.count >= 2 {
-            return String(words[0].prefix(1) + words[1].prefix(1)).uppercased()
-        } else if let first = name.first {
-            return String(first).uppercased()
-        }
-        return "?"
-    }
-
-    /// Color for the avatar circle based on username hash
-    private var avatarColor: Color {
-        let colors: [Color] = [.piratenPrimary, .blue, .green, .purple, .pink, .teal]
-        let hash = post.author.username.hashValue
-        return colors[abs(hash) % colors.count]
-    }
-
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            // Avatar circle with initials
-            ZStack {
-                Circle()
-                    .fill(avatarColor.opacity(0.3))
+            // Author avatar
+            if let avatarUrl = post.author.avatarUrl {
+                AsyncImage(url: avatarUrl) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Image(systemName: "person.circle.fill")
+                        .resizable()
+                        .foregroundColor(.secondary)
+                }
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
+                .accessibilityHidden(true)
+            } else {
+                Image(systemName: "person.circle.fill")
+                    .resizable()
+                    .foregroundColor(.secondary)
                     .frame(width: 40, height: 40)
-                Text(authorInitials)
-                    .font(.system(.subheadline, weight: .semibold))
-                    .foregroundStyle(avatarColor)
+                    .accessibilityHidden(true)
             }
-            .accessibilityHidden(true)
 
             // Message content
             VStack(alignment: .leading, spacing: 4) {

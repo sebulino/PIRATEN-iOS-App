@@ -329,41 +329,63 @@ private struct MessageThreadRow: View {
     let thread: MessageThread
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(thread.title)
-                    .font(.piratenHeadlineBody)
-                    .lineLimit(2)
-
-                Spacer()
-
-                if !thread.isRead {
-                    Circle()
-                        .fill(Color.piratenPrimary)
-                        .frame(width: 8, height: 8)
-                        .accessibilityLabel("Ungelesen")
+        HStack(alignment: .top, spacing: 10) {
+            // First participant avatar
+            if let avatarUrl = thread.participants.first?.avatarUrl {
+                AsyncImage(url: avatarUrl) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Image(systemName: "person.circle.fill")
+                        .resizable()
+                        .foregroundColor(.secondary)
                 }
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
+            } else {
+                Image(systemName: "person.circle.fill")
+                    .resizable()
+                    .foregroundColor(.secondary)
+                    .frame(width: 40, height: 40)
             }
 
-            // Participants
-            Text(participantsText)
-                .font(.piratenSubheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(thread.title)
+                        .font(.piratenHeadlineBody)
+                        .lineLimit(2)
 
-            HStack {
-                // Reply count (postsCount includes the original post, so subtract 1)
-                Label("\(max(0, thread.postsCount - 1))", systemImage: "bubble.left")
-                    .font(.piratenCaption)
+                    Spacer()
+
+                    if !thread.isRead {
+                        Circle()
+                            .fill(Color.piratenPrimary)
+                            .frame(width: 8, height: 8)
+                            .accessibilityLabel("Ungelesen")
+                    }
+                }
+
+                // Participants
+                Text(participantsText)
+                    .font(.piratenSubheadline)
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel("\(max(0, thread.postsCount - 1)) Antworten")
+                    .lineLimit(1)
 
-                Spacer()
+                HStack {
+                    // Reply count (postsCount includes the original post, so subtract 1)
+                    Label("\(max(0, thread.postsCount - 1))", systemImage: "bubble.left")
+                        .font(.piratenCaption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel("\(max(0, thread.postsCount - 1)) Antworten")
 
-                // Last activity time
-                Text(thread.lastActivityAt, style: .relative)
-                    .font(.piratenCaption2)
-                    .foregroundStyle(.secondary)
+                    Spacer()
+
+                    // Last activity time
+                    Text(thread.lastActivityAt, style: .relative)
+                        .font(.piratenCaption2)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .padding(.vertical, 4)
