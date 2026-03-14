@@ -134,6 +134,16 @@ enum HTMLContentParser {
             result = result.replacingOccurrences(of: ":\(shortcode):", with: emoji)
         }
 
+        // Strip remaining Discourse skin tone suffixes (:wave:t2: → :wave:) and retry
+        result = result.replacingOccurrences(
+            of: #":([a-z_]+):t[2-6]:"#,
+            with: ":$1:",
+            options: .regularExpression
+        )
+        for (shortcode, emoji) in emojiMap {
+            result = result.replacingOccurrences(of: ":\(shortcode):", with: emoji)
+        }
+
         return result
     }
 
