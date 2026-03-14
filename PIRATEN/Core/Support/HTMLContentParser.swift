@@ -192,7 +192,7 @@ enum HTMLContentParser {
         "man": "👨", "woman": "👩", "older_man": "👴", "older_woman": "👵",
         "cop": "👮", "guardsman": "💂", "angel": "👼", "princess": "👸",
         "robot": "🤖", "nerd_face": "🤓",
-        "slightly_smiling_face": "🙂", "slightly_frowning_face": "🙁",
+        "slight_smile": "🙂", "slightly_smiling_face": "🙂", "slightly_frowning_face": "🙁",
         "upside_down_face": "🙃", "rolling_eyes": "🙄", "thinking": "🤔",
         "zipper_mouth_face": "🤐", "face_with_thermometer": "🤒",
         "face_with_head_bandage": "🤕", "money_mouth_face": "🤑",

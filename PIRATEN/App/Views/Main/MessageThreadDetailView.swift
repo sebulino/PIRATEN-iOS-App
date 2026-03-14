@@ -400,22 +400,20 @@ private struct MessagePostRow: View {
     /// (spawns WebKit parser). Computed once via .task(id:) instead of on every render.
     @State private var parsedContent: AttributedString?
 
+    /// Cached avatar image — loaded via .task(id:) to avoid AsyncImage's
+    /// URLSession saturation in long LazyVStack lists (fails after ~33 items).
+    @State private var avatarImage: UIImage?
+
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             // Author avatar
-            if let avatarUrl = post.author.avatarUrl {
-                AsyncImage(url: avatarUrl) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Image(systemName: "person.circle.fill")
-                        .resizable()
-                        .foregroundColor(.secondary)
-                }
-                .frame(width: 40, height: 40)
-                .clipShape(Circle())
-                .accessibilityHidden(true)
+            if let avatarImage {
+                Image(uiImage: avatarImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 40, height: 40)
+                    .clipShape(Circle())
+                    .accessibilityHidden(true)
             } else {
                 Image(systemName: "person.circle.fill")
                     .resizable()
@@ -466,6 +464,19 @@ private struct MessagePostRow: View {
             // NSAttributedString HTML parsing is expensive (WebKit parser),
             // so we cache the result in @State to avoid re-parsing on every render.
             parsedContent = HTMLContentParser.parseToAttributedString(post.content)
+
+            // Load avatar manually instead of using AsyncImage, which saturates
+            // its internal URLSession after ~33 concurrent loads in a LazyVStack.
+            if avatarImage == nil, let url = post.author.avatarUrl {
+                do {
+                    let (data, _) = try await URLSession.shared.data(from: url)
+                    if let image = UIImage(data: data) {
+                        avatarImage = image
+                    }
+                } catch {
+                    // Silently fail — placeholder icon remains visible
+                }
+            }
         }
     }
 
