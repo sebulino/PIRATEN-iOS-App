@@ -404,6 +404,11 @@ private struct MessagePostRow: View {
     /// URLSession saturation in long LazyVStack lists (fails after ~33 items).
     @State private var avatarImage: UIImage?
 
+    /// Inline images extracted from the post HTML, loaded manually to avoid
+    /// AsyncImage saturation in long threads.
+    @State private var inlineImages: [(url: URL, image: UIImage)] = []
+    @State private var imageURLs: [URL] = []
+
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             // Author avatar
@@ -456,6 +461,15 @@ private struct MessagePostRow: View {
                         .font(.piratenBodyDefault)
                         .foregroundColor(.primary)
                 }
+
+                // Inline images from the post
+                ForEach(inlineImages, id: \.url.absoluteString) { item in
+                    Image(uiImage: item.image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
             }
         }
         .padding(.vertical, 8)
@@ -464,6 +478,20 @@ private struct MessagePostRow: View {
             // NSAttributedString HTML parsing is expensive (WebKit parser),
             // so we cache the result in @State to avoid re-parsing on every render.
             parsedContent = HTMLContentParser.parseToAttributedString(post.content)
+
+            // Extract and load inline images from the post HTML
+            let urls = HTMLContentParser.extractImageURLs(from: post.content)
+            imageURLs = urls
+            for url in urls {
+                do {
+                    let (data, _) = try await URLSession.shared.data(from: url)
+                    if let image = UIImage(data: data) {
+                        inlineImages.append((url: url, image: image))
+                    }
+                } catch {
+                    // Skip failed images
+                }
+            }
 
             // Load avatar manually instead of using AsyncImage, which saturates
             // its internal URLSession after ~33 concurrent loads in a LazyVStack.
