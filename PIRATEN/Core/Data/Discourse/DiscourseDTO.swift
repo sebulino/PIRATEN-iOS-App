@@ -50,6 +50,15 @@ struct DiscourseTopicDTO: Decodable {
     /// Whether the topic is unseen by the current user
     let unseen: Bool?
 
+    /// Number of unread posts in this topic (only present when authenticated)
+    let unreadPosts: Int?
+
+    /// The highest post number in this topic
+    let highestPostNumber: Int?
+
+    /// The last post number the current user has read
+    let lastReadPostNumber: Int?
+
     /// Array of poster references. The first one is typically the OP (original poster).
     let posters: [DiscoursePosterDTO]
 
@@ -65,6 +74,9 @@ struct DiscourseTopicDTO: Decodable {
         case archived
         case createdAt = "created_at"
         case unseen
+        case unreadPosts = "unread_posts"
+        case highestPostNumber = "highest_post_number"
+        case lastReadPostNumber = "last_read_post_number"
         case posters
     }
 
@@ -105,8 +117,21 @@ struct DiscourseTopicDTO: Decodable {
             isVisible: visible,
             isClosed: closed,
             isArchived: archived,
-            isRead: unseen != true
+            isRead: computeIsRead()
         )
+    }
+
+    /// Determines read status using all available Discourse signals.
+    /// A topic is unread if:
+    /// - `unseen` is true (user never opened it), OR
+    /// - `unread_posts` > 0 (new replies since last read), OR
+    /// - `highest_post_number` > `last_read_post_number` (posts added since last read)
+    /// If none of these fields are present, assumes read (conservative default).
+    private func computeIsRead() -> Bool {
+        if unseen == true { return false }
+        if let unread = unreadPosts, unread > 0 { return false }
+        if let highest = highestPostNumber, let lastRead = lastReadPostNumber, highest > lastRead { return false }
+        return true
     }
 }
 
