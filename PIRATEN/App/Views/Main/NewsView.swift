@@ -57,7 +57,7 @@ struct NewsView: View {
             }
 
             LazyVStack(alignment: .leading, spacing: 16) {
-                ForEach(viewModel.items) { item in
+                ForEach(viewModel.items.filter { !$0.headline.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) { item in
                     NavigationLink(destination: NewsDetailView(item: item)) {
                         NewsCardView(item: item)
                     }

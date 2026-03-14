@@ -402,16 +402,8 @@ struct MainTabView: View {
     // MARK: - Appearance Configuration
 
     private func configureNavigationBarAppearance() {
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithDefaultBackground()
-        appearance.largeTitleTextAttributes = [
-            .foregroundColor: UIColor(Color.piratenPrimary)
-        ]
-        appearance.titleTextAttributes = [
-            .foregroundColor: UIColor(Color.piratenPrimary)
-        ]
-        UINavigationBar.appearance().standardAppearance = appearance
-        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        // Font + color are configured centrally in PiratenAppearance.configure().
+        // Only set tint color here (for back button and bar button items).
         UINavigationBar.appearance().tintColor = UIColor(Color.piratenPrimary)
     }
 

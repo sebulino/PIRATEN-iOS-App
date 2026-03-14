@@ -27,8 +27,9 @@ enum PiratenAppearance {
         // Navigation bar
         let navAppearance = UINavigationBarAppearance()
         navAppearance.configureWithDefaultBackground()
-        navAppearance.largeTitleTextAttributes = [.font: largeTitleFont]
-        navAppearance.titleTextAttributes = [.font: inlineTitleFont]
+        let titleColor = UIColor(Color.piratenPrimary)
+        navAppearance.largeTitleTextAttributes = [.font: largeTitleFont, .foregroundColor: titleColor]
+        navAppearance.titleTextAttributes = [.font: inlineTitleFont, .foregroundColor: titleColor]
 
         UINavigationBar.appearance().standardAppearance = navAppearance
         UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
