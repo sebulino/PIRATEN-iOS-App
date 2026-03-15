@@ -50,18 +50,42 @@ final class RealDiscourseRepository: DiscourseRepository {
 
     func fetchPosts(forTopicId topicId: Int) async throws -> [Post] {
         do {
-            // Fetch topic with print=true to get all posts (not just first 20)
-            let data = try await apiClient.fetchTopic(id: topicId, includeAllPosts: true)
+            // Fetch the topic to get the initial posts and the full post ID stream
+            let data = try await apiClient.fetchTopic(id: topicId)
             let response = try decodeTopicDetailResponse(from: data)
 
-            // Map post DTOs to domain models
-            let posts = response.postStream.posts.compactMap { dto in
+            var allPostDTOs = response.postStream.posts
+            let loadedIds = Set(allPostDTOs.map { $0.id })
+
+            // Check if there are more posts to fetch via the stream
+            if let stream = response.postStream.stream {
+                let missingIds = stream.filter { !loadedIds.contains($0) }
+                if !missingIds.isEmpty {
+                    // Fetch missing posts in batches of 20 (Discourse limit)
+                    for batch in stride(from: 0, to: missingIds.count, by: 20) {
+                        let end = min(batch + 20, missingIds.count)
+                        let batchIds = Array(missingIds[batch..<end])
+                        let batchData = try await apiClient.fetchPostsByIds(
+                            topicId: topicId,
+                            postIds: batchIds
+                        )
+                        let batchResponse = try decodePostsByIdsResponse(from: batchData)
+                        allPostDTOs.append(contentsOf: batchResponse.postStream.posts)
+                    }
+                }
+            }
+
+            // Sort by post number and map to domain models
+            allPostDTOs.sort { $0.postNumber < $1.postNumber }
+            let posts = allPostDTOs.compactMap { dto in
                 dto.toDomainModel()
             }
 
             return posts
         } catch let error as DiscourseError {
             throw mapToRepositoryError(error)
+        } catch let error as DiscourseRepositoryError {
+            throw error
         } catch {
             throw DiscourseRepositoryError.loadFailed(
                 message: "Beiträge konnten nicht geladen werden"
@@ -305,6 +329,16 @@ final class RealDiscourseRepository: DiscourseRepository {
         // Note: CodingKeys handle snake_case mapping
         do {
             return try decoder.decode(DiscourseTopicDetailResponse.self, from: data)
+        } catch {
+            throw DiscourseError.decodingError(message: error.localizedDescription)
+        }
+    }
+
+    /// Decodes the /t/{topic_id}/posts.json?post_ids[]=... response.
+    private func decodePostsByIdsResponse(from data: Data) throws -> DiscoursePostsByIdsResponse {
+        let decoder = JSONDecoder()
+        do {
+            return try decoder.decode(DiscoursePostsByIdsResponse.self, from: data)
         } catch {
             throw DiscourseError.decodingError(message: error.localizedDescription)
         }

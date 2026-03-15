@@ -75,7 +75,7 @@ struct TopicDetailView: View {
                 )
             }
         }
-        .navigationTitle(viewModel.topic.title)
+        .navigationTitle(HTMLContentParser.replaceEmojiShortcodes(in: viewModel.topic.title))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

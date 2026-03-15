@@ -93,21 +93,22 @@ enum HTMLContentParser {
         return stripped
     }
 
-    /// Extracts image URLs from HTML `<img>` tags, excluding emoji images.
+    /// Extracts image URLs from HTML `<img>` tags, excluding emoji and avatar images.
     /// - Parameter html: The HTML string to extract images from
     /// - Returns: Array of image URLs found in the HTML
     static func extractImageURLs(from html: String) -> [URL] {
-        // Match <img> tags that are NOT emoji (no class="emoji")
-        let pattern = #"<img\s+(?![^>]*class\s*=\s*"[^"]*emoji)[^>]*src\s*=\s*"([^"]+)"[^>]*/?\s*>"#
+        // Match <img> tags that are NOT emoji and NOT avatar
+        let pattern = #"<img\s+(?![^>]*class\s*=\s*"[^"]*(emoji|avatar))[^>]*src\s*=\s*"([^"]+)"[^>]*/?\s*>"#
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
             return []
         }
         let range = NSRange(html.startIndex..., in: html)
         let matches = regex.matches(in: html, range: range)
         return matches.compactMap { match in
-            guard let srcRange = Range(match.range(at: 1), in: html) else { return nil }
+            // Capture group 2 is the src URL (group 1 is the emoji|avatar alternation)
+            guard let srcRange = Range(match.range(at: 2), in: html) else { return nil }
             let src = String(html[srcRange])
-            if src.contains("emoji") { return nil }
+            if src.contains("emoji") || src.contains("/user_avatar/") { return nil }
             return URL(string: src)
         }
     }
@@ -122,24 +123,44 @@ enum HTMLContentParser {
             with: ":$1:",
             options: .regularExpression
         )
-        // Also handle reversed attribute order
+        // Also handle reversed attribute order (title before class)
         result = result.replacingOccurrences(
             of: #"<img[^>]*title=":([^"]+):"[^>]*class="[^"]*emoji[^"]*"[^>]*/?\s*>"#,
             with: ":$1:",
             options: .regularExpression
         )
 
-        // Replace :shortcode: with Unicode emoji
-        for (shortcode, emoji) in emojiMap {
-            result = result.replacingOccurrences(of: ":\(shortcode):", with: emoji)
-        }
-
-        // Strip remaining Discourse skin tone suffixes (:wave:t2: → :wave:) and retry
+        // Fallback: catch any remaining emoji <img> tags using the alt attribute.
+        // Some Discourse versions/plugins omit the title attribute or use a different format.
         result = result.replacingOccurrences(
-            of: #":([a-z_]+):t[2-6]:"#,
+            of: #"<img[^>]*class="[^"]*emoji[^"]*"[^>]*alt=":([^"]+):"[^>]*/?\s*>"#,
             with: ":$1:",
             options: .regularExpression
         )
+        result = result.replacingOccurrences(
+            of: #"<img[^>]*alt=":([^"]+):"[^>]*class="[^"]*emoji[^"]*"[^>]*/?\s*>"#,
+            with: ":$1:",
+            options: .regularExpression
+        )
+
+        // Last resort: remove any remaining <img> tags with class="emoji" that weren't
+        // matched above (e.g. custom emojis without title/alt shortcodes).
+        // Replace with empty string to avoid broken images from relative Discourse URLs.
+        result = result.replacingOccurrences(
+            of: #"<img[^>]*class="[^"]*emoji[^"]*"[^>]*/?\s*>"#,
+            with: "",
+            options: .regularExpression
+        )
+
+        // Strip skin tone suffixes BEFORE the emojiMap pass, otherwise
+        // :wave: inside :wave:t2: gets greedily matched and leaves "👋t2:" behind.
+        result = result.replacingOccurrences(
+            of: #":([a-z_0-9+\-]+):t[2-6]:"#,
+            with: ":$1:",
+            options: .regularExpression
+        )
+
+        // Replace :shortcode: with Unicode emoji
         for (shortcode, emoji) in emojiMap {
             result = result.replacingOccurrences(of: ":\(shortcode):", with: emoji)
         }

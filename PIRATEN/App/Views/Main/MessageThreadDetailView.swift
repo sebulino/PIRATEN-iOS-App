@@ -80,7 +80,7 @@ struct MessageThreadDetailView: View {
                 )
             }
         }
-        .navigationTitle(viewModel.thread.title)
+        .navigationTitle(HTMLContentParser.replaceEmojiShortcodes(in: viewModel.thread.title))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

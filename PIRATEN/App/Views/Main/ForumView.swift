@@ -358,7 +358,7 @@ private struct TopicRow: View {
                             .foregroundStyle(.secondary)
                             .accessibilityLabel("Geschlossen")
                     }
-                    Text(topic.title)
+                    Text(HTMLContentParser.replaceEmojiShortcodes(in: topic.title))
                         .font(.piratenHeadlineBody)
                         .lineLimit(2)
                 }
