@@ -272,6 +272,16 @@ struct DiscoursePostStreamDTO: Decodable {
     let stream: [Int]?
 }
 
+/// Response from /t/{topic_id}/posts.json?post_ids[]=...
+/// Used when paginating to fetch additional posts by their IDs.
+struct DiscoursePostsByIdsResponse: Decodable {
+    let postStream: DiscoursePostStreamDTO
+
+    enum CodingKeys: String, CodingKey {
+        case postStream = "post_stream"
+    }
+}
+
 /// Action summary entry from Discourse API (e.g. likes).
 /// Appears in the `actions_summary` array of a post response.
 /// - `id == 2` corresponds to the "like" action type.

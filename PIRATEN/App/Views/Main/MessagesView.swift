@@ -331,7 +331,7 @@ private struct MessageThreadRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(thread.title)
+                Text(HTMLContentParser.replaceEmojiShortcodes(in: thread.title))
                     .font(.piratenHeadlineBody)
                     .lineLimit(2)
 

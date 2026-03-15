@@ -381,7 +381,7 @@ struct HomeView: View {
     @ViewBuilder
     private func forumTopicRow(_ topic: Topic) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(topic.title)
+            Text(HTMLContentParser.replaceEmojiShortcodes(in: topic.title))
                 .font(.piratenSubheadline)
                 .fontWeight(.medium)
                 .lineLimit(2)

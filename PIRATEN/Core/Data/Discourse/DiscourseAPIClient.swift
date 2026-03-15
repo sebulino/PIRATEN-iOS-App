@@ -127,6 +127,36 @@ final class DiscourseAPIClient {
         }
     }
 
+    /// Fetches specific posts by their IDs for a given topic.
+    /// Endpoint: GET /t/{topic_id}/posts.json?post_ids[]=...
+    /// Used for pagination when the initial response doesn't include all posts.
+    /// - Parameters:
+    ///   - topicId: The topic containing the posts
+    ///   - postIds: Array of post IDs to fetch
+    /// - Returns: Raw response data for decoding by the caller
+    /// - Throws: DiscourseError if the request fails
+    func fetchPostsByIds(topicId: Int, postIds: [Int]) async throws -> Data {
+        var urlComponents = URLComponents(url: url(for: "/t/\(topicId)/posts.json"), resolvingAgainstBaseURL: false)!
+        urlComponents.queryItems = postIds.map { URLQueryItem(name: "post_ids[]", value: "\($0)") }
+
+        guard let finalURL = urlComponents.url else {
+            throw DiscourseError.unknown(statusCode: nil, message: "Failed to construct URL")
+        }
+
+        let request = HTTPRequest.get(finalURL, headers: commonHeaders())
+        do {
+            let response = try await httpClient.execute(request)
+            guard response.isSuccess else {
+                throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
+            }
+            return response.data
+        } catch let error as HTTPError {
+            throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
+        }
+    }
+
     /// Fetches private messages inbox for the current user.
     /// Endpoint: GET /topics/private-messages/{username}.json
     /// - Parameter username: The username whose private messages to fetch
