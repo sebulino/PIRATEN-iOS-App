@@ -127,17 +127,16 @@ struct MessageThreadDetailView: View {
     private var messagesList: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
+                LazyVStack(spacing: 8) {
                     ForEach(viewModel.posts) { post in
                         MessagePostRow(
                             post: post,
+                            isFromCurrentUser: post.author.username == viewModel.currentUsername,
                             onUsernameTapped: { username in
                                 selectedUsername = username
                             }
                         )
-                        .padding(.horizontal, 16)
-                        Divider()
-                            .padding(.leading, 16)
+                        .padding(.horizontal, 12)
                     }
 
                     // One-time hint to help users discover the reply button
@@ -384,14 +383,12 @@ struct MessageThreadDetailView: View {
 
 // MARK: - Reply Composer View
 
-/// Row view for displaying a single message/post in the thread.
-/// Shows author avatar/initials, name, timestamp, and message content.
-/// Designed for private message context with a conversational appearance.
-/// Links in the content are clickable.
-///
-/// Layout: Avatar circle | Message content (name, timestamp, body)
+/// Row view for displaying a single message as a chat bubble.
+/// Current user's messages: right-aligned with orange outline.
+/// Other users' messages: left-aligned with warm grey outline, avatar on left.
 private struct MessagePostRow: View {
     let post: Post
+    let isFromCurrentUser: Bool
 
     /// Callback when username is tapped
     var onUsernameTapped: ((String) -> Void)?
@@ -409,77 +406,76 @@ private struct MessagePostRow: View {
     @State private var inlineImages: [(url: URL, image: UIImage)] = []
     @State private var imageURLs: [URL] = []
 
+    private let bubbleCornerRadius: CGFloat = 16
+    private var bubbleColor: Color { isFromCurrentUser ? .orange : Color(.systemGray4) }
+
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Author avatar
-            if let avatarImage {
-                Image(uiImage: avatarImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 40, height: 40)
-                    .clipShape(Circle())
-                    .accessibilityHidden(true)
+        HStack(alignment: .bottom, spacing: 8) {
+            if isFromCurrentUser {
+                Spacer(minLength: 48)
             } else {
-                Image(systemName: "person.circle.fill")
-                    .resizable()
-                    .foregroundColor(.secondary)
-                    .frame(width: 40, height: 40)
-                    .accessibilityHidden(true)
+                // Other user's avatar
+                avatarView
             }
 
-            // Message content
-            VStack(alignment: .leading, spacing: 4) {
-                // Author name and timestamp row
-                HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: isFromCurrentUser ? .trailing : .leading, spacing: 2) {
+                // Author name (only for other users)
+                if !isFromCurrentUser {
                     Button {
                         onUsernameTapped?(post.author.username)
                     } label: {
                         Text(post.author.displayName ?? post.author.username)
-                            .font(.piratenSubheadline)
+                            .font(.piratenCaption)
                             .fontWeight(.semibold)
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
+                    .padding(.leading, 12)
+                }
 
-                    Spacer()
+                // Bubble
+                VStack(alignment: .leading, spacing: 6) {
+                    // Message body
+                    SelectableTextView(
+                        attributedString: parsedContent,
+                        plainText: parsedContent == nil ? HTMLContentParser.stripHTML(from: post.content) : nil
+                    )
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    // Timestamp - use relative for recent, date for older
+                    // Inline images
+                    ForEach(inlineImages, id: \.url.absoluteString) { item in
+                        Image(uiImage: item.image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxWidth: .infinity)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+
+                    // Timestamp inside the bubble
                     Text(formatTimestamp(post.createdAt))
                         .font(.piratenCaption2)
                         .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: bubbleCornerRadius)
+                        .stroke(bubbleColor, lineWidth: 1.5)
+                )
+            }
 
-                // Message body with clickable links
-                if let content = parsedContent {
-                    Text(content)
-                        .font(.piratenBodyDefault)
-                        .foregroundColor(.primary)
-                        .tint(.blue)
-                } else {
-                    // Brief placeholder while HTML is being parsed
-                    Text(HTMLContentParser.stripHTML(from: post.content))
-                        .font(.piratenBodyDefault)
-                        .foregroundColor(.primary)
-                }
-
-                // Inline images from the post
-                ForEach(inlineImages, id: \.url.absoluteString) { item in
-                    Image(uiImage: item.image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxWidth: .infinity)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
+            if isFromCurrentUser {
+                // Current user's avatar
+                avatarView
+            } else {
+                Spacer(minLength: 48)
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 2)
         .task(id: post.id) {
-            // Pre-parse HTML content once when the row appears.
-            // NSAttributedString HTML parsing is expensive (WebKit parser),
-            // so we cache the result in @State to avoid re-parsing on every render.
             parsedContent = HTMLContentParser.parseToAttributedString(post.content)
 
-            // Extract and load inline images from the post HTML
             let urls = HTMLContentParser.extractImageURLs(from: post.content)
             imageURLs = urls
             for url in urls {
@@ -493,8 +489,6 @@ private struct MessagePostRow: View {
                 }
             }
 
-            // Load avatar manually instead of using AsyncImage, which saturates
-            // its internal URLSession after ~33 concurrent loads in a LazyVStack.
             if avatarImage == nil, let url = post.author.avatarUrl {
                 do {
                     let (data, _) = try await URLSession.shared.data(from: url)
@@ -505,6 +499,24 @@ private struct MessagePostRow: View {
                     // Silently fail — placeholder icon remains visible
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private var avatarView: some View {
+        if let avatarImage {
+            Image(uiImage: avatarImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 32, height: 32)
+                .clipShape(Circle())
+                .accessibilityHidden(true)
+        } else {
+            Image(systemName: "person.circle.fill")
+                .resizable()
+                .foregroundColor(.secondary)
+                .frame(width: 32, height: 32)
+                .accessibilityHidden(true)
         }
     }
 
