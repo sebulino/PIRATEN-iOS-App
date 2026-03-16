@@ -46,8 +46,14 @@ struct HomeView: View {
     /// Whether to show a badge on the news toolbar button
     var newsBadge: Bool = false
 
+    /// Factory for creating FeedbackViewModels
+    var feedbackViewModelFactory: ((FeedbackType) -> FeedbackViewModel)?
+
     /// Username of the contact whose profile is being shown
     @State private var selectedContactUsername: String?
+
+    /// The feedback ViewModel currently being presented (drives sheet)
+    @State private var feedbackViewModel: FeedbackViewModel?
 
     var body: some View {
         NavigationStack {
@@ -132,6 +138,12 @@ struct HomeView: View {
                     )
                 }
             }
+            .sheet(item: $feedbackViewModel) { vm in
+                FeedbackComposeView(
+                    viewModel: vm,
+                    onDismiss: { feedbackViewModel = nil }
+                )
+            }
         }
     }
 
@@ -168,13 +180,16 @@ struct HomeView: View {
                 // Section 1: Recent Contacts
                 recentContactsSection
 
-                // Section 2: Knowledge Articles
+                // Section 2: Feedback
+                feedbackSection
+
+                // Section 3: Knowledge Articles
                 knowledgeSection
 
-                // Section 3: Claimed Todos
+                // Section 4: Claimed Todos
                 claimedTodosSection
 
-                // Section 4: Recent Forum Topics
+                // Section 5: Recent Forum Topics
                 recentTopicsSection
             }
             .padding(.horizontal, 16)
@@ -247,7 +262,59 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Section 2: Knowledge Articles
+    // MARK: - Section 2: Feedback
+
+    @ViewBuilder
+    private var feedbackSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Deine Meinung, egal wozu")
+                .font(.piratenTitle3)
+                .fontWeight(.bold)
+                .foregroundColor(.orange)
+
+            HStack(spacing: 12) {
+                Button {
+                    if let factory = feedbackViewModelFactory {
+                        feedbackViewModel = factory(.positive)
+                    }
+                } label: {
+                    VStack(spacing: 6) {
+                        Image(systemName: "hand.thumbsup")
+                            .font(.title2)
+                        Text("was mir gefällt")
+                            .font(.piratenCaption)
+                            .fontWeight(.medium)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.green.opacity(0.15))
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    if let factory = feedbackViewModelFactory {
+                        feedbackViewModel = factory(.negative)
+                    }
+                } label: {
+                    VStack(spacing: 6) {
+                        Image(systemName: "hand.thumbsdown")
+                            .font(.title2)
+                        Text("was ich nicht mag")
+                            .font(.piratenCaption)
+                            .fontWeight(.medium)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.orange.opacity(0.15))
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: - Section 3: Knowledge Articles
 
     @ViewBuilder
     private var knowledgeSection: some View {
@@ -300,7 +367,7 @@ struct HomeView: View {
         .padding(.vertical, 6)
     }
 
-    // MARK: - Section 3: Claimed Todos
+    // MARK: - Section 4: Claimed Todos
 
     @ViewBuilder
     private var claimedTodosSection: some View {
@@ -345,7 +412,7 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Section 4: Recent Forum Topics
+    // MARK: - Section 5: Recent Forum Topics
 
     @ViewBuilder
     private var recentTopicsSection: some View {

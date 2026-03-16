@@ -52,6 +52,9 @@ struct StartupContainerView: View {
     /// Factory for creating TodoDetailViewModels
     var todoDetailViewModelFactory: ((Todo) -> TodoDetailViewModel)?
 
+    /// Factory for creating FeedbackViewModels
+    var feedbackViewModelFactory: ((FeedbackType) -> FeedbackViewModel)?
+
     /// Factory for creating AdminRequestViewModels
     var adminRequestViewModelFactory: (() -> AdminRequestViewModel)?
 
@@ -92,6 +95,7 @@ struct StartupContainerView: View {
                 createTodoViewModelFactory: createTodoViewModelFactory,
                 knowledgeTopicDetailViewModelFactory: knowledgeTopicDetailViewModelFactory,
                 todoDetailViewModelFactory: todoDetailViewModelFactory,
+                feedbackViewModelFactory: feedbackViewModelFactory,
                 adminRequestViewModelFactory: adminRequestViewModelFactory,
                 checkAdminStatus: checkAdminStatus,
                 onLogout: onLogout

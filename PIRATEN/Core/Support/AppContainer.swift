@@ -230,6 +230,13 @@ final class AppContainer {
         TodoDetailViewModel(todo: todo, todoRepository: todoRepository)
     }
 
+    /// Creates a FeedbackViewModel for the given feedback type.
+    /// - Parameter type: The type of feedback (positive or negative)
+    /// - Returns: A configured FeedbackViewModel
+    func makeFeedbackViewModel(type: FeedbackType) -> FeedbackViewModel {
+        FeedbackViewModel(type: type, discourseRepository: discourseRepository)
+    }
+
     /// Creates an AdminRequestViewModel for requesting admin access.
     /// - Returns: A configured AdminRequestViewModel
     func makeAdminRequestViewModel() -> AdminRequestViewModel {
