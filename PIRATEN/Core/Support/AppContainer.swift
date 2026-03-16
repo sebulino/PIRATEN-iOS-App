@@ -176,7 +176,7 @@ final class AppContainer {
     /// - Parameter thread: The message thread to display in detail
     /// - Returns: A configured MessageThreadDetailViewModel
     func makeMessageThreadDetailViewModel(for thread: MessageThread) -> MessageThreadDetailViewModel {
-        MessageThreadDetailViewModel(thread: thread, discourseRepository: discourseRepository)
+        MessageThreadDetailViewModel(thread: thread, discourseRepository: discourseRepository, authRepository: authRepository)
     }
 
     /// Creates a RecipientPickerViewModel for composing new messages.

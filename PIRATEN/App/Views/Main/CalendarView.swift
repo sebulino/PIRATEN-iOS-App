@@ -112,10 +112,6 @@ struct CalendarView: View {
                         ForEach(viewModel.upcomingEvents) { event in
                             CalendarEventRow(event: event)
                         }
-                    } header: {
-                        Text("Kommende Termine")
-                            .font(.piratenHeadlineBody)
-                            .padding(.top, 8)
                     }
                 }
 

@@ -327,18 +327,19 @@ private struct PostRow: View {
             }
 
             // Post content with clickable links
-            if let content = parsedContent {
+            if isExpanded || parsedContent == nil {
+                SelectableTextView(
+                    attributedString: parsedContent,
+                    plainText: parsedContent == nil ? HTMLContentParser.stripHTML(from: post.content) : nil
+                )
+                .fixedSize(horizontal: false, vertical: true)
+            } else if let content = parsedContent {
                 Text(content)
-                    .font(.piratenBodyDefault)
-                    .lineLimit(isExpanded ? nil : collapsedLineLimit)
-                    .foregroundColor(.primary)
-                    .tint(.blue)
-            } else {
-                // Brief placeholder while HTML is being parsed
-                Text(HTMLContentParser.stripHTML(from: post.content))
                     .font(.piratenBodyDefault)
                     .lineLimit(collapsedLineLimit)
                     .foregroundColor(.primary)
+                    .tint(.blue)
+                    .textSelection(.enabled)
             }
 
             // Inline images from the post

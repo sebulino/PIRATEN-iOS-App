@@ -118,7 +118,12 @@ final class MessageThreadDetailViewModel: ObservableObject {
     // MARK: - Dependencies
 
     private let discourseRepository: DiscourseRepository
+    private let authRepository: AuthRepository?
     private let safetyService: MessageSafetyService
+
+    /// The current user's username, resolved during loadPosts().
+    /// Used to determine which messages belong to the current user for bubble styling.
+    @Published private(set) var currentUsername: String?
 
     // MARK: - Initialization
 
@@ -126,14 +131,17 @@ final class MessageThreadDetailViewModel: ObservableObject {
     /// - Parameters:
     ///   - thread: The message thread to display details for
     ///   - discourseRepository: The repository to fetch post data from
+    ///   - authRepository: The auth repository to resolve the current user (optional)
     ///   - safetyService: The safety service for rate limiting and validation (optional, creates new instance if nil)
     init(
         thread: MessageThread,
         discourseRepository: DiscourseRepository,
+        authRepository: AuthRepository? = nil,
         safetyService: MessageSafetyService? = nil
     ) {
         self.thread = thread
         self.discourseRepository = discourseRepository
+        self.authRepository = authRepository
         self.safetyService = safetyService ?? MessageSafetyService()
 
         // Load hint dismissed state from UserDefaults
@@ -151,6 +159,11 @@ final class MessageThreadDetailViewModel: ObservableObject {
 
         Task {
             do {
+                // Resolve current user for bubble styling
+                if currentUsername == nil {
+                    currentUsername = await authRepository?.getCurrentUser()?.username
+                }
+
                 // PM threads use the same topic ID system as regular topics
                 // The /t/{id}.json endpoint works for both
                 let fetchedPosts = try await discourseRepository.fetchPosts(forTopicId: thread.id)
