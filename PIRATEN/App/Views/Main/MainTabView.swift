@@ -46,6 +46,9 @@ struct MainTabView: View {
     /// Factory for creating TodoDetailViewModels
     var todoDetailViewModelFactory: ((Todo) -> TodoDetailViewModel)?
 
+    /// Factory for creating FeedbackViewModels
+    var feedbackViewModelFactory: ((FeedbackType) -> FeedbackViewModel)?
+
     /// Factory for creating AdminRequestViewModels
     var adminRequestViewModelFactory: (() -> AdminRequestViewModel)?
 
@@ -111,7 +114,8 @@ struct MainTabView: View {
                 onMessagesTapped: { showingMessages = true },
                 messagesBadge: messagesViewModel.hasNewContent,
                 onNewsTapped: { showingNews = true },
-                newsBadge: newsViewModel.hasNewContent
+                newsBadge: newsViewModel.hasNewContent,
+                feedbackViewModelFactory: feedbackViewModelFactory
             )
                 .tabItem {
                     Label {

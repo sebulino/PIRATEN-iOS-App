@@ -88,6 +88,9 @@ struct PIRATENApp: App {
                 todoDetailViewModelFactory: { [container] todo in
                     container.makeTodoDetailViewModel(for: todo)
                 },
+                feedbackViewModelFactory: { [container] type in
+                    container.makeFeedbackViewModel(type: type)
+                },
                 adminRequestViewModelFactory: { [container] in
                     container.makeAdminRequestViewModel()
                 },
