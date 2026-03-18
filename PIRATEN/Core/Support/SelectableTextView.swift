@@ -46,5 +46,13 @@ struct SelectableTextView: UIViewRepresentable {
             textView.font = font
         }
         textView.textColor = .label
+        // Invalidate intrinsic content size so SwiftUI recalculates layout
+        textView.invalidateIntrinsicContentSize()
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
+        let width = proposal.width ?? uiView.superview?.bounds.width ?? 300
+        let fittingSize = uiView.sizeThatFits(CGSize(width: width, height: CGFloat.greatestFiniteMagnitude))
+        return CGSize(width: width, height: fittingSize.height)
     }
 }
