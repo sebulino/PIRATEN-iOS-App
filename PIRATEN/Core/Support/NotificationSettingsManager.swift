@@ -60,6 +60,17 @@ final class NotificationSettingsManager: ObservableObject {
         }
     }
 
+    /// Whether news notifications are enabled by the user
+    @Published var newsEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(newsEnabled, forKey: Keys.newsEnabled)
+            if newsEnabled {
+                requestPermissionIfNeeded()
+            }
+            syncRegistration()
+        }
+    }
+
     /// The current system authorization status
     @Published private(set) var authorizationStatus: UNAuthorizationStatus = .notDetermined
 
@@ -72,6 +83,7 @@ final class NotificationSettingsManager: ObservableObject {
         static let messagesEnabled = "notification_messages_enabled"
         static let todosEnabled = "notification_todos_enabled"
         static let forumEnabled = "notification_forum_enabled"
+        static let newsEnabled = "notification_news_enabled"
     }
 
     // MARK: - Initialization
@@ -87,6 +99,7 @@ final class NotificationSettingsManager: ObservableObject {
         self.messagesEnabled = UserDefaults.standard.bool(forKey: Keys.messagesEnabled)
         self.todosEnabled = UserDefaults.standard.bool(forKey: Keys.todosEnabled)
         self.forumEnabled = UserDefaults.standard.bool(forKey: Keys.forumEnabled)
+        self.newsEnabled = UserDefaults.standard.bool(forKey: Keys.newsEnabled)
 
         // Check current authorization status
         Task {
@@ -113,7 +126,7 @@ final class NotificationSettingsManager: ObservableObject {
 
     /// Whether any notification type is enabled
     var hasAnyNotificationsEnabled: Bool {
-        messagesEnabled || todosEnabled || forumEnabled
+        messagesEnabled || todosEnabled || forumEnabled || newsEnabled
     }
 
     /// Whether system permission has been granted
@@ -183,9 +196,11 @@ final class NotificationSettingsManager: ObservableObject {
         messagesEnabled = false
         todosEnabled = false
         forumEnabled = false
+        newsEnabled = false
         UserDefaults.standard.removeObject(forKey: Keys.messagesEnabled)
         UserDefaults.standard.removeObject(forKey: Keys.todosEnabled)
         UserDefaults.standard.removeObject(forKey: Keys.forumEnabled)
+        UserDefaults.standard.removeObject(forKey: Keys.newsEnabled)
 
         // Clear device token on logout
         deviceTokenManager.clearDeviceToken()
@@ -205,7 +220,8 @@ final class NotificationSettingsManager: ObservableObject {
         let preferences = PushNotificationPreferences(
             messagesEnabled: messagesEnabled,
             todosEnabled: todosEnabled,
-            forumEnabled: forumEnabled
+            forumEnabled: forumEnabled,
+            newsEnabled: newsEnabled
         )
 
         Task {

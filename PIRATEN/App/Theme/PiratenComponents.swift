@@ -139,7 +139,7 @@ struct PiratenIconButton: View {
 
                 if showBadge {
                     Circle()
-                        .fill(.red)
+                        .fill(Color.piratenPrimary)
                         .frame(width: 8, height: 8)
                         .offset(x: 2, y: -2)
                 }

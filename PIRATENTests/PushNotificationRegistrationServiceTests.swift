@@ -14,7 +14,7 @@ final class PushNotificationRegistrationServiceTests: XCTestCase {
 
     func testFakeServiceRegisterDoesNotThrow() async throws {
         let service = FakePushNotificationRegistrationService()
-        let prefs = PushNotificationPreferences(messagesEnabled: true, todosEnabled: false, forumEnabled: true)
+        let prefs = PushNotificationPreferences(messagesEnabled: true, todosEnabled: false, forumEnabled: true, newsEnabled: false)
 
         // Should not throw
         try await service.register(token: "abcdef", preferences: prefs)
@@ -28,9 +28,9 @@ final class PushNotificationRegistrationServiceTests: XCTestCase {
     // MARK: - PushNotificationPreferences
 
     func testPreferencesEquality() {
-        let a = PushNotificationPreferences(messagesEnabled: true, todosEnabled: false, forumEnabled: true)
-        let b = PushNotificationPreferences(messagesEnabled: true, todosEnabled: false, forumEnabled: true)
-        let c = PushNotificationPreferences(messagesEnabled: false, todosEnabled: false, forumEnabled: true)
+        let a = PushNotificationPreferences(messagesEnabled: true, todosEnabled: false, forumEnabled: true, newsEnabled: false)
+        let b = PushNotificationPreferences(messagesEnabled: true, todosEnabled: false, forumEnabled: true, newsEnabled: false)
+        let c = PushNotificationPreferences(messagesEnabled: false, todosEnabled: false, forumEnabled: true, newsEnabled: false)
 
         XCTAssertEqual(a, b)
         XCTAssertNotEqual(a, c)
@@ -44,7 +44,7 @@ final class PushNotificationRegistrationServiceTests: XCTestCase {
             baseURL: URL(string: "https://example.com")!,
             accessTokenProvider: { nil }
         )
-        let prefs = PushNotificationPreferences(messagesEnabled: true, todosEnabled: false, forumEnabled: false)
+        let prefs = PushNotificationPreferences(messagesEnabled: true, todosEnabled: false, forumEnabled: false, newsEnabled: false)
 
         // When/Then: should not throw (skips silently)
         try await service.register(token: "abc123", preferences: prefs)

@@ -6,6 +6,31 @@ This document tracks unresolved questions that block implementation decisions.
 
 ---
 
+## Status Overview
+
+| ID | Question | Area | Blocks |
+|----|----------|------|--------|
+| [Q-001](#q-001-sso-provider-details) | SSO Provider Details | Auth | Milestone 2 |
+| [Q-006](#q-006-rate-limiting-and-retry-strategy) | Rate Limiting and Retry Strategy | API | Production reliability |
+| [Q-007](#q-007-piratenlogin-protocol-details) | Piratenlogin Protocol Details | Auth | Auth implementation |
+| [Q-008](#q-008-token-refresh-strategy) | Token Refresh Strategy | Auth | Session management |
+| [Q-009](#q-009-discourse-api-session-handling) | Discourse API Session Handling | Forum/Messages | Forum/Messages features |
+| [Q-010](#q-010-token-lifetimes-and-rotation-policies) | Token Lifetimes and Rotation Policies | Auth | Documentation completeness |
+| [Q-005](#q-005-user-profile-data-source) | User Profile Data Source | Profile | Profile feature |
+| [Q-012](#q-012-pagination-strategy) | Pagination Strategy | Forum/Messages | Large topic/message lists |
+| [Q-013](#q-013-search-functionality) | Search Functionality | Forum | Future milestone |
+| [Q-014](#q-014-push-notification-backend-infrastructure) | Push Notification Backend Infrastructure | Notifications | Backend integration |
+| [Q-015](#q-015-push-notification-privacy-and-content-policy) | Push Notification Privacy and Content Policy | Notifications | Backend implementation |
+| [Q-016](#q-016-knowledge-progress-sync-across-devices) | Knowledge Progress Sync Across Devices | Knowledge | Multi-device experience |
+| [Q-017](#q-017-knowledge-content-preloading-strategy) | Knowledge Content Preloading Strategy | Knowledge | Offline experience |
+| [Q-018](#q-018-offline-content-bundle-for-knowledge-hub) | Offline Content Bundle for Knowledge Hub | Knowledge | First-launch experience |
+| [Q-020](#q-020-does-piragitratorde-use-rrule-recurrence-rules) | Does piragitator.de use RRULE? | Calendar | Recurring events display |
+| [Q-021](#q-021-is-1-a-fixed-feed-id-on-piragitratorde) | Is `/1/` a Fixed Feed ID on piragitator.de? | Calendar | Feed configurability |
+
+**Resolved:** Q-002, Q-003, Q-004, Q-011, Q-019
+
+---
+
 ## Authentication
 
 ### Q-001: SSO Provider Details

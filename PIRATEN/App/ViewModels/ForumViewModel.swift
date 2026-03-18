@@ -67,12 +67,23 @@ final class ForumViewModel: ObservableObject {
 
     private let discourseRepository: DiscourseRepository
 
+    /// Timer for periodic background polling (every 3 minutes)
+    private var pollingTimer: Timer?
+
+    /// Polling interval in seconds (3 minutes)
+    private static let pollingInterval: TimeInterval = 180
+
     // MARK: - Initialization
 
     /// Creates a ForumViewModel with the given repository.
     /// - Parameter discourseRepository: The repository to fetch forum data from
     init(discourseRepository: DiscourseRepository) {
         self.discourseRepository = discourseRepository
+        startPolling()
+    }
+
+    deinit {
+        pollingTimer?.invalidate()
     }
 
     // MARK: - Public Methods
@@ -114,6 +125,37 @@ final class ForumViewModel: ObservableObject {
         guard let newestId = topics.first?.id else { return }
         let lastSeen = UserDefaults.standard.integer(forKey: Self.lastSeenTopicKey)
         hasNewContent = lastSeen != 0 && newestId != lastSeen
+    }
+
+    /// Starts a repeating timer that polls for new forum content every 3 minutes.
+    /// Only updates the new-content flag without replacing the visible topic list,
+    /// so the user isn't disrupted while browsing.
+    private func startPolling() {
+        pollingTimer = Timer.scheduledTimer(withTimeInterval: Self.pollingInterval, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                await self?.pollForNewContent()
+            }
+        }
+    }
+
+    /// Fetches topics in the background and updates the new-content badge
+    /// without replacing the visible topic list.
+    private func pollForNewContent() async {
+        do {
+            let fetchedTopics = try await discourseRepository.fetchTopics()
+            // Only update the badge flag; don't replace the displayed list
+            // unless the user hasn't loaded anything yet
+            if topics.isEmpty {
+                topics = fetchedTopics
+                loadState = .loaded
+            }
+            // Check if there's new content by comparing newest topic ID
+            guard let newestId = fetchedTopics.first?.id else { return }
+            let lastSeen = UserDefaults.standard.integer(forKey: Self.lastSeenTopicKey)
+            hasNewContent = lastSeen != 0 && newestId != lastSeen
+        } catch {
+            // Polling failures are silent — don't disturb the user
+        }
     }
 
     private func handleError(_ error: DiscourseRepositoryError) {
