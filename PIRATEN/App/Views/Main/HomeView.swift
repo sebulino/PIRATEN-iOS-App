@@ -300,7 +300,7 @@ struct HomeView: View {
                     VStack(spacing: 6) {
                         Image(systemName: "hand.thumbsdown")
                             .font(.title2)
-                        Text("was ich nicht mag")
+                        Text("was mir nicht gefällt")
                             .font(.piratenCaption)
                             .fontWeight(.medium)
                     }

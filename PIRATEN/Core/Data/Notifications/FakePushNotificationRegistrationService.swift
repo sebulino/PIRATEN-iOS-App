@@ -18,7 +18,8 @@ final class FakePushNotificationRegistrationService: PushNotificationRegistratio
             [FakePush] register(token: \(tokenPrefix)..., preferences: \
             messages=\(preferences.messagesEnabled), \
             todos=\(preferences.todosEnabled), \
-            forum=\(preferences.forumEnabled))
+            forum=\(preferences.forumEnabled), \
+            news=\(preferences.newsEnabled))
             """)
         #endif
     }

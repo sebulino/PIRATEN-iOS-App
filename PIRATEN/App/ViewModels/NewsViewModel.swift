@@ -35,11 +35,22 @@ final class NewsViewModel: ObservableObject {
     private let newsRepository: NewsRepository
     private let cache: NewsCacheStore
 
+    /// Timer for periodic background polling (every 3 minutes)
+    private var pollingTimer: Timer?
+
+    /// Polling interval in seconds (3 minutes)
+    private static let pollingInterval: TimeInterval = 180
+
     // MARK: - Initialization
 
     init(newsRepository: NewsRepository, cache: NewsCacheStore) {
         self.newsRepository = newsRepository
         self.cache = cache
+        startPolling()
+    }
+
+    deinit {
+        pollingTimer?.invalidate()
     }
 
     // MARK: - Public Methods
@@ -100,6 +111,32 @@ final class NewsViewModel: ObservableObject {
     }
 
     // MARK: - Private Helpers
+
+    /// Starts a repeating timer that polls for new news content every 3 minutes.
+    private func startPolling() {
+        pollingTimer = Timer.scheduledTimer(withTimeInterval: Self.pollingInterval, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                await self?.pollForNewContent()
+            }
+        }
+    }
+
+    /// Fetches news in the background and updates the new-content badge
+    /// without disrupting the current view.
+    private func pollForNewContent() async {
+        do {
+            let fetched = try await newsRepository.fetchNews()
+            if items.isEmpty {
+                items = fetched
+                loadState = .loaded
+            }
+            guard let newestId = fetched.first?.messageId else { return }
+            let lastSeen = Int64(UserDefaults.standard.integer(forKey: Self.lastSeenNewsKey))
+            hasNewContent = lastSeen != 0 && newestId != lastSeen
+        } catch {
+            // Polling failures are silent
+        }
+    }
 
     private func updateNewContentFlag() {
         guard let newestId = items.first?.messageId else { return }

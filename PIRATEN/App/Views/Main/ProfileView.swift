@@ -329,6 +329,21 @@ struct ProfileView: View {
                 }
             }
 
+            // News toggle
+            Toggle(isOn: $notificationSettings.newsEnabled) {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Neuigkeiten")
+                        Text("Bei neuen Nachrichten im News-Kanal")
+                            .font(.piratenCaption)
+                            .foregroundColor(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "newspaper.fill")
+                        .foregroundColor(.piratenPrimary)
+                }
+            }
+
             // Todos toggle
             Toggle(isOn: $notificationSettings.todosEnabled) {
                 Label {

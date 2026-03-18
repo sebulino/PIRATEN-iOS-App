@@ -18,6 +18,9 @@ struct PushNotificationPreferences: Equatable {
 
     /// Receive notifications for new forum posts
     let forumEnabled: Bool
+
+    /// Receive notifications for new news items
+    let newsEnabled: Bool
 }
 
 /// Protocol for registering and unregistering push notification device tokens

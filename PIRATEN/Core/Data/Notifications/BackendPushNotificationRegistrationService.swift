@@ -54,7 +54,8 @@ final class BackendPushNotificationRegistrationService: PushNotificationRegistra
             "platform": "ios",
             "messages": preferences.messagesEnabled,
             "todos": preferences.todosEnabled,
-            "forum": preferences.forumEnabled
+            "forum": preferences.forumEnabled,
+            "news": preferences.newsEnabled
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
@@ -65,7 +66,7 @@ final class BackendPushNotificationRegistrationService: PushNotificationRegistra
         }
 
         #if DEBUG
-        print("[BackendPush] Registered token with preferences: messages=\(preferences.messagesEnabled), todos=\(preferences.todosEnabled), forum=\(preferences.forumEnabled)")
+        print("[BackendPush] Registered token with preferences: messages=\(preferences.messagesEnabled), todos=\(preferences.todosEnabled), forum=\(preferences.forumEnabled), news=\(preferences.newsEnabled)")
         #endif
     }
 

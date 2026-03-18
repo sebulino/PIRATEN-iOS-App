@@ -876,26 +876,240 @@ Use the base `HTTPClient` (via `RetryingHTTPClient`) for calendar requests inste
 
 ---
 
-## D-029: Six-Tab Layout with iOS "More" Menu
+## D-029: Five-Tab Layout — Messages and News as Toolbar Sheets
 
 **Date:** 2026-02-19
+**Status:** Accepted (corrected 2026-03-18)
+
+### Context
+The app has five content areas that need primary navigation: Kajüte (dashboard), Forum, Wissen, Termine, ToDos. Additionally, Messages (private forum inbox) and News (Telegram channel feed) need to be reachable from anywhere without disrupting the current tab context.
+
+### Decision
+Five tabs in `TabView` with these tags:
+
+| Tag | Label | Notes |
+|-----|-------|-------|
+| 0 | Kajüte | Landing page / dashboard |
+| 1 | Forum | Topic list |
+| 3 | Wissen | Knowledge hub |
+| 4 | Termine | Calendar |
+| 5 | ToDos | Task list |
+
+Tag 2 is intentionally skipped (previously reserved for a Nachrichten tab, now unused).
+
+**Messages** and **News** are presented as modal sheets from a persistent toolbar row (via `PiratenIconButton`) that appears on every tab screen. They are not tabs.
+
+With exactly 5 tabs, iOS shows all of them in the tab bar without a "More" menu.
+
+### Rationale
+1. **5 tabs fits natively**: iOS tab bar comfortably shows 5 items without overflow
+2. **Messages/News are transient overlays**: The inbox and news feed are consulted briefly then dismissed — modal sheets match this pattern better than tabs that hold navigation state
+3. **Accessible from anywhere**: Toolbar buttons for Messages and News are visible on every tab, so the user never needs to switch tabs to check them
+4. **Badge dots**: `PiratenIconButton` supports a badge overlay; new-content signals for Messages and News drive these without needing tab-level badges
+
+### Consequences
+- Deep link targets: Forum = tag 1, Todos = tag 5, Messages = sheet (not a tab)
+- `DeepLinkRouter.selectedTab` only addresses the five tab tags
+
+---
+
+## D-030: ScrollView + LazyVStack Instead of List
+
+**Date:** 2026-03-06
 **Status:** Accepted
 
 ### Context
-Adding Kajüte (Home) and Termine (Calendar) tabs brings the tab count from 4 to 6. iOS TabView behavior with >5 tabs shows the first 4 tabs plus a "More" menu containing the rest.
+Several views initially used SwiftUI `List` for displaying forum topics, posts, messages, and message threads. In production, these crashed with:
+
+```
+Expected dequeued view to be returned to the collection view
+```
+
+Root cause: `List` uses `UICollectionView` internally. Conditional sibling views in the same layout container (e.g., a `ZStack` holding a `List` alongside a `ProgressView`) trigger cell prefetching during relayout, causing UICollectionView's dequeue contract to be violated. The crash is non-deterministic and worsens with AttributeGraph recomputations.
 
 ### Decision
-Tab order: Kajüte (0), Forum (1), Nachrichten (2), Wissen (3), Termine (4), ToDos (5). The first 4 tabs are always visible; Termine and ToDos appear in the "More" menu.
+Replace all `List` usages in data-driven screens with `ScrollView` + `LazyVStack`:
+
+```swift
+ScrollView {
+    LazyVStack(alignment: .leading, spacing: 0) {
+        ForEach(items) { item in
+            ItemRow(item: item)
+            Divider()
+        }
+    }
+}
+```
+
+`.refreshable` works on `ScrollView` since iOS 16 and is preserved.
+
+**Affected views:** `ForumView`, `MessagesView`, `TopicDetailView`, `MessageThreadDetailView`
 
 ### Rationale
-1. **Kajüte first**: Dashboard is the natural landing page showing cross-feature overview
-2. **Core tabs visible**: Forum, Nachrichten, Wissen are the most-used features
-3. **"More" for less frequent**: Calendar events and Todos are consulted less often
-4. **iOS standard**: The "More" pattern is familiar to iOS users
+1. **Eliminates UICollectionView entirely**: No dequeue contract to violate
+2. **`.refreshable` still works**: Pull-to-refresh is not lost
+3. **`LazyVStack` still lazy**: Views are only created as they scroll into view
+4. **Deterministic layout**: SwiftUI layout instead of UIKit bridge — no AttributeGraph/UIKit interaction to go wrong
 
 ### Consequences
-- Deep link tab indices updated: Messages = 2, Todos = 5
-- Users can reorder tabs in "More" on the device (standard iOS behavior)
+- Scroll-to-item APIs (`ScrollViewReader`) must be used instead of `List`'s built-in selection/scroll
+- Row separators are manual `Divider()` views instead of automatic List separators
+
+---
+
+## D-031: Custom Brand Typography (PoliticsHead + DejaRip)
+
+**Date:** 2026-02-22
+**Status:** Accepted
+
+### Context
+The app needs to express the Piratenpartei brand identity visually beyond color. Standard system fonts (SF Pro) have no party association.
+
+### Decision
+Register two custom OTF fonts at app launch via CoreText (`CTFontManagerRegisterFontsForURL`) and apply them via UIKit appearance proxies:
+
+| Font | Usage |
+|------|-------|
+| **PoliticsHead-Bold** | Navigation bar large titles (32pt) and inline titles (18pt) |
+| **DejaRip** | Tab bar item labels (10pt) |
+
+All body text, captions, and UI controls continue to use Dynamic Type via the `piraten*` SwiftUI font extensions (which resolve to system fonts).
+
+Custom fonts are bundled in the app target as `.otf` files. Registration happens once in `PiratenAppearance.configure()`, called from `PIRATENApp.init()`.
+
+### Rationale
+1. **Brand identity**: Both fonts are official Piratenpartei typefaces
+2. **Minimal scope**: Custom fonts only at high-visibility structural points; body text stays Dynamic Type for accessibility
+3. **CoreText registration**: Necessary because UIKit appearance proxies fire before the SwiftUI render pass; fonts must be available early
+4. **Fallback**: Both font usages fall back to system bold if the OTF fails to load
+
+### Consequences
+- Font files are part of the app binary (~few hundred KB)
+- Xcode's font preview in Interface Builder will not show custom fonts
+
+---
+
+## D-032: Brand Color #FF8800 as piratenPrimary
+
+**Date:** 2026-02-22
+**Status:** Accepted
+
+### Context
+All interactive elements, icons, titles, and badge indicators need a consistent brand color. The color must adapt for dark mode legibility.
+
+### Decision
+Define `Color.piratenPrimary` as an adaptive UIColor:
+
+| Mode | Hex | RGB |
+|------|-----|-----|
+| Light | `#FF8800` | `(1.0, 0.533, 0.0)` |
+| Dark | `#FF9A1A` | `(1.0, 0.604, 0.102)` |
+
+This color is used for:
+- Navigation title text
+- Tab bar badge dots (via `UITabBarItem.appearance().badgeColor`)
+- Toolbar icon badge dots (`PiratenIconButton` overlay circle)
+- Icon foreground colors
+- Primary CTA buttons
+- Active state indicators
+
+**Badge dot color is `piratenPrimary`, not system red.** This applies to both the tab bar `.badge()` modifier and the custom `PiratenIconButton` badge overlay.
+
+### Rationale
+1. **Brand consistency**: Orange is the Piratenpartei primary color
+2. **Badge alignment**: Using brand orange instead of system red distinguishes app-specific new-content signals from OS-level alert badges
+3. **Dark mode**: The slightly lighter dark-mode variant maintains contrast against dark backgrounds
+
+---
+
+## D-033: Background Polling for New Content (3-Minute Timer)
+
+**Date:** 2026-03-18
+**Status:** Accepted
+
+### Context
+Users are informed of new forum posts or news items only when they actively navigate to those screens. While browsing other tabs (e.g., ToDos), new content goes unnoticed until the next tab switch.
+
+Push notifications (Q-014) are not yet active — the backend registration endpoint is unconfirmed.
+
+### Decision
+`ForumViewModel` and `NewsViewModel` each start a repeating `Timer` on `init` that fires every **180 seconds (3 minutes)**. On each tick, the timer:
+
+1. Silently fetches the latest content in the background
+2. Compares the newest item ID against the UserDefaults "last seen" ID
+3. Sets `hasNewContent = true` if new content exists
+4. Does **not** replace the displayed list — the user's current scroll position and visible content are preserved
+
+Polling failures are swallowed silently. Timers are invalidated in `deinit`.
+
+### Rationale
+1. **Fills the gap until push notifications land**: Users see badge dots appear without switching tabs
+2. **Non-disruptive**: List content is not replaced; only the badge state changes
+3. **3-minute interval**: Balances freshness against battery/network use; Discourse rate limit is 20 req/min so there is ample headroom
+4. **Shared pattern**: Same implementation in both ForumViewModel and NewsViewModel for consistency
+
+### Consequences
+- Slightly increased background network activity while the app is open
+- Once Q-014 push infrastructure is live, polling can be reduced or removed
+- Timer does not run when the app is backgrounded (iOS suspends the run loop)
+
+---
+
+## D-034: UITextView Wrapper (SelectableTextView) for Range Text Selection
+
+**Date:** 2026-03-16
+**Status:** Accepted
+
+### Context
+Forum posts and messages contain text that users may want to copy in part (e.g., a specific sentence). SwiftUI's `.textSelection(.enabled)` modifier only supports selecting the entire text block — it does not allow tapping and dragging to select a range.
+
+### Decision
+Wrap `UITextView` in a `UIViewRepresentable` called `SelectableTextView`:
+
+- `isScrollEnabled = false` — height expands to fit all content
+- `isEditable = false` — read-only
+- `dataDetectorTypes = [.link]` — links remain tappable
+- Implements `sizeThatFits(_:uiView:context:)` to report correct height to SwiftUI based on available width
+- Calls `invalidateIntrinsicContentSize()` on every content update
+
+Used in `TopicDetailView` (expanded post view) and `MessageThreadDetailView`.
+
+### Rationale
+1. **True range selection**: UITextView provides the native iOS text selection handles
+2. **Link detection**: `dataDetectorTypes = [.link]` preserves tappable URLs without manual HTML parsing
+3. **Collapsed fallback**: In the collapsed (≤6 lines) state, a plain SwiftUI `Text` with `.lineLimit` is used — no need for UITextView overhead there
+4. **`sizeThatFits` required**: Without it, SwiftUI cannot calculate the correct height for long posts inside a `LazyVStack`, causing the "Mehr anzeigen" expanded view to be truncated
+
+### Consequences
+- UIKit bridge adds some layout complexity; `sizeThatFits` ensures SwiftUI lays out correctly
+- `UIScreen.main` (deprecated iOS 16+) is avoided; width falls back to `uiView.superview?.bounds.width ?? 300`
+
+---
+
+## D-035: Chat Bubble Layout for Private Messages
+
+**Date:** 2026-03-08
+**Status:** Accepted
+
+### Context
+The original `MessageThreadDetailView` rendered messages as a flat, symmetric list — both sent and received messages looked identical. This did not match user expectations for a messaging interface and made conversation flow hard to follow.
+
+### Decision
+Render messages as directional chat bubbles:
+
+- **Sent by current user**: right-aligned, `piratenPrimary`-tinted background
+- **Received**: left-aligned, secondary/surface background
+- Bubble shape: `RoundedRectangle(cornerRadius: 16)` with asymmetric corners (the corner at the author side is squared off)
+- Timestamp below each bubble, aligned to the bubble edge
+- Author avatar shown only for received messages
+
+### Rationale
+1. **Familiar pattern**: Chat bubbles are the universally understood metaphor for 1:1 and group messaging
+2. **Instant orientation**: The user can tell at a glance which messages are theirs without reading author names
+3. **Reduces visual noise**: Hiding the author label on sent messages (self-evident) cleans up the UI
+
+### Consequences
+- Requires knowing which message belongs to the current user — derived from comparing `post.author.username` to the authenticated user's username
 
 ---
 
@@ -904,5 +1118,6 @@ Tab order: Kajüte (0), Forum (1), Nachrichten (2), Wissen (3), Termine (4), ToD
 Decisions pending external input:
 - meine-piraten.de authentication integration (when server adds auth)
 - Todo pagination strategy (when data volume requires it)
-- Knowledge progress sync across devices (if needed)
+- Knowledge progress sync across devices (if needed, see Q-016)
 - piragitator.de RRULE support (see Q-020)
+- Reduce or remove background polling once push notifications are live (Q-014)

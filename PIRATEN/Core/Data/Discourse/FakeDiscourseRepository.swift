@@ -146,7 +146,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
                 author: fakeUsers[1],
                 replyToPostNumber: nil,
                 createdAt: Date().addingTimeInterval(-86400 * 2 + 3600),
-                content: "Besonders wichtig finde ich die Aspekte zur Datensouveränität. Hier müssen wir als Piraten klare Position beziehen.",
+                content: "Besonders wichtig finde ich die Aspekte zur Datensouveränität. Hier müssen wir als Piraten klare Position beziehen. Insbesondere aber zu Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.",
                 replyCount: 1,
                 likeCount: 8,
                 likedByCurrentUser: false,
