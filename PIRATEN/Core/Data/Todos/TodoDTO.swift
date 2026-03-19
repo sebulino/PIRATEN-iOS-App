@@ -81,16 +81,12 @@ struct TaskDTO: Decodable {
 struct EntityDTO: Decodable {
     let id: Int
     let name: String
-    let lv: Bool?
-    let ov: Bool?
-    let kv: Bool?
+    let entityLevel: String?
     let entityId: Int?
 
     enum CodingKeys: String, CodingKey {
         case id, name
-        case lv = "LV"
-        case ov = "OV"
-        case kv = "KV"
+        case entityLevel = "entity_level"
         case entityId = "entity_id"
     }
 
@@ -98,9 +94,7 @@ struct EntityDTO: Decodable {
         Entity(
             id: id,
             name: name,
-            isLV: lv ?? false,
-            isOV: ov ?? false,
-            isKV: kv ?? false,
+            entityLevel: EntityLevel(rawValue: entityLevel ?? "") ?? .kv,
             parentEntityId: entityId
         )
     }
