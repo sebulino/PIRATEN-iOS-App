@@ -200,7 +200,7 @@ final class HomeViewModel: ObservableObject {
             let categories = await todoRepository.fetchCategories()
             let entities = await todoRepository.fetchEntities()
             self.categoriesById = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0.name) })
-            self.entitiesById = Dictionary(uniqueKeysWithValues: entities.map { ($0.id, $0.name) })
+            self.entitiesById = Dictionary(uniqueKeysWithValues: entities.map { ($0.id, "\($0.name) (\($0.entityLevel.displayName))") })
 
             return claimed
         } catch {

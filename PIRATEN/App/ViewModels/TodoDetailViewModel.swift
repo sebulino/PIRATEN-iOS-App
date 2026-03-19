@@ -78,7 +78,9 @@ final class TodoDetailViewModel: ObservableObject {
             let categories = await todoRepository.fetchCategories()
             let entities = await todoRepository.fetchEntities()
             self.categoryName = categories.first { $0.id == todo.categoryId }?.name
-            self.entityName = entities.first { $0.id == todo.entityId }?.name
+            if let entity = entities.first(where: { $0.id == todo.entityId }) {
+                self.entityName = "\(entity.name)" // "\(entity.name) (\(entity.entityLevel.displayName))"
+            }
         }
     }
 

@@ -32,8 +32,15 @@ struct CreateTodoView: View {
                     } else {
                         Picker("Gliederung", selection: $viewModel.selectedEntityId) {
                             Text("Bitte wählen").tag(nil as Int?)
-                            ForEach(viewModel.entities) { entity in
-                                Text(entity.name).tag(entity.id as Int?)
+                            ForEach(EntityLevel.allCases, id: \.self) { level in
+                                let matching = viewModel.entities.filter { $0.entityLevel == level }
+                                if !matching.isEmpty {
+                                    Section(level.displayName) {
+                                        ForEach(matching) { entity in
+                                            Text(entity.name).tag(entity.id as Int?)
+                                        }
+                                    }
+                                }
                             }
                         }
 

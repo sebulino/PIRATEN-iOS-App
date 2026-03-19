@@ -20,11 +20,11 @@ final class FakeTodoRepository: TodoRepository {
     private var nextCommentId: Int = 1000
 
     private let entities: [Entity] = [
-        Entity(id: 1, name: "KV Frankfurt", isLV: false, isOV: false, isKV: true, parentEntityId: 2),
-        Entity(id: 2, name: "LV Hessen", isLV: true, isOV: false, isKV: false, parentEntityId: nil),
-        Entity(id: 3, name: "KV München", isLV: false, isOV: false, isKV: true, parentEntityId: 4),
-        Entity(id: 4, name: "LV Bayern", isLV: true, isOV: false, isKV: false, parentEntityId: nil),
-        Entity(id: 5, name: "OV Schwabing", isLV: false, isOV: true, isKV: false, parentEntityId: 3)
+        Entity(id: 1, name: "KV Frankfurt", entityLevel: .kv, parentEntityId: 2),
+        Entity(id: 2, name: "LV Hessen", entityLevel: .lv, parentEntityId: nil),
+        Entity(id: 3, name: "KV München", entityLevel: .kv, parentEntityId: 5),
+        Entity(id: 4, name: "LV Bayern", entityLevel: .lv, parentEntityId: nil),
+        Entity(id: 5, name: "BZV Oberbayern", entityLevel: .bzv, parentEntityId: 4)
     ]
 
     private let categories: [TodoCategory] = [
