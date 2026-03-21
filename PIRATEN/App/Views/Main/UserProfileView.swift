@@ -79,15 +79,21 @@ struct UserProfileView: View {
                 // Profile Header
                 VStack(spacing: 12) {
                     // Large avatar
-                    ZStack {
-                        Circle()
-                            .fill(avatarColor(for: profile.username).opacity(0.3))
-                            .frame(width: 80, height: 80)
-                        Text(authorInitials(for: profile))
-                            .font(.system(.title, weight: .semibold))
-                            .foregroundStyle(avatarColor(for: profile.username))
+                    if let avatarUrl = profile.avatarUrl {
+                        AsyncImage(url: avatarUrl) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            initialsAvatar(for: profile)
+                        }
+                        .frame(width: 80, height: 80)
+                        .clipShape(Circle())
+                        .accessibilityHidden(true)
+                    } else {
+                        initialsAvatar(for: profile)
+                            .accessibilityHidden(true)
                     }
-                    .accessibilityHidden(true)
 
                     // Display name
                     Text(profile.displayText)
@@ -238,8 +244,19 @@ struct UserProfileView: View {
 
     // MARK: - Avatar Helpers
 
+    @ViewBuilder
+    private func initialsAvatar(for profile: UserProfile) -> some View {
+        ZStack {
+            Circle()
+                .fill(avatarColor(for: profile.username).opacity(0.3))
+                .frame(width: 80, height: 80)
+            Text(authorInitials(for: profile))
+                .font(.system(.title, weight: .semibold))
+                .foregroundStyle(avatarColor(for: profile.username))
+        }
+    }
+
     /// Extracts initials from the display name or username
-    /// Reused logic from MessagePostRow
     private func authorInitials(for profile: UserProfile) -> String {
         let name = profile.displayText
         let words = name.split(separator: " ")
