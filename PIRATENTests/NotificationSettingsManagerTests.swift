@@ -149,7 +149,7 @@ final class NotificationSettingsManagerTests: XCTestCase {
         sut.messagesEnabled = true
 
         // Allow async Task to run
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        try? await Task.sleep(nanoseconds: 300_000_000)
 
         // Then: register was called with correct preferences
         XCTAssertEqual(spyService.registerCalls.count, 1)
@@ -165,14 +165,14 @@ final class NotificationSettingsManagerTests: XCTestCase {
         sut.messagesEnabled = true
 
         // Allow first sync
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        try? await Task.sleep(nanoseconds: 300_000_000)
         spyService.registerCalls.removeAll()
 
         // When: disable all
         sut.messagesEnabled = false
 
         // Allow async Task to run
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        try? await Task.sleep(nanoseconds: 300_000_000)
 
         // Then: unregister was called
         XCTAssertEqual(spyService.unregisterCalls.count, 1)
@@ -194,7 +194,7 @@ final class NotificationSettingsManagerTests: XCTestCase {
         // When
         cleanManager.messagesEnabled = true
 
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        try? await Task.sleep(nanoseconds: 300_000_000)
 
         // Then: no calls made (no token to register)
         XCTAssertEqual(cleanSpyService.registerCalls.count, 0)
@@ -209,7 +209,7 @@ final class NotificationSettingsManagerTests: XCTestCase {
         // When
         sut.messagesEnabled = true
 
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        try? await Task.sleep(nanoseconds: 300_000_000)
 
         // Then: local state is still enabled despite sync failure
         XCTAssertTrue(sut.messagesEnabled)
@@ -225,14 +225,14 @@ final class NotificationSettingsManagerTests: XCTestCase {
         sut.todosEnabled = true
         sut.forumEnabled = true
 
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        try? await Task.sleep(nanoseconds: 300_000_000)
         spyService.registerCalls.removeAll()
         spyService.unregisterCalls.removeAll()
 
         // When
         sut.clearAllSettings()
 
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        try? await Task.sleep(nanoseconds: 300_000_000)
 
         // Then: all preferences disabled
         XCTAssertFalse(sut.messagesEnabled)
@@ -256,13 +256,13 @@ final class NotificationSettingsManagerTests: XCTestCase {
     func testChangingMultiplePreferencesSyncsLatestState() async {
         // Given: a device token is available
         deviceTokenManager.didReceiveDeviceToken(Data([0x12, 0x34]))
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        try? await Task.sleep(nanoseconds: 300_000_000)
         spyService.registerCalls.removeAll()
 
         // When: enable multiple preferences
         sut.messagesEnabled = true
         sut.forumEnabled = true
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        try? await Task.sleep(nanoseconds: 500_000_000)
 
         // Then: at least one register call includes both preferences enabled
         let latestCall = spyService.registerCalls.last

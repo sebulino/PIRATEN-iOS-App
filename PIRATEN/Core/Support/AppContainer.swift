@@ -273,15 +273,8 @@ final class AppContainer {
         self.newsCacheStore = NewsCacheStore()
         self.readingProgressStore = ReadingProgressStore()
 
-        // Push notification layer
+        // Push notification layer (token manager + deep link router have no external dependencies)
         self.deviceTokenManager = DeviceTokenManager()
-        // TODO: Replace FakePushNotificationRegistrationService with BackendPushNotificationRegistrationService
-        // once the backend endpoint is confirmed (see Docs/OPEN_QUESTIONS.md Q-014).
-        self.pushRegistrationService = FakePushNotificationRegistrationService()
-        self.notificationSettingsManager = NotificationSettingsManager(
-            deviceTokenManager: deviceTokenManager,
-            registrationService: pushRegistrationService
-        )
         self.deepLinkRouter = DeepLinkRouter()
 
         // Presentation layer - auth state manager first (needed for HTTP client)
@@ -386,6 +379,19 @@ final class AppContainer {
         // News API client and repository (meine-piraten.de Rails backend)
         let newsAPIClient = NewsAPIClient(httpClient: baseHTTPClient, baseURL: meinePiratenBaseURL)
         self.newsRepository = RealNewsRepository(apiClient: newsAPIClient, cache: newsCacheStore)
+
+        // Push notification registration (requires meinePiratenBaseURL + authStateManager)
+        let capturedAuthStateManager = self.authStateManager
+        self.pushRegistrationService = BackendPushNotificationRegistrationService(
+            baseURL: meinePiratenBaseURL,
+            accessTokenProvider: { [weak capturedAuthStateManager] in
+                await capturedAuthStateManager?.getValidAccessToken()
+            }
+        )
+        self.notificationSettingsManager = NotificationSettingsManager(
+            deviceTokenManager: deviceTokenManager,
+            registrationService: pushRegistrationService
+        )
 
         // Remaining presentation layer
         self.forumViewModel = ForumViewModel(discourseRepository: discourseRepository)

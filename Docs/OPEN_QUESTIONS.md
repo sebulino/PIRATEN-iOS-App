@@ -19,7 +19,7 @@ This document tracks unresolved questions that block implementation decisions.
 | [Q-005](#q-005-user-profile-data-source) | User Profile Data Source | Profile | Profile feature |
 | [Q-012](#q-012-pagination-strategy) | Pagination Strategy | Forum/Messages | Large topic/message lists |
 | [Q-013](#q-013-search-functionality) | Search Functionality | Forum | Future milestone |
-| [Q-014](#q-014-push-notification-backend-infrastructure) | Push Notification Backend Infrastructure | Notifications | Backend integration |
+| ~~[Q-014](#q-014-push-notification-backend-infrastructure)~~ | ~~Push Notification Backend Infrastructure~~ | ~~Notifications~~ | ~~Resolved~~ |
 | [Q-015](#q-015-push-notification-privacy-and-content-policy) | Push Notification Privacy and Content Policy | Notifications | Backend implementation |
 | [Q-016](#q-016-knowledge-progress-sync-across-devices) | Knowledge Progress Sync Across Devices | Knowledge | Multi-device experience |
 | [Q-017](#q-017-knowledge-content-preloading-strategy) | Knowledge Content Preloading Strategy | Knowledge | Offline experience |
@@ -27,7 +27,7 @@ This document tracks unresolved questions that block implementation decisions.
 | [Q-020](#q-020-does-piragitratorde-use-rrule-recurrence-rules) | Does piragitator.de use RRULE? | Calendar | Recurring events display |
 | [Q-021](#q-021-is-1-a-fixed-feed-id-on-piragitratorde) | Is `/1/` a Fixed Feed ID on piragitator.de? | Calendar | Feed configurability |
 
-**Resolved:** Q-002, Q-003, Q-004, Q-011, Q-019
+**Resolved:** Q-002, Q-003, Q-004, Q-011, Q-014, Q-019
 
 ---
 
@@ -400,74 +400,33 @@ Not implemented.
 
 ### Q-014: Push Notification Backend Infrastructure
 
-**Status:** Open
+**Status:** Resolved ✅
 **Blocking:** M5 (Push Notifications) backend integration
 **Asked:** 2026-02-08
+**Resolved:** 2026-03-21
 
 **Question:**
-What backend infrastructure is required to support push notifications for Messages and Todos?
+What backend infrastructure is required to support push notifications?
 
-**What we need:**
+**Answer:**
+The meine-piraten.de backend now provides push subscription endpoints:
 
-**1. Device Token Registration Endpoint**
-- Endpoint to register APNs device tokens
-- Required fields: device_token (hex string), user_id, platform (iOS), enabled_categories (messages, todos)
-- Authentication: requires valid user session
-- Response: confirmation of registration
-- Deregistration endpoint for logout/opt-out
+- **POST** `/api/push_subscriptions` — Register/update device token and notification preferences
+  - Body: `{ "token": "<hex>", "platform": "ios", "messages": true, "todos": false, "forum": true, "news": true }`
+  - Authentication: Bearer token (meine-piraten.de access token)
+- **DELETE** `/api/push_subscriptions/:token` — Deregister device token
 
-**2. Notification Sending Logic**
-- Server must send push notifications via APNs when:
-  - New private message received (if messages notifications enabled)
-  - New/updated todo assigned (if todos notifications enabled)
-- APNs endpoint: `https://api.push.apple.com/3/device/<device_token>` (production)
-- APNs endpoint: `https://api.sandbox.push.apple.com/3/device/<device_token>` (development)
-- Required: APNs authentication certificate or token-based auth (JWT with signing key)
-
-**3. Notification Payload Format**
-```json
-{
-  "aps": {
-    "alert": {
-      "title": "Neue Nachricht",
-      "body": "Du hast eine neue Nachricht erhalten"
-    },
-    "badge": 1,
-    "sound": "default"
-  },
-  "deepLink": "message",
-  "topicId": 12345
-}
-```
-
-**Privacy Requirements:**
-- ❌ NEVER include message content in notification payload
-- ❌ NEVER include sender username in payload (fetch on device after tap)
-- ✅ Use generic text: "Du hast eine neue Nachricht" not "Klaus sent: Hi there"
-- ✅ Only include minimal routing data: deepLink type + ID
-- ✅ Respect user's enabled categories (only send if opted in)
-
-**4. APNs Configuration**
-- APNs Auth Key (.p8 file) from Apple Developer account
-- Team ID and Key ID for token-based auth (recommended over certificates)
-- App Bundle ID: `de.piratenpartei.PIRATEN` (must match Xcode project)
-- Topics: same as bundle ID
-
-**5. User Preferences Storage**
-- Server must store per-user notification preferences
-- Fields: messages_enabled (bool), todos_enabled (bool), device_token (string)
-- Must support multiple devices per user (different tokens)
-- Clear tokens on logout or when device unregisters
-
-**Current implementation:**
+**Implementation (2026-03-21):**
+- ✅ `BackendPushNotificationRegistrationService` wired in `AppContainer` (replaces fake service)
+- ✅ Endpoint paths confirmed and updated (`push_subscriptions` with underscores)
 - ✅ iOS app registers for remote notifications when permission granted
 - ✅ Device token captured and stored locally
 - ✅ Deep link routing implemented for message threads and todo details
-- ❌ Backend registration endpoint not implemented
-- ❌ APNs sending logic not implemented
 
-**Recommendation:**
-Use token-based APNs authentication (JWT) instead of certificates for easier rotation and management.
+**Remaining backend work (not iOS app responsibility):**
+- APNs sending logic (requires .p8 key from Apple Developer account)
+- Token-based APNs authentication (JWT) recommended over certificates
+- Discourse notification delivery handled by iOS polling (every 3 hours), not server-side webhooks
 
 ---
 
