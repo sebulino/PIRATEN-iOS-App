@@ -347,4 +347,4 @@ The iOS app is ready. Once the server implements §2 and §3, push notifications
 - [ ] Notification triggers hooked into message/todo save callbacks
 - [ ] Stale token cleanup implemented
 - [ ] (Optional) Discourse webhook configured for forum post events
-- [ ] iOS app's `AppContainer.swift` updated: replace `FakePushNotificationRegistrationService` with `BackendPushNotificationRegistrationService` and confirm the endpoint path
+- [x] iOS app's `AppContainer.swift` updated: replaced `FakePushNotificationRegistrationService` with `BackendPushNotificationRegistrationService` and confirmed endpoint path (`api/push_subscriptions`)

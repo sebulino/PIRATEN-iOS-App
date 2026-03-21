@@ -67,11 +67,11 @@ final class ForumViewModel: ObservableObject {
 
     private let discourseRepository: DiscourseRepository
 
-    /// Timer for periodic background polling (every 3 minutes)
+    /// Timer for periodic background polling (every 30 minutes)
     private var pollingTimer: Timer?
 
-    /// Polling interval in seconds (3 minutes)
-    private static let pollingInterval: TimeInterval = 180
+    /// Polling interval in seconds (30 minutes)
+    private static let pollingInterval: TimeInterval = 1800
 
     // MARK: - Initialization
 
@@ -127,7 +127,7 @@ final class ForumViewModel: ObservableObject {
         hasNewContent = lastSeen != 0 && newestId != lastSeen
     }
 
-    /// Starts a repeating timer that polls for new forum content every 3 minutes.
+    /// Starts a repeating timer that polls for new forum content every 30 minutes.
     /// Only updates the new-content flag without replacing the visible topic list,
     /// so the user isn't disrupted while browsing.
     private func startPolling() {

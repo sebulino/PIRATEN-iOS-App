@@ -5,6 +5,7 @@
 //  Created by Claude Code on 10.02.26.
 //
 
+import Combine
 import XCTest
 @testable import PIRATEN
 
@@ -133,14 +134,18 @@ final class UserProfileTests: XCTestCase {
         let fakeRepo = FakeDiscourseRepository()
         let viewModel = UserProfileViewModel(username: "nautilus", discourseRepository: fakeRepo)
 
+        // Subscribe before triggering load to avoid missing the state change
+        let expectation = XCTestExpectation(description: "Profile loaded")
+        let cancellable = viewModel.$loadState
+            .dropFirst() // skip current .idle
+            .filter { $0 == .loaded }
+            .sink { _ in expectation.fulfill() }
+
         // When loading profile
         viewModel.loadProfile()
 
-        // Wait for async operation to complete (poll with timeout)
-        let startTime = Date()
-        while viewModel.loadState != .loaded && Date().timeIntervalSince(startTime) < 2.0 {
-            try? await Task.sleep(nanoseconds: 50_000_000) // 50ms polling interval
-        }
+        await fulfillment(of: [expectation], timeout: 2.0)
+        cancellable.cancel()
 
         // Then state should be loaded
         XCTAssertEqual(viewModel.loadState, .loaded)
@@ -153,14 +158,18 @@ final class UserProfileTests: XCTestCase {
         let fakeRepo = FakeDiscourseRepository()
         let viewModel = UserProfileViewModel(username: "nautilus", discourseRepository: fakeRepo)
 
+        // Subscribe before triggering retry to avoid missing the state change
+        let expectation = XCTestExpectation(description: "Profile loaded via retry")
+        let cancellable = viewModel.$loadState
+            .dropFirst() // skip current .idle
+            .filter { $0 == .loaded }
+            .sink { _ in expectation.fulfill() }
+
         // When calling retry
         viewModel.retry()
 
-        // Wait for async operation to complete (poll with timeout)
-        let startTime = Date()
-        while viewModel.loadState != .loaded && Date().timeIntervalSince(startTime) < 2.0 {
-            try? await Task.sleep(nanoseconds: 50_000_000) // 50ms polling interval
-        }
+        await fulfillment(of: [expectation], timeout: 2.0)
+        cancellable.cancel()
 
         // Then it should load the profile
         XCTAssertEqual(viewModel.loadState, .loaded)

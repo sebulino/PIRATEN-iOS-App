@@ -35,11 +35,11 @@ final class NewsViewModel: ObservableObject {
     private let newsRepository: NewsRepository
     private let cache: NewsCacheStore
 
-    /// Timer for periodic background polling (every 3 minutes)
+    /// Timer for periodic background polling (every 30 minutes)
     private var pollingTimer: Timer?
 
-    /// Polling interval in seconds (3 minutes)
-    private static let pollingInterval: TimeInterval = 180
+    /// Polling interval in seconds (30 minutes)
+    private static let pollingInterval: TimeInterval = 1800
 
     // MARK: - Initialization
 
@@ -112,7 +112,7 @@ final class NewsViewModel: ObservableObject {
 
     // MARK: - Private Helpers
 
-    /// Starts a repeating timer that polls for new news content every 3 minutes.
+    /// Starts a repeating timer that polls for new news content every 30 minutes.
     private func startPolling() {
         pollingTimer = Timer.scheduledTimer(withTimeInterval: Self.pollingInterval, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in

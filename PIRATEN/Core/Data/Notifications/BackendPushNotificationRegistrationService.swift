@@ -8,15 +8,12 @@
 import Foundation
 
 /// Real push notification registration service that syncs device token
-/// and user preferences with the PIRATEN backend.
+/// and user preferences with the PIRATEN backend (meine-piraten.de).
 ///
-/// ## Status: Scaffolded — Backend endpoint not yet confirmed
-/// See Docs/OPEN_QUESTIONS.md Q-014 for the pending API details.
-///
-/// ## Expected API (to be confirmed with backend team)
-/// - POST /api/push-subscriptions
-///   Body: { "token": "<hex>", "platform": "ios", "messages": true, "todos": false, "forum": true }
-/// - DELETE /api/push-subscriptions/<token>
+/// ## API Endpoints
+/// - POST /api/push_subscriptions
+///   Body: { "token": "<hex>", "platform": "ios", "messages": true, "todos": false, "forum": true, "news": true }
+/// - DELETE /api/push_subscriptions/<token>
 final class BackendPushNotificationRegistrationService: PushNotificationRegistrationService {
 
     // MARK: - Dependencies
@@ -42,8 +39,7 @@ final class BackendPushNotificationRegistrationService: PushNotificationRegistra
             return
         }
 
-        // TODO: Replace path with confirmed backend endpoint (Q-014)
-        let url = baseURL.appendingPathComponent("api/push-subscriptions")
+        let url = baseURL.appendingPathComponent("api/push_subscriptions")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
@@ -75,8 +71,7 @@ final class BackendPushNotificationRegistrationService: PushNotificationRegistra
             return
         }
 
-        // TODO: Replace path with confirmed backend endpoint (Q-014)
-        let url = baseURL.appendingPathComponent("api/push-subscriptions/\(token)")
+        let url = baseURL.appendingPathComponent("api/push_subscriptions/\(token)")
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")

@@ -5,6 +5,7 @@
 //  Created by Claude Code on 19.02.26.
 //
 
+import Combine
 import Foundation
 import Testing
 @testable import PIRATEN
@@ -33,6 +34,21 @@ struct HomeViewModelTests {
         )
     }
 
+    /// Waits for the ViewModel's loadState to become `.loaded` using Combine observation.
+    private func waitForLoaded(_ vm: HomeViewModel) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            var cancellable: AnyCancellable?
+            cancellable = vm.$loadState
+                .dropFirst()
+                .filter { $0 == .loaded }
+                .first()
+                .sink { _ in
+                    cancellable?.cancel()
+                    continuation.resume()
+                }
+        }
+    }
+
     // MARK: - Load State Tests
 
     @Test("Initial state is idle")
@@ -49,7 +65,7 @@ struct HomeViewModelTests {
         let vm = makeViewModel()
         vm.loadDashboard()
 
-        try await Task.sleep(nanoseconds: 500_000_000) // 500ms for async operations
+        try await waitForLoaded(vm)
         #expect(vm.loadState == .loaded)
     }
 
@@ -58,7 +74,7 @@ struct HomeViewModelTests {
         let vm = makeViewModel()
         vm.loadDashboard()
 
-        try await Task.sleep(nanoseconds: 500_000_000)
+        try await waitForLoaded(vm)
         // FakeDiscourseRepository returns some topics
         // recentTopics should have at most 5
         #expect(vm.recentTopics.count <= 5)
@@ -69,7 +85,7 @@ struct HomeViewModelTests {
         let vm = makeViewModel()
         vm.loadDashboard()
 
-        try await Task.sleep(nanoseconds: 500_000_000)
+        try await waitForLoaded(vm)
         // Should have at most 3 articles
         #expect(vm.knowledgeArticles.count <= 3)
     }
@@ -82,7 +98,7 @@ struct HomeViewModelTests {
         let vm = makeViewModel()
         vm.loadDashboard()
 
-        try await Task.sleep(nanoseconds: 500_000_000)
+        try await waitForLoaded(vm)
         // Should still reach loaded state even if contacts fail
         #expect(vm.loadState == .loaded)
     }

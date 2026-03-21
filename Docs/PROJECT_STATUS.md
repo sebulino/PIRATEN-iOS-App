@@ -96,7 +96,7 @@ Clean Architecture folder structure, auth state machine, tab bar shell, xcconfig
 
 | Area | Limitation | Tracked |
 |------|-----------|---------|
-| Push notifications | Backend registration endpoint not implemented — `FakePushNotificationRegistrationService` in use | Q-014 |
+| Push notifications | Backend registration wired (`BackendPushNotificationRegistrationService`); APNs sending is a backend responsibility (requires .p8 key) | Q-014 (resolved) |
 | Forum | First page only (no pagination) | Q-012 |
 | Calendar | No RRULE recurrence support — recurring events show first occurrence only | Q-020 |
 | Knowledge | Progress stored locally only — lost on reinstall, not synced across devices | Q-016 |
