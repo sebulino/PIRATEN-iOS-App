@@ -399,6 +399,10 @@ final class FakeDiscourseRepository: DiscourseRepository {
         return 9999
     }
 
+    func markTopicAsRead(topicId: Int, highestPostNumber: Int) async throws {
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+    }
+
     func fetchUserProfile(username: String) async throws -> UserProfile {
         // Simulate network delay (placeholder behavior)
         try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds

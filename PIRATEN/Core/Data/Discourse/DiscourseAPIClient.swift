@@ -472,6 +472,46 @@ final class DiscourseAPIClient {
         }
     }
 
+    /// Marks a topic as read by recording read timings.
+    /// Endpoint: POST /topics/timings
+    /// - Parameters:
+    ///   - topicId: The ID of the topic to mark as read
+    ///   - highestPostNumber: The highest post number in the topic (marks all posts up to this as read)
+    /// - Throws: DiscourseError if the request fails
+    func markTopicAsRead(topicId: Int, highestPostNumber: Int) async throws {
+        // Discourse expects form-encoded data for the timings endpoint
+        var formFields = [
+            "topic_id=\(topicId)",
+            "topic_time=1000"
+        ]
+        // Mark each post as read (1000ms read time satisfies Discourse's threshold)
+        for postNumber in 1...highestPostNumber {
+            formFields.append("timings[\(postNumber)]=1000")
+        }
+        let bodyString = formFields.joined(separator: "&")
+        let bodyData = Data(bodyString.utf8)
+
+        var headers = commonHeaders()
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+
+        let request = HTTPRequest(
+            url: url(for: "/topics/timings"),
+            method: .post,
+            headers: headers,
+            body: bodyData
+        )
+        do {
+            let response = try await httpClient.execute(request)
+            guard response.isSuccess else {
+                throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
+            }
+        } catch let error as HTTPError {
+            throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
+        }
+    }
+
     // MARK: - Error Mapping
 
     /// Maps HTTP status codes to Discourse-specific errors.

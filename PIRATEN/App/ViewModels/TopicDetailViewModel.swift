@@ -112,7 +112,7 @@ final class TopicDetailViewModel: ObservableObject {
 
     // MARK: - Public Methods
 
-    /// Loads posts for the current topic.
+    /// Loads posts for the current topic and marks it as read.
     func loadPosts() {
         loadState = .loading
 
@@ -121,11 +121,43 @@ final class TopicDetailViewModel: ObservableObject {
                 let fetchedPosts = try await discourseRepository.fetchPosts(forTopicId: topic.id)
                 self.posts = fetchedPosts
                 self.loadState = .loaded
+
+                // Mark topic as read in background (don't block the UI)
+                if !topic.isRead, let highestPostNumber = fetchedPosts.last?.postNumber {
+                    self.markAsRead(highestPostNumber: highestPostNumber)
+                }
             } catch let error as DiscourseRepositoryError {
                 handleError(error)
             } catch {
                 self.loadState = .error(message: "Ein unbekannter Fehler ist aufgetreten")
             }
+        }
+    }
+
+    /// Marks the topic as read locally and notifies Discourse.
+    private func markAsRead(highestPostNumber: Int) {
+        // Update local model immediately so the list view reflects the change
+        topic = Topic(
+            id: topic.id,
+            title: topic.title,
+            createdBy: topic.createdBy,
+            createdAt: topic.createdAt,
+            postsCount: topic.postsCount,
+            viewCount: topic.viewCount,
+            likeCount: topic.likeCount,
+            categoryId: topic.categoryId,
+            isVisible: topic.isVisible,
+            isClosed: topic.isClosed,
+            isArchived: topic.isArchived,
+            isRead: true
+        )
+
+        // Notify Discourse in the background — failure is non-fatal
+        Task {
+            try? await discourseRepository.markTopicAsRead(
+                topicId: topic.id,
+                highestPostNumber: highestPostNumber
+            )
         }
     }
 

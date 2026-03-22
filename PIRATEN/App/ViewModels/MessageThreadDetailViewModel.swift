@@ -169,11 +169,39 @@ final class MessageThreadDetailViewModel: ObservableObject {
                 let fetchedPosts = try await discourseRepository.fetchPosts(forTopicId: thread.id)
                 self.posts = fetchedPosts
                 self.loadState = .loaded
+
+                // Mark thread as read in background (don't block the UI)
+                if !thread.isRead, let highestPostNumber = fetchedPosts.last?.postNumber {
+                    self.markAsRead(highestPostNumber: highestPostNumber)
+                }
             } catch let error as DiscourseRepositoryError {
                 handleError(error)
             } catch {
                 self.loadState = .error(message: "Ein unbekannter Fehler ist aufgetreten")
             }
+        }
+    }
+
+    /// Marks the message thread as read locally and notifies Discourse.
+    private func markAsRead(highestPostNumber: Int) {
+        // Update local model immediately so the list view reflects the change
+        thread = MessageThread(
+            id: thread.id,
+            title: thread.title,
+            participants: thread.participants,
+            createdAt: thread.createdAt,
+            lastActivityAt: thread.lastActivityAt,
+            postsCount: thread.postsCount,
+            isRead: true,
+            lastPoster: thread.lastPoster
+        )
+
+        // Notify Discourse in the background — failure is non-fatal
+        Task {
+            try? await discourseRepository.markTopicAsRead(
+                topicId: thread.id,
+                highestPostNumber: highestPostNumber
+            )
         }
     }
 

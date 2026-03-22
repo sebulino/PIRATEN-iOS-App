@@ -112,4 +112,13 @@ protocol DiscourseRepository {
     ///
     /// API Endpoint: DELETE /post_actions/{id}.json?post_action_type_id=2
     func unlikePost(id: Int) async throws
+
+    /// Marks a topic (or PM thread) as read by recording read timings with Discourse.
+    /// - Parameters:
+    ///   - topicId: The ID of the topic to mark as read
+    ///   - highestPostNumber: The highest post number (marks all posts up to this as read)
+    /// - Throws: DiscourseRepositoryError if the request fails
+    ///
+    /// API Endpoint: POST /topics/timings
+    func markTopicAsRead(topicId: Int, highestPostNumber: Int) async throws
 }

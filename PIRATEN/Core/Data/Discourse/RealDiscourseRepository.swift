@@ -269,6 +269,20 @@ final class RealDiscourseRepository: DiscourseRepository {
         }
     }
 
+    func markTopicAsRead(topicId: Int, highestPostNumber: Int) async throws {
+        do {
+            try await apiClient.markTopicAsRead(topicId: topicId, highestPostNumber: highestPostNumber)
+        } catch let error as DiscourseError {
+            throw mapToRepositoryError(error)
+        } catch let error as DiscourseRepositoryError {
+            throw error
+        } catch {
+            throw DiscourseRepositoryError.loadFailed(
+                message: "Thema konnte nicht als gelesen markiert werden"
+            )
+        }
+    }
+
     func fetchUserProfile(username: String) async throws -> UserProfile {
         do {
             let data = try await apiClient.fetchUserProfile(username: username)

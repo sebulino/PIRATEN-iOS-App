@@ -147,6 +147,9 @@ struct MessagesView: View {
                                 userProfileViewModelFactory: userProfileViewModelFactory,
                                 onSendMessageFromProfile: onSendMessageFromProfile
                             )
+                            .onDisappear {
+                                viewModel.markThreadAsRead(id: thread.id)
+                            }
                         } label: {
                             MessageThreadRow(thread: thread)
                                 .frame(maxWidth: .infinity, alignment: .leading)

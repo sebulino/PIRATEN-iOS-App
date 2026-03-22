@@ -112,6 +112,24 @@ final class MessagesViewModel: ObservableObject {
         loadMessages()
     }
 
+    /// Updates the local thread list to mark a thread as read (no network call).
+    /// Called when the user views a message thread detail, so the list background updates immediately.
+    func markThreadAsRead(id: Int) {
+        guard let index = messageThreads.firstIndex(where: { $0.id == id }) else { return }
+        let t = messageThreads[index]
+        guard !t.isRead else { return }
+        messageThreads[index] = MessageThread(
+            id: t.id,
+            title: t.title,
+            participants: t.participants,
+            createdAt: t.createdAt,
+            lastActivityAt: t.lastActivityAt,
+            postsCount: t.postsCount,
+            isRead: true,
+            lastPoster: t.lastPoster
+        )
+    }
+
     // MARK: - Private Helpers
 
     private func handleError(_ error: DiscourseRepositoryError) {

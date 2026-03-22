@@ -124,6 +124,9 @@ struct ForumView: View {
                         userProfileViewModelFactory: userProfileViewModelFactory,
                         onSendMessageFromProfile: onSendMessageFromProfile
                     )
+                    .onDisappear {
+                        viewModel.markTopicAsRead(id: topic.id)
+                    }
                 }
             }
             .onAppear {
