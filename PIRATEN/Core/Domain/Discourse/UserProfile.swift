@@ -12,6 +12,7 @@ struct UserProfile: Identifiable, Equatable {
     let postCount: Int
     let likesGiven: Int
     let likesReceived: Int
+    let gliederung: String?
 
     /// Display text for the user, preferring display name over username.
     /// Filters out placeholder values (e.g. "none none") that Discourse may

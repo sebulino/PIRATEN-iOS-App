@@ -308,7 +308,8 @@ final class RealDiscourseRepository: DiscourseRepository {
                     joinedAt: profile.joinedAt,
                     postCount: profile.postCount,
                     likesGiven: summary.userSummary.likesGiven ?? profile.likesGiven,
-                    likesReceived: summary.userSummary.likesReceived ?? profile.likesReceived
+                    likesReceived: summary.userSummary.likesReceived ?? profile.likesReceived,
+                    gliederung: profile.gliederung
                 )
             }
 

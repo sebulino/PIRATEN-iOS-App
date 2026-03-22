@@ -418,7 +418,8 @@ final class FakeDiscourseRepository: DiscourseRepository {
             joinedAt: Date().addingTimeInterval(-365 * 24 * 60 * 60), // 1 year ago
             postCount: 142,
             likesGiven: 89,
-            likesReceived: 203
+            likesReceived: 203,
+            gliederung: "LV Berlin"
         )
     }
 }

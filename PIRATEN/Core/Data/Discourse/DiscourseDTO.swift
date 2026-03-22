@@ -663,6 +663,7 @@ struct DiscourseUserProfileDTO: Decodable {
     let postCount: Int?
     let likeCount: Int?
     let likesReceived: Int?
+    let userFields: [String: String?]?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -674,6 +675,7 @@ struct DiscourseUserProfileDTO: Decodable {
         case postCount = "post_count"
         case likeCount = "like_count"
         case likesReceived = "likes_received"
+        case userFields = "user_fields"
     }
 
     /// Converts this DTO to a domain UserProfile model.
@@ -697,6 +699,12 @@ struct DiscourseUserProfileDTO: Decodable {
             }
         }
 
+        // Extract Gliederung from Discourse custom user fields.
+        // The field ID must match the Discourse instance configuration.
+        // TODO: Move field ID to xcconfig once confirmed (see OPEN_QUESTIONS.md).
+        let gliederungFieldId = "1"
+        let gliederung = userFields?[gliederungFieldId].flatMap { $0 }
+
         return UserProfile(
             id: id,
             username: username,
@@ -706,7 +714,8 @@ struct DiscourseUserProfileDTO: Decodable {
             joinedAt: joinedAt,
             postCount: postCount ?? 0,
             likesGiven: likeCount ?? 0,
-            likesReceived: likesReceived ?? 0
+            likesReceived: likesReceived ?? 0,
+            gliederung: gliederung
         )
     }
 }

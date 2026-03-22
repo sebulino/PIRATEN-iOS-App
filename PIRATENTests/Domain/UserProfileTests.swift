@@ -25,7 +25,8 @@ final class UserProfileTests: XCTestCase {
             joinedAt: Date(),
             postCount: 0,
             likesGiven: 0,
-            likesReceived: 0
+            likesReceived: 0,
+            gliederung: nil
         )
 
         // Then displayText should prefer display name
@@ -43,7 +44,8 @@ final class UserProfileTests: XCTestCase {
             joinedAt: Date(),
             postCount: 0,
             likesGiven: 0,
-            likesReceived: 0
+            likesReceived: 0,
+            gliederung: nil
         )
 
         // Then displayText should fall back to username
@@ -63,7 +65,8 @@ final class UserProfileTests: XCTestCase {
             createdAt: "2025-01-15T10:30:00.000Z",
             postCount: 150,
             likeCount: 75,
-            likesReceived: 200
+            likesReceived: 200,
+            userFields: ["1": "LV Berlin"]
         )
 
         // When mapping to domain model
@@ -93,7 +96,8 @@ final class UserProfileTests: XCTestCase {
             createdAt: "2025-01-15T10:30:00.000Z",
             postCount: nil,
             likeCount: nil,
-            likesReceived: nil
+            likesReceived: nil,
+            userFields: nil
         )
 
         // When mapping to domain model
@@ -117,7 +121,8 @@ final class UserProfileTests: XCTestCase {
             createdAt: "invalid-date",
             postCount: nil,
             likeCount: nil,
-            likesReceived: nil
+            likesReceived: nil,
+            userFields: nil
         )
 
         // When mapping to domain model

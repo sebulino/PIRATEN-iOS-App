@@ -174,6 +174,7 @@ struct MainTabView: View {
                     }
                 }
                 .tag(3)
+                .badge(knowledgeViewModel.hasNewContent ? Text(" ") : nil)
 
             CalendarView(
                 viewModel: calendarViewModel,
@@ -343,6 +344,7 @@ struct MainTabView: View {
         .onChange(of: deepLinkRouter.selectedTab) { _, newTab in
             switch newTab {
             case 1: forumViewModel.markAsViewed()
+            case 3: knowledgeViewModel.markAsViewed()
             case 4: calendarViewModel.markAsViewed()
             case 5: todosViewModel.markAsViewed()
             default: break
