@@ -128,6 +128,11 @@ final class HomeViewModel: ObservableObject {
         loadDashboard()
     }
 
+    /// Updates the unread message count from an external source (e.g. after closing Messages sheet).
+    func updateUnreadMessageCount(_ count: Int) {
+        unreadMessageCount = count
+    }
+
     // MARK: - Private Section Loaders
 
     /// Loads recent contacts and unread message count from message threads.
