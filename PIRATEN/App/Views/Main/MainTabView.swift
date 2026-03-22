@@ -308,7 +308,12 @@ struct MainTabView: View {
         }) {
             NewsView(viewModel: newsViewModel)
         }
-        .sheet(isPresented: $showingMessages) {
+        .sheet(isPresented: $showingMessages, onDismiss: {
+            // Sync unread count back to home dashboard after reading messages
+            homeViewModel.updateUnreadMessageCount(
+                messagesViewModel.messageThreads.filter { !$0.isRead }.count
+            )
+        }) {
             NavigationStack {
                 MessagesView(
                     viewModel: messagesViewModel,
