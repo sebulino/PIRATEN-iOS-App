@@ -24,6 +24,9 @@ final class KnowledgeViewModel: ObservableObject {
     @Published private(set) var loadState: KnowledgeLoadState = .idle
     @Published private(set) var index: KnowledgeIndex?
     @Published var searchQuery: String = ""
+    @Published private(set) var hasNewContent: Bool = false
+
+    private static let lastSeenTopicIdKey = "knowledge_lastSeenTopicId"
 
     // MARK: - Dependencies
 
@@ -89,6 +92,7 @@ final class KnowledgeViewModel: ObservableObject {
                 let fetchedIndex = try await repository.fetchIndex(forceRefresh: forceRefresh)
                 self.index = fetchedIndex
                 self.loadState = .loaded
+                self.updateNewContentFlag()
             } catch let error as KnowledgeError {
                 self.loadState = .error(message: error.localizedDescription)
             } catch {
@@ -106,5 +110,20 @@ final class KnowledgeViewModel: ObservableObject {
     /// Returns the reading progress for a specific topic.
     func progress(for topicId: String) -> TopicProgress? {
         progressStore.getProgress(for: topicId)
+    }
+
+    /// Marks the Knowledge tab as viewed, clearing the new content indicator.
+    func markAsViewed() {
+        guard let newestId = index?.topics.first?.id else { return }
+        UserDefaults.standard.set(newestId, forKey: Self.lastSeenTopicIdKey)
+        hasNewContent = false
+    }
+
+    // MARK: - Private Helpers
+
+    private func updateNewContentFlag() {
+        guard let newestId = index?.topics.first?.id else { return }
+        let lastSeen = UserDefaults.standard.string(forKey: Self.lastSeenTopicIdKey)
+        hasNewContent = lastSeen != nil && newestId != lastSeen
     }
 }

@@ -123,6 +123,21 @@ struct UserProfileView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal)
 
+                // Gliederung Section
+                if let gliederung = profile.gliederung, !gliederung.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Gliederung")
+                            .font(.piratenHeadlineBody)
+                            .foregroundColor(.primary)
+
+                        Text(gliederung)
+                            .font(.piratenBodyDefault)
+                            .foregroundColor(.primary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
+                }
+
                 // Bio Section
                 if let bio = profile.bio, !bio.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
