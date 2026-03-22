@@ -353,6 +353,10 @@ struct MainTabView: View {
         .onAppear {
             configureNavigationBarAppearance()
             configureTabBarAppearance()
+            // Load messages at startup so the toolbar badge reflects unread state
+            if messagesViewModel.loadState == .idle {
+                messagesViewModel.loadMessages()
+            }
         }
         .task {
             await refreshDeliveredNotificationsCount()
