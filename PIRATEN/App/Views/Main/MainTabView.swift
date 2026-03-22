@@ -358,9 +358,12 @@ struct MainTabView: View {
         .onAppear {
             configureNavigationBarAppearance()
             configureTabBarAppearance()
-            // Load messages at startup so the toolbar badge reflects unread state
+            // Load data at startup so badges reflect unread state immediately
             if messagesViewModel.loadState == .idle {
                 messagesViewModel.loadMessages()
+            }
+            if forumViewModel.loadState == .idle {
+                forumViewModel.loadTopics()
             }
         }
         .task {
