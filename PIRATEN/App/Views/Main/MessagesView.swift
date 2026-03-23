@@ -140,22 +140,15 @@ struct MessagesView: View {
             LazyVStack(alignment: .leading, spacing: 0) {
                 ForEach(viewModel.messageThreads) { thread in
                     if let factory = messageThreadDetailViewModelFactory {
-                        NavigationLink {
-                            MessageThreadDetailView(
-                                viewModel: factory(thread),
-                                discourseAuthCoordinator: discourseAuthCoordinator,
-                                userProfileViewModelFactory: userProfileViewModelFactory,
-                                onSendMessageFromProfile: onSendMessageFromProfile
-                            )
-                            .onDisappear {
-                                viewModel.markThreadAsRead(id: thread.id)
-                            }
-                        } label: {
-                            MessageThreadRow(thread: thread)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
+                        MessageThreadListItem(
+                            thread: thread,
+                            factory: factory,
+                            discourseAuthCoordinator: discourseAuthCoordinator,
+                            userProfileViewModelFactory: userProfileViewModelFactory,
+                            onSendMessageFromProfile: onSendMessageFromProfile,
+                            onArchive: { viewModel.archiveThread(id: thread.id) },
+                            onRead: { viewModel.markThreadAsRead(id: thread.id) }
+                        )
                     } else {
                         MessageThreadRow(thread: thread)
                     }
@@ -323,6 +316,203 @@ struct MessagesView: View {
             .buttonStyle(.bordered)
         }
         .padding()
+    }
+}
+
+// MARK: - UIKit Horizontal Pan Gesture
+
+/// UIViewRepresentable that installs a UIPanGestureRecognizer configured to only
+/// recognize horizontal pans. Vertical pans are rejected in gestureRecognizerShouldBegin,
+/// so UIScrollView handles them normally (scrolling works).
+private struct HorizontalPanGesture: UIViewRepresentable {
+    var onBegan: () -> Void
+    var onChanged: (CGFloat) -> Void
+    var onEnded: (CGFloat) -> Void
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .clear
+        view.isUserInteractionEnabled = false
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        context.coordinator.onBegan = onBegan
+        context.coordinator.onChanged = onChanged
+        context.coordinator.onEnded = onEnded
+
+        // Attach pan gesture to superview (SwiftUI's hosting view) so taps pass
+        // through to NavigationLink. Only add once.
+        if let superview = uiView.superview,
+           !(superview.gestureRecognizers?.contains(where: { $0 is UIPanGestureRecognizer }) ?? false) {
+            let pan = UIPanGestureRecognizer(
+                target: context.coordinator,
+                action: #selector(Coordinator.handlePan(_:))
+            )
+            pan.delegate = context.coordinator
+            superview.addGestureRecognizer(pan)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onBegan: onBegan, onChanged: onChanged, onEnded: onEnded)
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var onBegan: () -> Void
+        var onChanged: (CGFloat) -> Void
+        var onEnded: (CGFloat) -> Void
+
+        init(onBegan: @escaping () -> Void, onChanged: @escaping (CGFloat) -> Void, onEnded: @escaping (CGFloat) -> Void) {
+            self.onBegan = onBegan
+            self.onChanged = onChanged
+            self.onEnded = onEnded
+        }
+
+        /// Only begin if the pan is more horizontal than vertical.
+        /// Returning false lets UIScrollView claim the gesture for scrolling.
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return false }
+            let velocity = pan.velocity(in: pan.view)
+            return abs(velocity.x) > abs(velocity.y)
+        }
+
+        /// Allow this gesture to work alongside UIScrollView's pan gesture.
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+        ) -> Bool {
+            true
+        }
+
+        @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
+            let translation = gesture.translation(in: gesture.view).x
+            switch gesture.state {
+            case .began:
+                onBegan()
+            case .changed:
+                onChanged(translation)
+            case .ended, .cancelled:
+                onEnded(translation)
+            default:
+                break
+            }
+        }
+    }
+}
+
+/// Wrapper that adds a swipe-left-to-archive gesture using UIKit's UIPanGestureRecognizer.
+/// UIKit gestures properly coexist with UIScrollView (which SwiftUI's ScrollView wraps),
+/// unlike SwiftUI's DragGesture which steals touches and blocks scrolling.
+private struct SwipeableMessageRow<Content: View>: View {
+    let onArchive: () -> Void
+    @Binding var isInteracting: Bool
+    @ViewBuilder let content: () -> Content
+
+    @State private var offset: CGFloat = 0
+    @State private var isShowingAction = false
+
+    private let actionWidth: CGFloat = 80
+    private let swipeThreshold: CGFloat = -60
+
+    var body: some View {
+        content()
+            .background(Color(.systemBackground))
+            .offset(x: offset)
+            .background(alignment: .trailing) {
+                if offset < 0 {
+                    Button {
+                        onArchive()
+                    } label: {
+                        VStack(spacing: 4) {
+                            Image(systemName: "archivebox.fill")
+                                .font(.piratenTitle2)
+                            Text("Archiv")
+                                .font(.piratenCaption)
+                        }
+                        .foregroundColor(.white)
+                        .frame(width: -offset)
+                        .frame(maxHeight: .infinity)
+                        .background(Color.orange)
+                    }
+                }
+            }
+            .clipped()
+            .overlay {
+                HorizontalPanGesture(
+                    onBegan: {
+                        isInteracting = true
+                    },
+                    onChanged: { translation in
+                        if translation < 0 {
+                            offset = isShowingAction
+                                ? max(translation - actionWidth, -actionWidth)
+                                : max(translation, -actionWidth)
+                        } else if isShowingAction {
+                            offset = min(translation - actionWidth, 0)
+                        }
+                    },
+                    onEnded: { translation in
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            if translation < swipeThreshold && !isShowingAction {
+                                offset = -actionWidth
+                                isShowingAction = true
+                            } else if isShowingAction && translation > -swipeThreshold {
+                                offset = 0
+                                isShowingAction = false
+                            } else if isShowingAction {
+                                offset = -actionWidth
+                            } else {
+                                offset = 0
+                            }
+                        }
+                        // Re-enable NavigationLink after a short delay so the touch-up
+                        // from the pan doesn't trigger navigation
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            isInteracting = isShowingAction
+                        }
+                    }
+                )
+            }
+    }
+}
+
+/// Per-row wrapper that holds the `isInteracting` state needed to disable
+/// `NavigationLink` during swipe gestures. Each row needs its own state.
+private struct MessageThreadListItem: View {
+    let thread: MessageThread
+    let factory: (MessageThread) -> MessageThreadDetailViewModel
+    var discourseAuthCoordinator: DiscourseAuthCoordinator
+    var userProfileViewModelFactory: ((String) -> UserProfileViewModel)?
+    var onSendMessageFromProfile: ((UserProfile) -> Void)?
+    let onArchive: () -> Void
+    let onRead: () -> Void
+
+    @State private var isInteracting = false
+
+    var body: some View {
+        NavigationLink {
+            MessageThreadDetailView(
+                viewModel: factory(thread),
+                discourseAuthCoordinator: discourseAuthCoordinator,
+                userProfileViewModelFactory: userProfileViewModelFactory,
+                onSendMessageFromProfile: onSendMessageFromProfile
+            )
+            .onDisappear {
+                onRead()
+            }
+        } label: {
+            SwipeableMessageRow(
+                onArchive: onArchive,
+                isInteracting: $isInteracting
+            ) {
+                MessageThreadRow(thread: thread)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(isInteracting)
     }
 }
 

@@ -121,4 +121,11 @@ protocol DiscourseRepository {
     ///
     /// API Endpoint: POST /topics/timings
     func markTopicAsRead(topicId: Int, highestPostNumber: Int) async throws
+
+    /// Archives a private message thread.
+    /// - Parameter topicId: The ID of the PM topic to archive
+    /// - Throws: DiscourseRepositoryError if the request fails
+    ///
+    /// API Endpoint: PUT /t/{topicId}/archive-message
+    func archiveMessageThread(topicId: Int) async throws
 }

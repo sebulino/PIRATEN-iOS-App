@@ -130,6 +130,20 @@ final class MessagesViewModel: ObservableObject {
         )
     }
 
+    /// Archives a message thread on Discourse and removes it from the local list.
+    func archiveThread(id: Int) {
+        Task {
+            do {
+                try await discourseRepository.archiveMessageThread(topicId: id)
+                messageThreads.removeAll { $0.id == id }
+            } catch let error as DiscourseRepositoryError {
+                handleError(error)
+            } catch {
+                loadState = .error(message: "Nachricht konnte nicht archiviert werden")
+            }
+        }
+    }
+
     // MARK: - Private Helpers
 
     private func handleError(_ error: DiscourseRepositoryError) {

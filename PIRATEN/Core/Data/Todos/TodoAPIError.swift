@@ -10,6 +10,7 @@ import Foundation
 /// API-level errors for meine-piraten.de Todo operations.
 enum TodoAPIError: Error, Equatable {
     case notFound
+    case unauthorized
     case validationFailed(message: String?)
     case serverError(message: String?)
     case networkError(message: String)
@@ -21,6 +22,8 @@ enum TodoAPIError: Error, Equatable {
         switch self {
         case .notFound:
             return "Aufgabe nicht gefunden"
+        case .unauthorized:
+            return "Sitzung abgelaufen — bitte erneut anmelden"
         case .validationFailed(let message):
             if let message = message {
                 return "Validierungsfehler: \(message)"
