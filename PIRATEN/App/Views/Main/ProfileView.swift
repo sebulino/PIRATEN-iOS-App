@@ -299,62 +299,16 @@ struct ProfileView: View {
     @ViewBuilder
     private var notificationSettingsSection: some View {
         Section {
-            // Messages toggle
-            Toggle(isOn: $notificationSettings.messagesEnabled) {
+            Toggle(isOn: $notificationSettings.notificationsEnabled) {
                 Label {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Nachrichten")
-                        Text("Bei neuen privaten Nachrichten")
+                        Text("Benachrichtigungen")
+                        Text("Bei neuen Diskussions-Benachrichtigungen")
                             .font(.piratenCaption)
                             .foregroundColor(.secondary)
                     }
                 } icon: {
-                    Image(systemName: "envelope.fill")
-                        .foregroundColor(.piratenPrimary)
-                }
-            }
-
-            // Forum toggle
-            Toggle(isOn: $notificationSettings.forumEnabled) {
-                Label {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Forum")
-                        Text("Bei neuen Forenbeiträgen")
-                            .font(.piratenCaption)
-                            .foregroundColor(.secondary)
-                    }
-                } icon: {
-                    Image(systemName: "bubble.left.and.bubble.right.fill")
-                        .foregroundColor(.piratenPrimary)
-                }
-            }
-
-            // News toggle
-            Toggle(isOn: $notificationSettings.newsEnabled) {
-                Label {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Neuigkeiten")
-                        Text("Bei neuen Nachrichten im News-Kanal")
-                            .font(.piratenCaption)
-                            .foregroundColor(.secondary)
-                    }
-                } icon: {
-                    Image(systemName: "newspaper.fill")
-                        .foregroundColor(.piratenPrimary)
-                }
-            }
-
-            // Todos toggle
-            Toggle(isOn: $notificationSettings.todosEnabled) {
-                Label {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Aufgaben")
-                        Text("Bei neuen oder geänderten Aufgaben")
-                            .font(.piratenCaption)
-                            .foregroundColor(.secondary)
-                    }
-                } icon: {
-                    Image(systemName: "checklist")
+                    Image(systemName: "bell.fill")
                         .foregroundColor(.piratenPrimary)
                 }
             }
@@ -383,30 +337,9 @@ struct ProfileView: View {
         } header: {
             Text("Mitteilungen")
         } footer: {
-            Text("Mitteilungen werden nur für die aktivierten Kategorien gesendet. Es werden keine Nachrichteninhalte übertragen – nur ein allgemeiner Hinweis. Es werden keine Tracking-Daten erfasst.")
+            Text("Es werden keine Nachrichteninhalte übertragen – nur ein allgemeiner Hinweis. Es werden keine Tracking-Daten erfasst.")
                 .font(.piratenCaption)
         }
-
-        #if DEBUG
-        if let token = notificationSettings.debugDeviceTokenString {
-            Section("Debug: Device Token") {
-                Button {
-                    UIPasteboard.general.string = token
-                    
-                } label: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(token)
-                            .font(.system(.caption2, design: .monospaced))
-                            .lineLimit(nil)
-                        Text("Tap to copy")
-                            .font(.piratenCaption)
-                            .foregroundColor(.piratenPrimary)
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        #endif
     }
 }
 
@@ -434,15 +367,11 @@ private struct ProfileRow: View {
 }
 
 #Preview {
-    let deviceTokenManager = DeviceTokenManager()
     ProfileView(
         viewModel: ProfileViewModel(
             authRepository: FakeAuthRepository(credentialStore: KeychainCredentialStore()),
             discourseRepository: FakeDiscourseRepository()
         ),
-        notificationSettings: NotificationSettingsManager(
-            deviceTokenManager: deviceTokenManager,
-            registrationService: FakePushNotificationRegistrationService()
-        )
+        notificationSettings: NotificationSettingsManager()
     )
 }

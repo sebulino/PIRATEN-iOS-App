@@ -8,6 +8,7 @@
 import SwiftUI
 import UIKit
 import UserNotifications
+import Combine
 
 struct MainTabView: View {
     @ObservedObject var homeViewModel: HomeViewModel
@@ -20,6 +21,7 @@ struct MainTabView: View {
     @ObservedObject var profileViewModel: ProfileViewModel
     @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
     @ObservedObject var notificationSettings: NotificationSettingsManager
+    @ObservedObject var notificationPoller: DiscourseNotificationPoller
     @ObservedObject var deepLinkRouter: DeepLinkRouter
 
     /// Factory for creating TopicDetailViewModels
@@ -91,6 +93,12 @@ struct MainTabView: View {
 
     /// State for handling deep link navigation to todo detail
     @State private var deepLinkedTodo: Todo?
+
+    /// Scene phase for foreground/background polling control
+    @Environment(\.scenePhase) private var scenePhase
+
+    /// Timer for foreground notification polling
+    @State private var pollingTimer: Timer?
 
     /// Whether the notification bell should show a badge
     private var notificationsBadge: Bool {
@@ -365,6 +373,33 @@ struct MainTabView: View {
             if forumViewModel.loadState == .idle {
                 forumViewModel.loadTopics()
             }
+            // Start foreground polling if notifications are enabled
+            startPollingIfNeeded()
+        }
+        .onDisappear {
+            stopPolling()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            switch newPhase {
+            case .active:
+                // Poll immediately on foreground return, then resume timer
+                if notificationSettings.notificationsEnabled {
+                    Task { await notificationPoller.poll() }
+                    startPollingIfNeeded()
+                }
+                Task { await refreshDeliveredNotificationsCount() }
+            case .background, .inactive:
+                stopPolling()
+            @unknown default:
+                break
+            }
+        }
+        .onChange(of: notificationSettings.notificationsEnabled) { _, enabled in
+            if enabled {
+                startPollingIfNeeded()
+            } else {
+                stopPolling()
+            }
         }
         .task {
             await refreshDeliveredNotificationsCount()
@@ -417,6 +452,27 @@ struct MainTabView: View {
         deliveredNotificationsCount = delivered.count
     }
 
+    // MARK: - Notification Polling
+
+    /// Starts the foreground polling timer (every 60 seconds) if notifications are enabled.
+    private func startPollingIfNeeded() {
+        guard notificationSettings.notificationsEnabled else { return }
+        guard pollingTimer == nil else { return }
+
+        pollingTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
+            Task { @MainActor in
+                await notificationPoller.poll()
+                await refreshDeliveredNotificationsCount()
+            }
+        }
+    }
+
+    /// Stops the foreground polling timer.
+    private func stopPolling() {
+        pollingTimer?.invalidate()
+        pollingTimer = nil
+    }
+
     // MARK: - Appearance Configuration
 
     private func configureNavigationBarAppearance() {
@@ -465,7 +521,6 @@ struct MainTabView: View {
     let fakeDiscourseRepo = FakeDiscourseRepository()
     let discourseAPIKeyProvider = KeychainDiscourseAPIKeyProvider(credentialStore: credentialStore)
     let recentRecipientsStore = RecentRecipientsStore()
-    let deviceTokenManager = DeviceTokenManager()
 
     let fakeKnowledgeRepo = FakeKnowledgeRepository()
     let progressStore = ReadingProgressStore()
@@ -496,9 +551,10 @@ struct MainTabView: View {
             discourseAPIKeyProvider: discourseAPIKeyProvider,
             credentialStore: credentialStore
         ),
-        notificationSettings: NotificationSettingsManager(
-            deviceTokenManager: deviceTokenManager,
-            registrationService: FakePushNotificationRegistrationService()
+        notificationSettings: NotificationSettingsManager(),
+        notificationPoller: DiscourseNotificationPoller(
+            httpClient: URLSessionHTTPClient.withCaching(),
+            baseURL: URL(string: "https://diskussion.piratenpartei.de")!
         ),
         deepLinkRouter: DeepLinkRouter(),
         topicDetailViewModelFactory: { topic in

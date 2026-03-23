@@ -1113,6 +1113,48 @@ Render messages as directional chat bubbles:
 
 ---
 
+## D-036: Client-Side Polling Instead of APNs Push Notifications
+
+**Date:** 2026-03-23
+**Status:** Accepted
+
+### Context
+The app was designed with an APNs push notification architecture: the iOS app registers device tokens with the Rails backend (meine-piraten.de), which would then send push notifications via Apple Push Notification service. However, the self-hosted Discourse server cannot send event notifications to the Rails backend (no webhooks available), making the Rails server unable to know when to push.
+
+Analysis of the official Discourse mobile app revealed that self-hosted instances use the same client-side polling approach — the app polls the Discourse instance directly and creates local notifications when unread counts increase.
+
+### Decision
+Replace the APNs push infrastructure with client-side polling of Discourse's `/notifications/totals.json` endpoint:
+
+- **Foreground**: Poll every 60 seconds via timer
+- **App returns to foreground**: Poll immediately
+- **Local notifications**: Scheduled when unread count increases
+- **Single toggle**: Replaced 4 per-category toggles with one "Benachrichtigungen" toggle (Discourse gives aggregate counts only)
+
+### Removed
+- `DeviceTokenManager` (APNs token management)
+- `PushNotificationRegistrationService` protocol + implementations
+- `BackendPushNotificationRegistrationService` (Rails backend sync)
+- `FakePushNotificationRegistrationService`
+- `aps-environment` entitlement
+- Per-category notification preferences (`PushNotificationPreferences`)
+
+### Added
+- `DiscourseNotificationPoller` — polls Discourse, compares counts, schedules local notifications
+
+### Rationale
+1. **Eliminates server dependency**: No Rails server needed for notifications
+2. **Proven pattern**: Official Discourse app uses identical approach for self-hosted instances
+3. **Simpler architecture**: Fewer moving parts, no APNs credentials to manage
+4. **Privacy preserved**: Only aggregate counts are fetched, no notification content
+
+### Consequences
+- Notifications are delayed (up to 60s in foreground, no background delivery until BGTaskScheduler is added)
+- Notifications are generic ("Du hast N neue Benachrichtigungen") — no per-category or content-specific detail
+- If Discourse adds webhooks in the future, can revisit APNs push
+
+---
+
 ## Future Decisions
 
 Decisions pending external input:
@@ -1120,4 +1162,4 @@ Decisions pending external input:
 - Todo pagination strategy (when data volume requires it)
 - Knowledge progress sync across devices (if needed, see Q-016)
 - piragitator.de RRULE support (see Q-020)
-- Reduce or remove background polling once push notifications are live (Q-014)
+- Add BGTaskScheduler for background notification polling (extends D-036)
