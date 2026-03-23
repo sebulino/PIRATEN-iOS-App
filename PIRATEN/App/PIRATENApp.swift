@@ -9,7 +9,7 @@ import SwiftUI
 
 @main
 struct PIRATENApp: App {
-    /// App delegate for handling APNs device token callbacks
+    /// App delegate for handling notification routing
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     /// The central dependency container for the application.
@@ -26,9 +26,6 @@ struct PIRATENApp: App {
         }
 
         self.container = AppContainer()
-
-        // Wire AppDelegate to DeviceTokenManager for APNs callbacks
-        appDelegate.deviceTokenManager = container.deviceTokenManager
 
         // Wire AppDelegate to DeepLinkRouter for notification routing
         appDelegate.deepLinkRouter = container.deepLinkRouter
@@ -63,6 +60,7 @@ struct PIRATENApp: App {
                 profileViewModel: container.profileViewModel,
                 discourseAuthCoordinator: container.discourseAuthCoordinator,
                 notificationSettings: container.notificationSettingsManager,
+                notificationPoller: container.notificationPoller,
                 deepLinkRouter: container.deepLinkRouter,
                 topicDetailViewModelFactory: { [container] topic in
                     container.makeTopicDetailViewModel(for: topic)

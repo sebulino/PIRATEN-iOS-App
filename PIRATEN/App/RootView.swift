@@ -19,6 +19,7 @@ struct RootView: View {
     @ObservedObject var profileViewModel: ProfileViewModel
     @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
     @ObservedObject var notificationSettings: NotificationSettingsManager
+    @ObservedObject var notificationPoller: DiscourseNotificationPoller
     @ObservedObject var deepLinkRouter: DeepLinkRouter
 
     /// Factory for creating TopicDetailViewModels
@@ -78,6 +79,7 @@ struct RootView: View {
                     profileViewModel: profileViewModel,
                     discourseAuthCoordinator: discourseAuthCoordinator,
                     notificationSettings: notificationSettings,
+                    notificationPoller: notificationPoller,
                     deepLinkRouter: deepLinkRouter,
                     topicDetailViewModelFactory: topicDetailViewModelFactory,
                     messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
@@ -177,7 +179,6 @@ struct SessionExpiredView: View {
     let fakeDiscourseRepo = FakeDiscourseRepository()
     let discourseAPIKeyProvider = KeychainDiscourseAPIKeyProvider(credentialStore: credentialStore)
     let recentRecipientsStore = RecentRecipientsStore()
-    let deviceTokenManager = DeviceTokenManager()
 
     let fakeKnowledgeRepo = FakeKnowledgeRepository()
     let progressStore = ReadingProgressStore()
@@ -209,9 +210,10 @@ struct SessionExpiredView: View {
             discourseAPIKeyProvider: discourseAPIKeyProvider,
             credentialStore: credentialStore
         ),
-        notificationSettings: NotificationSettingsManager(
-            deviceTokenManager: deviceTokenManager,
-            registrationService: FakePushNotificationRegistrationService()
+        notificationSettings: NotificationSettingsManager(),
+        notificationPoller: DiscourseNotificationPoller(
+            httpClient: URLSessionHTTPClient.withCaching(),
+            baseURL: URL(string: "https://diskussion.piratenpartei.de")!
         ),
         deepLinkRouter: DeepLinkRouter(),
         topicDetailViewModelFactory: { topic in

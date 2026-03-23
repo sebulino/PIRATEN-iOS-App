@@ -129,16 +129,12 @@ final class AppContainer {
     /// Reading progress storage for Knowledge Hub topics.
     let readingProgressStore: ReadingProgressStore
 
-    /// Device token manager for APNs registration and storage.
-    /// Stores device tokens locally (non-sensitive data).
-    let deviceTokenManager: DeviceTokenManager
-
-    /// Push notification registration service for syncing token + preferences to backend.
-    let pushRegistrationService: PushNotificationRegistrationService
-
-    /// Notification settings manager for push notification preferences.
-    /// Privacy-first: all notifications are opt-in (default off).
+    /// Notification settings manager for notification preferences.
+    /// Privacy-first: notifications are opt-in (default off).
     let notificationSettingsManager: NotificationSettingsManager
+
+    /// Notification poller for polling Discourse notification counts.
+    let notificationPoller: DiscourseNotificationPoller
 
     /// Deep link router for handling notification-based navigation.
     let deepLinkRouter: DeepLinkRouter
@@ -273,8 +269,7 @@ final class AppContainer {
         self.newsCacheStore = NewsCacheStore()
         self.readingProgressStore = ReadingProgressStore()
 
-        // Push notification layer (token manager + deep link router have no external dependencies)
-        self.deviceTokenManager = DeviceTokenManager()
+        // Notification layer (deep link router has no external dependencies)
         self.deepLinkRouter = DeepLinkRouter()
 
         // Presentation layer - auth state manager first (needed for HTTP client)
@@ -380,17 +375,13 @@ final class AppContainer {
         let newsAPIClient = NewsAPIClient(httpClient: baseHTTPClient, baseURL: meinePiratenBaseURL)
         self.newsRepository = RealNewsRepository(apiClient: newsAPIClient, cache: newsCacheStore)
 
-        // Push notification registration (requires meinePiratenBaseURL + authStateManager)
-        let capturedAuthStateManager = self.authStateManager
-        self.pushRegistrationService = BackendPushNotificationRegistrationService(
-            baseURL: meinePiratenBaseURL,
-            accessTokenProvider: { [weak capturedAuthStateManager] in
-                await capturedAuthStateManager?.getValidAccessToken()
-            }
-        )
-        self.notificationSettingsManager = NotificationSettingsManager(
-            deviceTokenManager: deviceTokenManager,
-            registrationService: pushRegistrationService
+        // Notification settings (no external dependencies)
+        self.notificationSettingsManager = NotificationSettingsManager()
+
+        // Notification poller (uses Discourse HTTP client for authenticated polling)
+        self.notificationPoller = DiscourseNotificationPoller(
+            httpClient: discourseHTTPClient,
+            baseURL: Self.discourseBaseURL
         )
 
         // Remaining presentation layer
@@ -467,12 +458,11 @@ final class AppContainer {
         self.newsCacheStore = NewsCacheStore()
         self.readingProgressStore = ReadingProgressStore()
 
-        // Push notification layer (testing)
-        self.deviceTokenManager = DeviceTokenManager()
-        self.pushRegistrationService = FakePushNotificationRegistrationService()
-        self.notificationSettingsManager = NotificationSettingsManager(
-            deviceTokenManager: deviceTokenManager,
-            registrationService: pushRegistrationService
+        // Notification layer (testing)
+        self.notificationSettingsManager = NotificationSettingsManager()
+        self.notificationPoller = DiscourseNotificationPoller(
+            httpClient: URLSessionHTTPClient.withCaching(),
+            baseURL: Self.discourseBaseURL
         )
         self.deepLinkRouter = DeepLinkRouter()
 

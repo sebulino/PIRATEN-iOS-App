@@ -8,15 +8,11 @@
 import UIKit
 import UserNotifications
 
-/// AppDelegate to handle APNs device token registration callbacks and notification routing.
+/// AppDelegate to handle notification routing.
 /// In SwiftUI, this is integrated via @UIApplicationDelegateAdaptor.
 ///
-/// Privacy note: Device tokens are stored locally but never logged in full.
-/// Tokens are only sent to backend when notification settings are enabled.
+/// Handles local notification presentation and tap routing via deep links.
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
-
-    /// Device token manager for storing and managing APNs tokens
-    var deviceTokenManager: DeviceTokenManager?
 
     /// Deep link router for handling notification taps
     var deepLinkRouter: DeepLinkRouter?
@@ -31,25 +27,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         UNUserNotificationCenter.current().delegate = self
 
         return true
-    }
-
-    func application(
-        _ application: UIApplication,
-        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
-    ) {
-        // Forward to device token manager for storage
-        deviceTokenManager?.didReceiveDeviceToken(deviceToken)
-        let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
-        print("tokenString: \(tokenString)")
-        
-    }
-
-    func application(
-        _ application: UIApplication,
-        didFailToRegisterForRemoteNotificationsWithError error: Error
-    ) {
-        // Forward to device token manager for error handling
-        deviceTokenManager?.didFailToRegister(with: error)
     }
 
     // MARK: - UNUserNotificationCenterDelegate
@@ -89,6 +66,3 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         completionHandler()
     }
 }
-
-
-

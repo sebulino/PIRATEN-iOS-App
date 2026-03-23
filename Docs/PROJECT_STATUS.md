@@ -12,13 +12,20 @@ No active milestone. The app is in an **enhancement and stabilisation phase** fo
 
 ## Recent Enhancements
 
+### Notifications: Replaced APNs Push with Client-Side Polling (2026-03-23)
+
+- Replaced APNs push notification infrastructure with client-side polling of Discourse `/notifications/totals.json` (see D-036)
+- Removed `DeviceTokenManager`, `PushNotificationRegistrationService`, `BackendPushNotificationRegistrationService`, `FakePushNotificationRegistrationService`
+- Added `DiscourseNotificationPoller` — polls Discourse every 60s in foreground, creates local notifications on count increase
+- Simplified 4 per-category notification toggles to single "Benachrichtigungen" toggle
+- Removed `aps-environment` entitlement (no longer using APNs)
+- Eliminates dependency on Rails server for notification delivery
+
 ### News Notifications + Background Polling (2026-03-18)
 **Branch:** `feature/news-notifications-and-polling`
 
-- Added `newsEnabled` notification toggle to `NotificationSettingsManager`, `PushNotificationPreferences`, both registration services (real + fake), and ProfileView
 - `ForumViewModel` and `NewsViewModel` now start a 3-minute repeating timer on init that silently fetches new content and updates the badge dot without disrupting the visible list
 - Badge dot color changed from system red to `piratenPrimary` (`#FF8800`) in `PiratenIconButton`; tab bar badge was already using piratenPrimary
-- Added `Docs/PUSH_NOTIFICATIONS_RAILS_PRD.md` — full implementation guide for the Rails server team
 
 ### Fix: Expanded Post Content Truncated (2026-03-18)
 **PR:** #52 — merged
@@ -75,8 +82,8 @@ REST client for the meine-piraten.de Rails server. DTOs, `TodoAPIClient`, `RealT
 ### Milestone 6: Actionable Todos (Write Operations) — Complete ✅
 Create, claim, complete, unclaim, comment, and delete (hidden from UI) for Todos. Full UI with `TodoDetailView`, `CreateTodoView`, `TodoRow`. `FakeTodoRepository` with in-memory data.
 
-### Milestone 5: Push Notifications — Complete ✅ (iOS side)
-APNs device token registration, per-category opt-in toggles in ProfileView, deep link routing from notification taps to Messages/Todos/Forum. Backend integration pending (see Q-014).
+### Milestone 5: Notifications — Complete ✅
+Client-side polling of Discourse notification counts with local notification delivery. Single opt-in toggle in ProfileView. Deep link routing from notification taps. Originally APNs-based, replaced with polling (see D-036).
 
 ### Milestone 4: Private Messages — Complete ✅
 Message thread list, compose flow, recipient picker, recent recipients, draft storage. Forum post replies and PM replies share `ReplyComposerView`.
@@ -96,7 +103,7 @@ Clean Architecture folder structure, auth state machine, tab bar shell, xcconfig
 
 | Area | Limitation | Tracked |
 |------|-----------|---------|
-| Push notifications | Backend registration wired (`BackendPushNotificationRegistrationService`); APNs sending is a backend responsibility (requires .p8 key) | Q-014 (resolved) |
+| Notifications | Client-side polling of Discourse `/notifications/totals.json` every 60s; local notifications on count increase (D-036) | — |
 | Forum | First page only (no pagination) | Q-012 |
 | Calendar | No RRULE recurrence support — recurring events show first occurrence only | Q-020 |
 | Knowledge | Progress stored locally only — lost on reinstall, not synced across devices | Q-016 |
