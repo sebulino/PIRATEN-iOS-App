@@ -27,6 +27,9 @@ struct TopicDetailView: View {
     /// Focus state for reply composer text field
     @FocusState private var isComposerFocused: Bool
 
+    /// Scroll proxy for programmatic scrolling to bottom
+    @State private var scrollProxy: ScrollViewProxy?
+
     var body: some View {
         Group {
             switch viewModel.loadState {
@@ -127,44 +130,69 @@ struct TopicDetailView: View {
     /// UICollectionView cell dequeue crashes (AttributeGraph cycles).
     @ViewBuilder
     private var postsList: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                ForEach(viewModel.posts) { post in
-                    PostRow(
-                        post: post,
-                        onUsernameTapped: { username in
-                            selectedUsername = username
-                        },
-                        onReplyTapped: viewModel.isAuthenticated ? {
-                            viewModel.showComposer(replyingTo: post)
-                            isComposerFocused = true
-                        } : nil,
-                        onLikeTapped: viewModel.isAuthenticated ? {
-                            viewModel.toggleLike(for: post)
-                        } : nil
-                    )
-                    .padding(.horizontal, 16)
-                    Divider()
-                        .padding(.leading, 16)
-                }
-
-                // Closed topic indicator
-                if viewModel.topic.isClosed {
-                    HStack {
-                        Spacer()
-                        VStack(spacing: 6) {
-                            Image(systemName: "lock.fill")
-                                .font(.piratenTitle2)
-                                .foregroundStyle(.secondary)
-                            Text("Dieses Thema ist geschlossen.")
-                                .font(.piratenSubheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(viewModel.posts) { post in
+                        PostRow(
+                            post: post,
+                            onUsernameTapped: { username in
+                                selectedUsername = username
+                            },
+                            onReplyTapped: viewModel.isAuthenticated ? {
+                                viewModel.showComposer(replyingTo: post)
+                                isComposerFocused = true
+                            } : nil,
+                            onLikeTapped: viewModel.isAuthenticated ? {
+                                viewModel.toggleLike(for: post)
+                            } : nil
+                        )
+                        .padding(.horizontal, 16)
+                        Divider()
+                            .padding(.leading, 16)
                     }
-                    .padding(.vertical, 20)
-                    .padding(.horizontal, 16)
+
+                    // Closed topic indicator
+                    if viewModel.topic.isClosed {
+                        HStack {
+                            Spacer()
+                            VStack(spacing: 6) {
+                                Image(systemName: "lock.fill")
+                                    .font(.piratenTitle2)
+                                    .foregroundStyle(.secondary)
+                                Text("Dieses Thema ist geschlossen.")
+                                    .font(.piratenSubheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                        }
+                        .padding(.vertical, 20)
+                        .padding(.horizontal, 16)
+                    }
+
+                    Color.clear
+                        .frame(height: 1)
+                        .id("topicListBottom")
                 }
+            }
+            .onAppear { scrollProxy = proxy }
+            .overlay(alignment: .bottomTrailing) {
+                Button {
+                    withAnimation {
+                        proxy.scrollTo("topicListBottom", anchor: .bottom)
+                    }
+                } label: {
+                    Image(systemName: "chevron.down.circle")
+                        .font(.system(size: 30, weight: .semibold))
+                        .foregroundColor(Color.piratenPrimary)
+                        .frame(width: 38, height: 38)
+                        .background(.white.opacity(0.8))
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                }
+                .accessibilityLabel("Nach unten")
+                .padding(.trailing, 16)
+                .padding(.bottom, 16)
             }
         }
     }

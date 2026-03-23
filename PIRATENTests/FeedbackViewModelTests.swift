@@ -107,4 +107,5 @@ private final class MockFeedbackDiscourseRepository: DiscourseRepository {
     func likePost(id: Int) async throws {}
     func unlikePost(id: Int) async throws {}
     func markTopicAsRead(topicId: Int, highestPostNumber: Int) async throws {}
+    func archiveMessageThread(topicId: Int) async throws {}
 }

@@ -512,6 +512,28 @@ final class DiscourseAPIClient {
         }
     }
 
+    /// Archives a private message thread.
+    /// Endpoint: PUT /t/{topicId}/archive-message
+    /// - Parameter topicId: The ID of the PM topic to archive
+    /// - Throws: DiscourseError if the request fails
+    func archiveMessageThread(topicId: Int) async throws {
+        let request = HTTPRequest(
+            url: url(for: "/t/\(topicId)/archive-message"),
+            method: .put,
+            headers: commonHeaders()
+        )
+        do {
+            let response = try await httpClient.execute(request)
+            guard response.isSuccess else {
+                throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
+            }
+        } catch let error as HTTPError {
+            throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
+        }
+    }
+
     // MARK: - Error Mapping
 
     /// Maps HTTP status codes to Discourse-specific errors.

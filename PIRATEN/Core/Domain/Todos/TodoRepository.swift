@@ -14,6 +14,7 @@ enum TodoError: Error, Equatable {
     case descriptionTooLong
     case todoNotFound
     case invalidTransition
+    case unauthorized
     case operationFailed(String)
 }
 

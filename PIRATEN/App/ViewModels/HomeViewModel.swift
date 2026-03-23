@@ -91,24 +91,13 @@ final class HomeViewModel: ObservableObject {
         loadState = .loading
 
         Task {
-            // Load user's first name for greeting
-            // SSO may return "none" as displayName — fall back to Discourse profile
-            if let user = await authRepository.getCurrentUser() {
-                let resolvedName: String
-                if user.displayName.lowercased().contains("none"),
-                   let profile = try? await discourseRepository.fetchUserProfile(username: user.username) {
-                    resolvedName = profile.displayText
-                } else {
-                    resolvedName = user.displayName
-                }
-                self.userFirstName = resolvedName.components(separatedBy: " ").first
-            }
-
+            async let userNameResult = resolveUserName()
             async let contactsResult = loadRecentContacts()
             async let articlesResult = loadKnowledgeArticles()
             async let topicsResult = loadRecentTopics()
             async let todosResult = loadClaimedTodos()
 
+            self.userFirstName = await userNameResult
             let contactsData = await contactsResult
             let articles = await articlesResult
             let topics = await topicsResult
@@ -134,6 +123,20 @@ final class HomeViewModel: ObservableObject {
     }
 
     // MARK: - Private Section Loaders
+
+    /// Resolves the user's first name for the greeting.
+    /// SSO may return "none" as displayName — falls back to Discourse profile.
+    private func resolveUserName() async -> String? {
+        guard let user = await authRepository.getCurrentUser() else { return nil }
+        let resolvedName: String
+        if user.displayName.lowercased().contains("none"),
+           let profile = try? await discourseRepository.fetchUserProfile(username: user.username) {
+            resolvedName = profile.displayText
+        } else {
+            resolvedName = user.displayName
+        }
+        return resolvedName.components(separatedBy: " ").first
+    }
 
     /// Loads recent contacts and unread message count from message threads.
     /// Extracts unique participants from the most recent threads.
@@ -202,8 +205,10 @@ final class HomeViewModel: ObservableObject {
             let claimed = todos.filter { $0.status == .claimed }
 
             // Load reference data for name resolution
-            let categories = await todoRepository.fetchCategories()
-            let entities = await todoRepository.fetchEntities()
+            async let categoriesResult = todoRepository.fetchCategories()
+            async let entitiesResult = todoRepository.fetchEntities()
+            let categories = await categoriesResult
+            let entities = await entitiesResult
             self.categoriesById = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0.name) })
             self.entitiesById = Dictionary(uniqueKeysWithValues: entities.map { ($0.id, "\($0.name) (\($0.entityLevel.displayName))") })
 

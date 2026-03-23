@@ -283,6 +283,20 @@ final class RealDiscourseRepository: DiscourseRepository {
         }
     }
 
+    func archiveMessageThread(topicId: Int) async throws {
+        do {
+            try await apiClient.archiveMessageThread(topicId: topicId)
+        } catch let error as DiscourseError {
+            throw mapToRepositoryError(error)
+        } catch let error as DiscourseRepositoryError {
+            throw error
+        } catch {
+            throw DiscourseRepositoryError.loadFailed(
+                message: "Nachricht konnte nicht archiviert werden"
+            )
+        }
+    }
+
     func fetchUserProfile(username: String) async throws -> UserProfile {
         do {
             let data = try await apiClient.fetchUserProfile(username: username)

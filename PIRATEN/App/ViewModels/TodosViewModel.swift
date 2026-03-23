@@ -72,13 +72,17 @@ final class TodosViewModel: ObservableObject {
     // MARK: - Dependencies
 
     private let todoRepository: TodoRepository
+    private let authStateManager: AuthStateManager?
 
     // MARK: - Initialization
 
     /// Creates a TodosViewModel with the given repository.
-    /// - Parameter todoRepository: The repository to fetch todo data from
-    init(todoRepository: TodoRepository) {
+    /// - Parameters:
+    ///   - todoRepository: The repository to fetch todo data from
+    ///   - authStateManager: Optional auth state manager for handling session expiry
+    init(todoRepository: TodoRepository, authStateManager: AuthStateManager? = nil) {
         self.todoRepository = todoRepository
+        self.authStateManager = authStateManager
     }
 
     // MARK: - Public Methods
@@ -92,8 +96,10 @@ final class TodosViewModel: ObservableObject {
             do {
                 let fetchedTodos = try await todoRepository.fetchTodos()
 
-                let categories = await todoRepository.fetchCategories()
-                let entities = await todoRepository.fetchEntities()
+                async let categoriesResult = todoRepository.fetchCategories()
+                async let entitiesResult = todoRepository.fetchEntities()
+                let categories = await categoriesResult
+                let entities = await entitiesResult
                 self.categoriesById = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0.name) })
 //                self.entitiesById = Dictionary(uniqueKeysWithValues: entities.map { ($0.id, "\($0.name) (\($0.entityLevel.displayName))") })
                 self.entitiesById = Dictionary(uniqueKeysWithValues: entities.map { ($0.id, "\($0.name)") })
@@ -101,6 +107,8 @@ final class TodosViewModel: ObservableObject {
                 self.todos = fetchedTodos
                 self.loadState = .loaded
                 self.updateNewContentFlag()
+            } catch let error as TodoError where error == .unauthorized {
+                self.authStateManager?.logout()
             } catch {
                 self.loadState = .error(message: "Aufgaben konnten nicht geladen werden. Bitte überprüfe deine Verbindung.")
             }

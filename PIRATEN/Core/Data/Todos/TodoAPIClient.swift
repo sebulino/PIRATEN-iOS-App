@@ -179,6 +179,8 @@ final class TodoAPIClient {
         let message = String(data: data, encoding: .utf8)
 
         switch statusCode {
+        case 401, 403:
+            return .unauthorized
         case 404:
             return .notFound
         case 422:
@@ -203,7 +205,7 @@ final class TodoAPIClient {
         case .serverError(_, let message):
             return .serverError(message: message)
         case .unauthorized, .forbidden:
-            return .unknown(statusCode: nil, message: error.localizedDescription)
+            return .unauthorized
         case .unknown(let message):
             return .unknown(statusCode: nil, message: message)
         }

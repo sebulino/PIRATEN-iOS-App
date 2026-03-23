@@ -16,7 +16,7 @@ import Foundation
 /// - Same post structure as regular topics
 ///
 /// API Reference: GET /topics/private-messages/{username}.json
-struct MessageThread: Identifiable, Equatable {
+struct MessageThread: Identifiable, Equatable, Hashable {
     /// Unique identifier for the message thread (same as topic ID in Discourse)
     let id: Int
 

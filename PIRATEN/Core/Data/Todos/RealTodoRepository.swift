@@ -247,6 +247,8 @@ final class RealTodoRepository: TodoRepository {
 
     private func mapToTodoError(_ error: TodoAPIError) -> TodoError {
         switch error {
+        case .unauthorized:
+            return .unauthorized
         case .notFound:
             return .todoNotFound
         case .validationFailed(let message):
