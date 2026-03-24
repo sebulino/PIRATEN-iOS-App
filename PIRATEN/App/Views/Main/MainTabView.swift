@@ -120,9 +120,9 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onMessagesTapped: { showingMessages = true },
-                messagesBadge: messagesViewModel.hasNewContent,
+                messagesBadge: messagesViewModel.hasNewContent && notificationSettings.messagesEnabled,
                 onNewsTapped: { showingNews = true },
-                newsBadge: newsViewModel.hasNewContent,
+                newsBadge: newsViewModel.hasNewContent && notificationSettings.newsEnabled && notificationSettings.newsEnabled,
                 feedbackViewModelFactory: feedbackViewModelFactory
             )
                 .tabItem {
@@ -147,9 +147,9 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onMessagesTapped: { showingMessages = true },
-                messagesBadge: messagesViewModel.hasNewContent,
+                messagesBadge: messagesViewModel.hasNewContent && notificationSettings.messagesEnabled,
                 onNewsTapped: { showingNews = true },
-                newsBadge: newsViewModel.hasNewContent
+                newsBadge: newsViewModel.hasNewContent && notificationSettings.newsEnabled
             )
                 .tabItem {
                     Label {
@@ -160,7 +160,7 @@ struct MainTabView: View {
                     }
                 }
                 .tag(1)
-                .badge(forumViewModel.hasNewContent ? Text(" ") : nil)
+                .badge(forumViewModel.hasNewContent && notificationSettings.forumEnabled ? Text(" ") : nil)
 
             KnowledgeView(
                 viewModel: knowledgeViewModel,
@@ -169,9 +169,9 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onMessagesTapped: { showingMessages = true },
-                messagesBadge: messagesViewModel.hasNewContent,
+                messagesBadge: messagesViewModel.hasNewContent && notificationSettings.messagesEnabled,
                 onNewsTapped: { showingNews = true },
-                newsBadge: newsViewModel.hasNewContent
+                newsBadge: newsViewModel.hasNewContent && notificationSettings.newsEnabled
             )
                 .tabItem {
                     Label {
@@ -190,9 +190,9 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onMessagesTapped: { showingMessages = true },
-                messagesBadge: messagesViewModel.hasNewContent,
+                messagesBadge: messagesViewModel.hasNewContent && notificationSettings.messagesEnabled,
                 onNewsTapped: { showingNews = true },
-                newsBadge: newsViewModel.hasNewContent
+                newsBadge: newsViewModel.hasNewContent && notificationSettings.newsEnabled
             )
                 .tabItem {
                     Label {
@@ -213,9 +213,9 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onMessagesTapped: { showingMessages = true },
-                messagesBadge: messagesViewModel.hasNewContent,
+                messagesBadge: messagesViewModel.hasNewContent && notificationSettings.messagesEnabled,
                 onNewsTapped: { showingNews = true },
-                newsBadge: newsViewModel.hasNewContent
+                newsBadge: newsViewModel.hasNewContent && notificationSettings.newsEnabled
             )
                 .tabItem {
                     Label {
@@ -226,7 +226,7 @@ struct MainTabView: View {
                     }
                 }
                 .tag(5)
-                .badge(todosViewModel.hasNewContent ? Text(" ") : nil)
+                .badge(todosViewModel.hasNewContent && notificationSettings.todosEnabled ? Text(" ") : nil)
         }
         .sheet(isPresented: $showingRecipientPicker, onDismiss: {
             // After recipient picker dismisses, show compose if we have a recipient
@@ -356,7 +356,11 @@ struct MainTabView: View {
         .tint(Color.piratenPrimary)
         .onChange(of: deepLinkRouter.selectedTab) { _, newTab in
             switch newTab {
-            case 1: forumViewModel.markAsViewed()
+            case 1:
+                forumViewModel.markAsViewed()
+                if forumViewModel.loadState == .loaded {
+                    forumViewModel.refresh()
+                }
             case 3: knowledgeViewModel.markAsViewed()
             case 4: calendarViewModel.markAsViewed()
             case 5: todosViewModel.markAsViewed()
