@@ -299,49 +299,6 @@ struct ProfileView: View {
     @ViewBuilder
     private var notificationSettingsSection: some View {
         Section {
-            Toggle(isOn: $notificationSettings.notificationsEnabled) {
-                Label {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Push-Benachrichtigungen")
-                        Text("Lokale Hinweise bei neuen Aktivitäten")
-                            .font(.piratenCaption)
-                            .foregroundColor(.secondary)
-                    }
-                } icon: {
-                    Image(systemName: "bell.fill")
-                        .foregroundColor(.piratenPrimary)
-                }
-            }
-
-            // System permission status (if denied)
-            if notificationSettings.authorizationStatus == .denied {
-                Button {
-                    notificationSettings.openSystemSettings()
-                } label: {
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.piratenPrimary)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Mitteilungen deaktiviert")
-                                .foregroundColor(.primary)
-                            Text("In den Einstellungen aktivieren")
-                                .font(.piratenCaption)
-                                .foregroundColor(.secondary)
-                        }
-                        Spacer()
-                        Image(systemName: "arrow.up.forward.app")
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-        } header: {
-            Text("Push-Mitteilungen")
-        } footer: {
-            Text("Es werden keine Nachrichteninhalte übertragen – nur ein allgemeiner Hinweis. Es werden keine Tracking-Daten erfasst.")
-                .font(.piratenCaption)
-        }
-
-        Section {
             Toggle(isOn: $notificationSettings.messagesEnabled) {
                 Label {
                     VStack(alignment: .leading, spacing: 2) {
@@ -397,10 +354,32 @@ struct ProfileView: View {
                         .foregroundColor(.piratenPrimary)
                 }
             }
+
+            // System permission status (if denied)
+            if notificationSettings.anyNotificationsEnabled && notificationSettings.authorizationStatus == .denied {
+                Button {
+                    notificationSettings.openSystemSettings()
+                } label: {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.piratenPrimary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Mitteilungen deaktiviert")
+                                .foregroundColor(.primary)
+                            Text("In den Einstellungen aktivieren")
+                                .font(.piratenCaption)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "arrow.up.forward.app")
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
         } header: {
-            Text("Hinweise in der App")
+            Text("Mitteilungen")
         } footer: {
-            Text("Steuert, ob ein Hinweispunkt im Tab-Menü angezeigt wird.")
+            Text("Es werden keine Nachrichteninhalte übertragen – nur ein allgemeiner Hinweis. Es werden keine Tracking-Daten erfasst.")
                 .font(.piratenCaption)
         }
     }
