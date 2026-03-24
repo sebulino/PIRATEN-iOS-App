@@ -21,7 +21,7 @@ final class NotificationSettingsManager: ObservableObject {
 
     // MARK: - Published State
 
-    /// Whether notifications are enabled by the user
+    /// Whether push notifications are enabled by the user (opt-in, default off)
     @Published var notificationsEnabled: Bool {
         didSet {
             UserDefaults.standard.set(notificationsEnabled, forKey: Keys.notificationsEnabled)
@@ -29,6 +29,26 @@ final class NotificationSettingsManager: ObservableObject {
                 requestPermissionIfNeeded()
             }
         }
+    }
+
+    /// Whether message badges are shown in the tab bar
+    @Published var messagesEnabled: Bool {
+        didSet { UserDefaults.standard.set(messagesEnabled, forKey: Keys.messagesEnabled) }
+    }
+
+    /// Whether forum badges are shown in the tab bar
+    @Published var forumEnabled: Bool {
+        didSet { UserDefaults.standard.set(forumEnabled, forKey: Keys.forumEnabled) }
+    }
+
+    /// Whether todo badges are shown in the tab bar
+    @Published var todosEnabled: Bool {
+        didSet { UserDefaults.standard.set(todosEnabled, forKey: Keys.todosEnabled) }
+    }
+
+    /// Whether news badges are shown in the tab bar
+    @Published var newsEnabled: Bool {
+        didSet { UserDefaults.standard.set(newsEnabled, forKey: Keys.newsEnabled) }
     }
 
     /// The current system authorization status
@@ -41,13 +61,24 @@ final class NotificationSettingsManager: ObservableObject {
 
     private enum Keys {
         static let notificationsEnabled = "notification_enabled"
+        static let messagesEnabled = "notification_messages_enabled"
+        static let forumEnabled = "notification_forum_enabled"
+        static let todosEnabled = "notification_todos_enabled"
+        static let newsEnabled = "notification_news_enabled"
     }
 
     // MARK: - Initialization
 
     init() {
-        // Load saved preference (default to false for privacy)
+        // Load saved preferences (push notifications default off, badges default on)
         self.notificationsEnabled = UserDefaults.standard.bool(forKey: Keys.notificationsEnabled)
+
+        // Badge toggles default to true (opt-out)
+        let defaults = UserDefaults.standard
+        self.messagesEnabled = defaults.object(forKey: Keys.messagesEnabled) as? Bool ?? true
+        self.forumEnabled = defaults.object(forKey: Keys.forumEnabled) as? Bool ?? true
+        self.todosEnabled = defaults.object(forKey: Keys.todosEnabled) as? Bool ?? true
+        self.newsEnabled = defaults.object(forKey: Keys.newsEnabled) as? Bool ?? true
 
         // Check current authorization status
         Task {
@@ -103,6 +134,15 @@ final class NotificationSettingsManager: ObservableObject {
     /// Called on logout to respect privacy.
     func clearAllSettings() {
         notificationsEnabled = false
-        UserDefaults.standard.removeObject(forKey: Keys.notificationsEnabled)
+        messagesEnabled = true
+        forumEnabled = true
+        todosEnabled = true
+        newsEnabled = true
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: Keys.notificationsEnabled)
+        defaults.removeObject(forKey: Keys.messagesEnabled)
+        defaults.removeObject(forKey: Keys.forumEnabled)
+        defaults.removeObject(forKey: Keys.todosEnabled)
+        defaults.removeObject(forKey: Keys.newsEnabled)
     }
 }

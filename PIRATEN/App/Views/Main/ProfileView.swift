@@ -302,8 +302,8 @@ struct ProfileView: View {
             Toggle(isOn: $notificationSettings.notificationsEnabled) {
                 Label {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Benachrichtigungen")
-                        Text("Bei neuen Diskussions-Benachrichtigungen")
+                        Text("Push-Benachrichtigungen")
+                        Text("Lokale Hinweise bei neuen Aktivitäten")
                             .font(.piratenCaption)
                             .foregroundColor(.secondary)
                     }
@@ -335,9 +335,72 @@ struct ProfileView: View {
                 }
             }
         } header: {
-            Text("Mitteilungen")
+            Text("Push-Mitteilungen")
         } footer: {
             Text("Es werden keine Nachrichteninhalte übertragen – nur ein allgemeiner Hinweis. Es werden keine Tracking-Daten erfasst.")
+                .font(.piratenCaption)
+        }
+
+        Section {
+            Toggle(isOn: $notificationSettings.messagesEnabled) {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Nachrichten")
+                        Text("Bei neuen privaten Nachrichten")
+                            .font(.piratenCaption)
+                            .foregroundColor(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "envelope.fill")
+                        .foregroundColor(.piratenPrimary)
+                }
+            }
+
+            Toggle(isOn: $notificationSettings.forumEnabled) {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Forum")
+                        Text("Bei neuen Diskussionsbeiträgen")
+                            .font(.piratenCaption)
+                            .foregroundColor(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "bubble.left.and.bubble.right.fill")
+                        .foregroundColor(.piratenPrimary)
+                }
+            }
+
+            Toggle(isOn: $notificationSettings.todosEnabled) {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Aufgaben")
+                        Text("Bei neuen oder geänderten Aufgaben")
+                            .font(.piratenCaption)
+                            .foregroundColor(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "checklist")
+                        .foregroundColor(.piratenPrimary)
+                }
+            }
+
+            Toggle(isOn: $notificationSettings.newsEnabled) {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("News")
+                        Text("Bei neuen Neuigkeiten")
+                            .font(.piratenCaption)
+                            .foregroundColor(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "newspaper.fill")
+                        .foregroundColor(.piratenPrimary)
+                }
+            }
+        } header: {
+            Text("Hinweise in der App")
+        } footer: {
+            Text("Steuert, ob ein Hinweispunkt im Tab-Menü angezeigt wird.")
                 .font(.piratenCaption)
         }
     }
