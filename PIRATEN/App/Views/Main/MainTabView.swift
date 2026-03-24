@@ -120,9 +120,9 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onMessagesTapped: { showingMessages = true },
-                messagesBadge: messagesViewModel.hasNewContent && notificationSettings.messagesEnabled,
+                messagesBadge: messagesViewModel.hasNewContent,
                 onNewsTapped: { showingNews = true },
-                newsBadge: newsViewModel.hasNewContent && notificationSettings.newsEnabled && notificationSettings.newsEnabled,
+                newsBadge: newsViewModel.hasNewContent && notificationSettings.newsEnabled,
                 feedbackViewModelFactory: feedbackViewModelFactory
             )
                 .tabItem {
@@ -147,9 +147,9 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onMessagesTapped: { showingMessages = true },
-                messagesBadge: messagesViewModel.hasNewContent && notificationSettings.messagesEnabled,
+                messagesBadge: messagesViewModel.hasNewContent,
                 onNewsTapped: { showingNews = true },
-                newsBadge: newsViewModel.hasNewContent && notificationSettings.newsEnabled
+                newsBadge: newsViewModel.hasNewContent
             )
                 .tabItem {
                     Label {
@@ -160,7 +160,7 @@ struct MainTabView: View {
                     }
                 }
                 .tag(1)
-                .badge(forumViewModel.hasNewContent && notificationSettings.forumEnabled ? Text(" ") : nil)
+                .badge(forumViewModel.hasNewContent ? Text(" ") : nil)
 
             KnowledgeView(
                 viewModel: knowledgeViewModel,
@@ -169,9 +169,9 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onMessagesTapped: { showingMessages = true },
-                messagesBadge: messagesViewModel.hasNewContent && notificationSettings.messagesEnabled,
+                messagesBadge: messagesViewModel.hasNewContent,
                 onNewsTapped: { showingNews = true },
-                newsBadge: newsViewModel.hasNewContent && notificationSettings.newsEnabled
+                newsBadge: newsViewModel.hasNewContent
             )
                 .tabItem {
                     Label {
@@ -190,9 +190,9 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onMessagesTapped: { showingMessages = true },
-                messagesBadge: messagesViewModel.hasNewContent && notificationSettings.messagesEnabled,
+                messagesBadge: messagesViewModel.hasNewContent,
                 onNewsTapped: { showingNews = true },
-                newsBadge: newsViewModel.hasNewContent && notificationSettings.newsEnabled
+                newsBadge: newsViewModel.hasNewContent
             )
                 .tabItem {
                     Label {
@@ -213,9 +213,9 @@ struct MainTabView: View {
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
                 onMessagesTapped: { showingMessages = true },
-                messagesBadge: messagesViewModel.hasNewContent && notificationSettings.messagesEnabled,
+                messagesBadge: messagesViewModel.hasNewContent,
                 onNewsTapped: { showingNews = true },
-                newsBadge: newsViewModel.hasNewContent && notificationSettings.newsEnabled
+                newsBadge: newsViewModel.hasNewContent
             )
                 .tabItem {
                     Label {
@@ -226,7 +226,7 @@ struct MainTabView: View {
                     }
                 }
                 .tag(5)
-                .badge(todosViewModel.hasNewContent && notificationSettings.todosEnabled ? Text(" ") : nil)
+                .badge(todosViewModel.hasNewContent ? Text(" ") : nil)
         }
         .sheet(isPresented: $showingRecipientPicker, onDismiss: {
             // After recipient picker dismisses, show compose if we have a recipient
@@ -387,7 +387,7 @@ struct MainTabView: View {
             switch newPhase {
             case .active:
                 // Poll immediately on foreground return, then resume timer
-                if notificationSettings.notificationsEnabled {
+                if notificationSettings.anyNotificationsEnabled {
                     Task { await notificationPoller.poll() }
                     startPollingIfNeeded()
                 }
@@ -398,11 +398,47 @@ struct MainTabView: View {
                 break
             }
         }
-        .onChange(of: notificationSettings.notificationsEnabled) { _, enabled in
+        .onChange(of: notificationSettings.anyNotificationsEnabled) { _, enabled in
             if enabled {
                 startPollingIfNeeded()
             } else {
                 stopPolling()
+            }
+        }
+        .onChange(of: messagesViewModel.hasNewContent) { old, new in
+            if new && !old && notificationSettings.messagesEnabled {
+                scheduleLocalNotification(
+                    title: "Neue Nachrichten",
+                    body: "Du hast neue private Nachrichten.",
+                    category: "messages"
+                )
+            }
+        }
+        .onChange(of: forumViewModel.hasNewContent) { old, new in
+            if new && !old && notificationSettings.forumEnabled {
+                scheduleLocalNotification(
+                    title: "Neuer Forumsbeitrag",
+                    body: "Es gibt neue Beiträge im Forum.",
+                    category: "forum"
+                )
+            }
+        }
+        .onChange(of: todosViewModel.hasNewContent) { old, new in
+            if new && !old && notificationSettings.todosEnabled {
+                scheduleLocalNotification(
+                    title: "Neue Aufgaben",
+                    body: "Es gibt neue oder geänderte Aufgaben.",
+                    category: "todos"
+                )
+            }
+        }
+        .onChange(of: newsViewModel.hasNewContent) { old, new in
+            if new && !old && notificationSettings.newsEnabled {
+                scheduleLocalNotification(
+                    title: "Neue Neuigkeiten",
+                    body: "Es gibt neue Neuigkeiten.",
+                    category: "news"
+                )
             }
         }
         .task {
@@ -458,9 +494,9 @@ struct MainTabView: View {
 
     // MARK: - Notification Polling
 
-    /// Starts the foreground polling timer (every 60 seconds) if notifications are enabled.
+    /// Starts the foreground polling timer (every 60 seconds) if any notifications are enabled.
     private func startPollingIfNeeded() {
-        guard notificationSettings.notificationsEnabled else { return }
+        guard notificationSettings.anyNotificationsEnabled else { return }
         guard pollingTimer == nil else { return }
 
         pollingTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
@@ -475,6 +511,25 @@ struct MainTabView: View {
     private func stopPolling() {
         pollingTimer?.invalidate()
         pollingTimer = nil
+    }
+
+    /// Schedules a local notification for a specific content category.
+    private func scheduleLocalNotification(title: String, body: String, category: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+
+        let request = UNNotificationRequest(
+            identifier: "\(category)-\(UUID().uuidString)",
+            content: content,
+            trigger: nil
+        )
+
+        Task {
+            try? await UNUserNotificationCenter.current().add(request)
+            await refreshDeliveredNotificationsCount()
+        }
     }
 
     // MARK: - Appearance Configuration

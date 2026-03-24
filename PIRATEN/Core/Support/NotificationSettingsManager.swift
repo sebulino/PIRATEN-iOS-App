@@ -10,8 +10,8 @@ import Combine
 import UserNotifications
 import UIKit
 
-/// Manages notification permissions and the single opt-in toggle.
-/// Privacy-first: notifications are opt-in (default off).
+/// Manages per-category push notification preferences and system permissions.
+/// Privacy-first: all notification categories are opt-in (default off).
 /// No tracking or analytics data is collected.
 ///
 /// Uses client-side polling of Discourse for notification detection
@@ -21,34 +21,36 @@ final class NotificationSettingsManager: ObservableObject {
 
     // MARK: - Published State
 
-    /// Whether push notifications are enabled by the user (opt-in, default off)
-    @Published var notificationsEnabled: Bool {
+    /// Whether push notifications for new messages are enabled
+    @Published var messagesEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(notificationsEnabled, forKey: Keys.notificationsEnabled)
-            if notificationsEnabled {
-                requestPermissionIfNeeded()
-            }
+            UserDefaults.standard.set(messagesEnabled, forKey: Keys.messagesEnabled)
+            if messagesEnabled { requestPermissionIfNeeded() }
         }
     }
 
-    /// Whether message badges are shown in the tab bar
-    @Published var messagesEnabled: Bool {
-        didSet { UserDefaults.standard.set(messagesEnabled, forKey: Keys.messagesEnabled) }
-    }
-
-    /// Whether forum badges are shown in the tab bar
+    /// Whether push notifications for new forum topics are enabled
     @Published var forumEnabled: Bool {
-        didSet { UserDefaults.standard.set(forumEnabled, forKey: Keys.forumEnabled) }
+        didSet {
+            UserDefaults.standard.set(forumEnabled, forKey: Keys.forumEnabled)
+            if forumEnabled { requestPermissionIfNeeded() }
+        }
     }
 
-    /// Whether todo badges are shown in the tab bar
+    /// Whether push notifications for new or changed todos are enabled
     @Published var todosEnabled: Bool {
-        didSet { UserDefaults.standard.set(todosEnabled, forKey: Keys.todosEnabled) }
+        didSet {
+            UserDefaults.standard.set(todosEnabled, forKey: Keys.todosEnabled)
+            if todosEnabled { requestPermissionIfNeeded() }
+        }
     }
 
-    /// Whether news badges are shown in the tab bar
+    /// Whether push notifications for news are enabled
     @Published var newsEnabled: Bool {
-        didSet { UserDefaults.standard.set(newsEnabled, forKey: Keys.newsEnabled) }
+        didSet {
+            UserDefaults.standard.set(newsEnabled, forKey: Keys.newsEnabled)
+            if newsEnabled { requestPermissionIfNeeded() }
+        }
     }
 
     /// The current system authorization status
@@ -57,10 +59,26 @@ final class NotificationSettingsManager: ObservableObject {
     /// Whether we're currently requesting permission
     @Published private(set) var isRequestingPermission = false
 
+    // MARK: - Computed Properties
+
+    /// Whether any notification category is enabled
+    var anyNotificationsEnabled: Bool {
+        messagesEnabled || forumEnabled || todosEnabled || newsEnabled
+    }
+
+    /// Whether system permission has been granted
+    var isSystemPermissionGranted: Bool {
+        authorizationStatus == .authorized || authorizationStatus == .provisional
+    }
+
+    /// Whether the user needs to grant system permission
+    var needsSystemPermission: Bool {
+        anyNotificationsEnabled && !isSystemPermissionGranted
+    }
+
     // MARK: - UserDefaults Keys
 
     private enum Keys {
-        static let notificationsEnabled = "notification_enabled"
         static let messagesEnabled = "notification_messages_enabled"
         static let forumEnabled = "notification_forum_enabled"
         static let todosEnabled = "notification_todos_enabled"
@@ -70,15 +88,12 @@ final class NotificationSettingsManager: ObservableObject {
     // MARK: - Initialization
 
     init() {
-        // Load saved preferences (push notifications default off, badges default on)
-        self.notificationsEnabled = UserDefaults.standard.bool(forKey: Keys.notificationsEnabled)
-
-        // Badge toggles default to true (opt-out)
+        // All categories default to false (opt-in for privacy)
         let defaults = UserDefaults.standard
-        self.messagesEnabled = defaults.object(forKey: Keys.messagesEnabled) as? Bool ?? true
-        self.forumEnabled = defaults.object(forKey: Keys.forumEnabled) as? Bool ?? true
-        self.todosEnabled = defaults.object(forKey: Keys.todosEnabled) as? Bool ?? true
-        self.newsEnabled = defaults.object(forKey: Keys.newsEnabled) as? Bool ?? true
+        self.messagesEnabled = defaults.bool(forKey: Keys.messagesEnabled)
+        self.forumEnabled = defaults.bool(forKey: Keys.forumEnabled)
+        self.todosEnabled = defaults.bool(forKey: Keys.todosEnabled)
+        self.newsEnabled = defaults.bool(forKey: Keys.newsEnabled)
 
         // Check current authorization status
         Task {
@@ -94,18 +109,8 @@ final class NotificationSettingsManager: ObservableObject {
         self.authorizationStatus = settings.authorizationStatus
     }
 
-    /// Whether system permission has been granted
-    var isSystemPermissionGranted: Bool {
-        authorizationStatus == .authorized || authorizationStatus == .provisional
-    }
-
-    /// Whether the user needs to grant system permission
-    var needsSystemPermission: Bool {
-        notificationsEnabled && !isSystemPermissionGranted
-    }
-
     /// Requests system notification permission if not already granted.
-    /// Only called when user explicitly enables the notification toggle.
+    /// Only called when user explicitly enables a notification toggle.
     func requestPermissionIfNeeded() {
         guard !isSystemPermissionGranted else { return }
 
@@ -130,16 +135,14 @@ final class NotificationSettingsManager: ObservableObject {
         }
     }
 
-    /// Disables notifications and clears preferences.
+    /// Disables all notifications and clears preferences.
     /// Called on logout to respect privacy.
     func clearAllSettings() {
-        notificationsEnabled = false
-        messagesEnabled = true
-        forumEnabled = true
-        todosEnabled = true
-        newsEnabled = true
+        messagesEnabled = false
+        forumEnabled = false
+        todosEnabled = false
+        newsEnabled = false
         let defaults = UserDefaults.standard
-        defaults.removeObject(forKey: Keys.notificationsEnabled)
         defaults.removeObject(forKey: Keys.messagesEnabled)
         defaults.removeObject(forKey: Keys.forumEnabled)
         defaults.removeObject(forKey: Keys.todosEnabled)

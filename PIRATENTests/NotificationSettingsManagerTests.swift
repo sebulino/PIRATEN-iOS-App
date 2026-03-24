@@ -13,62 +13,100 @@ final class NotificationSettingsManagerTests: XCTestCase {
 
     private var sut: NotificationSettingsManager!
 
-    // UserDefaults key (must match NotificationSettingsManager.Keys)
-    private let enabledKey = "notification_enabled"
+    // UserDefaults keys (must match NotificationSettingsManager.Keys)
+    private let messagesKey = "notification_messages_enabled"
+    private let forumKey = "notification_forum_enabled"
+    private let todosKey = "notification_todos_enabled"
+    private let newsKey = "notification_news_enabled"
 
     override func setUp() {
         super.setUp()
-        UserDefaults.standard.removeObject(forKey: enabledKey)
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: messagesKey)
+        defaults.removeObject(forKey: forumKey)
+        defaults.removeObject(forKey: todosKey)
+        defaults.removeObject(forKey: newsKey)
         sut = NotificationSettingsManager()
     }
 
     override func tearDown() {
-        UserDefaults.standard.removeObject(forKey: enabledKey)
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: messagesKey)
+        defaults.removeObject(forKey: forumKey)
+        defaults.removeObject(forKey: todosKey)
+        defaults.removeObject(forKey: newsKey)
         sut = nil
         super.tearDown()
     }
 
     // MARK: - Initial State
 
-    func testInitialStateNotificationsDisabled() {
-        XCTAssertFalse(sut.notificationsEnabled)
+    func testInitialStateAllDisabled() {
+        XCTAssertFalse(sut.messagesEnabled)
+        XCTAssertFalse(sut.forumEnabled)
+        XCTAssertFalse(sut.todosEnabled)
+        XCTAssertFalse(sut.newsEnabled)
+        XCTAssertFalse(sut.anyNotificationsEnabled)
     }
 
     func testInitLoadsPreferenceFromUserDefaults() {
-        // Given: preference stored in UserDefaults
-        UserDefaults.standard.set(true, forKey: enabledKey)
+        UserDefaults.standard.set(true, forKey: messagesKey)
+        UserDefaults.standard.set(true, forKey: forumKey)
 
-        // When: creating a new manager
         let manager = NotificationSettingsManager()
 
-        // Then
-        XCTAssertTrue(manager.notificationsEnabled)
+        XCTAssertTrue(manager.messagesEnabled)
+        XCTAssertTrue(manager.forumEnabled)
+        XCTAssertFalse(manager.todosEnabled)
+        XCTAssertFalse(manager.newsEnabled)
     }
 
     // MARK: - Toggle Persistence
 
-    func testEnablingNotificationsPersistsToUserDefaults() {
-        sut.notificationsEnabled = true
-        XCTAssertTrue(UserDefaults.standard.bool(forKey: enabledKey))
+    func testEnablingCategoryPersistsToUserDefaults() {
+        sut.messagesEnabled = true
+        XCTAssertTrue(UserDefaults.standard.bool(forKey: messagesKey))
+
+        sut.forumEnabled = true
+        XCTAssertTrue(UserDefaults.standard.bool(forKey: forumKey))
     }
 
-    func testDisablingNotificationsPersistsFalse() {
-        sut.notificationsEnabled = true
-        sut.notificationsEnabled = false
-        XCTAssertFalse(UserDefaults.standard.bool(forKey: enabledKey))
+    func testDisablingCategoryPersistsFalse() {
+        sut.todosEnabled = true
+        sut.todosEnabled = false
+        XCTAssertFalse(UserDefaults.standard.bool(forKey: todosKey))
+    }
+
+    // MARK: - Any Notifications Enabled
+
+    func testAnyNotificationsEnabledWhenOneIsOn() {
+        sut.newsEnabled = true
+        XCTAssertTrue(sut.anyNotificationsEnabled)
+    }
+
+    func testAnyNotificationsDisabledWhenAllOff() {
+        sut.messagesEnabled = false
+        sut.forumEnabled = false
+        sut.todosEnabled = false
+        sut.newsEnabled = false
+        XCTAssertFalse(sut.anyNotificationsEnabled)
     }
 
     // MARK: - Clear All Settings
 
     func testClearAllSettingsResetsEverything() {
-        // Given: notifications enabled
-        sut.notificationsEnabled = true
+        sut.messagesEnabled = true
+        sut.forumEnabled = true
+        sut.todosEnabled = true
+        sut.newsEnabled = true
 
-        // When
         sut.clearAllSettings()
 
-        // Then
-        XCTAssertFalse(sut.notificationsEnabled)
-        XCTAssertFalse(UserDefaults.standard.bool(forKey: enabledKey))
+        XCTAssertFalse(sut.messagesEnabled)
+        XCTAssertFalse(sut.forumEnabled)
+        XCTAssertFalse(sut.todosEnabled)
+        XCTAssertFalse(sut.newsEnabled)
+        XCTAssertFalse(UserDefaults.standard.bool(forKey: messagesKey))
+        XCTAssertFalse(UserDefaults.standard.bool(forKey: forumKey))
     }
 }

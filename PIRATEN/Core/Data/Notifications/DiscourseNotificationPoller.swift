@@ -59,11 +59,6 @@ final class DiscourseNotificationPoller: ObservableObject {
             let totals = try await fetchNotificationTotals()
             let newTotal = totals.unreadNotifications
 
-            if newTotal > lastKnownTotal && lastKnownTotal >= 0 {
-                let increase = newTotal - lastKnownTotal
-                await scheduleLocalNotification(newCount: increase)
-            }
-
             lastKnownTotal = newTotal
             UserDefaults.standard.set(newTotal, forKey: Keys.lastKnownTotal)
 
@@ -106,31 +101,6 @@ final class DiscourseNotificationPoller: ObservableObject {
         return try JSONDecoder().decode(NotificationTotals.self, from: response.data)
     }
 
-    private func scheduleLocalNotification(newCount: Int) async {
-        let content = UNMutableNotificationContent()
-        if newCount == 1 {
-            content.title = "Neue Benachrichtigung"
-            content.body = "Du hast eine neue Benachrichtigung."
-        } else {
-            content.title = "Neue Benachrichtigungen"
-            content.body = "Du hast \(newCount) neue Benachrichtigungen."
-        }
-        content.sound = .default
-
-        let request = UNNotificationRequest(
-            identifier: "discourse-notification-\(UUID().uuidString)",
-            content: content,
-            trigger: nil // Deliver immediately
-        )
-
-        do {
-            try await UNUserNotificationCenter.current().add(request)
-        } catch {
-            #if DEBUG
-            print("[NotificationPoller] Failed to schedule notification: \(error)")
-            #endif
-        }
-    }
 }
 
 // MARK: - DTO
