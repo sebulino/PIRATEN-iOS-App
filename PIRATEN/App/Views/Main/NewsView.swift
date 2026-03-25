@@ -10,6 +10,9 @@ struct NewsView: View {
 
     @Environment(\.dismiss) private var dismiss
 
+    /// Tracks which news items the user has tapped into during this session
+    @State private var viewedItemIds: Set<Int64> = []
+
     var body: some View {
         NavigationStack {
             Group {
@@ -58,8 +61,11 @@ struct NewsView: View {
 
             LazyVStack(alignment: .leading, spacing: 16) {
                 ForEach(viewModel.items.filter { !$0.headline.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) { item in
-                    NavigationLink(destination: NewsDetailView(item: item)) {
-                        NewsCardView(item: item)
+                    NavigationLink(destination:
+                        NewsDetailView(item: item)
+                            .onAppear { viewedItemIds.insert(item.id) }
+                    ) {
+                        NewsCardView(item: item, isNew: viewModel.isNew(item) && !viewedItemIds.contains(item.id))
                     }
                     .buttonStyle(.plain)
                 }

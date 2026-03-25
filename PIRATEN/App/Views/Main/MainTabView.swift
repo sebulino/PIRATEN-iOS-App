@@ -100,6 +100,15 @@ struct MainTabView: View {
     /// Timer for foreground notification polling
     @State private var pollingTimer: Timer?
 
+    /// Whether any content across all categories is unread
+    private var anyContentUnread: Bool {
+        messagesViewModel.hasNewContent ||
+        forumViewModel.hasNewContent ||
+        todosViewModel.hasNewContent ||
+        newsViewModel.hasNewContent ||
+        calendarViewModel.hasNewContent
+    }
+
     /// Whether the notification bell should show a badge
     private var notificationsBadge: Bool {
         deliveredNotificationsCount > 0 || notificationSettings.authorizationStatus == .denied
@@ -122,7 +131,7 @@ struct MainTabView: View {
                 onMessagesTapped: { showingMessages = true },
                 messagesBadge: messagesViewModel.hasNewContent,
                 onNewsTapped: { showingNews = true },
-                newsBadge: newsViewModel.hasNewContent && notificationSettings.newsEnabled,
+                newsBadge: newsViewModel.hasNewContent,
                 feedbackViewModelFactory: feedbackViewModelFactory
             )
                 .tabItem {
@@ -182,7 +191,7 @@ struct MainTabView: View {
                     }
                 }
                 .tag(3)
-                .badge(knowledgeViewModel.hasNewContent ? Text(" ") : nil)
+                .badge(Text?.none)
 
             CalendarView(
                 viewModel: calendarViewModel,
@@ -377,6 +386,12 @@ struct MainTabView: View {
             if forumViewModel.loadState == .idle {
                 forumViewModel.loadTopics()
             }
+            if todosViewModel.loadState == .idle {
+                todosViewModel.loadTodos()
+            }
+            if newsViewModel.loadState == .idle {
+                newsViewModel.loadNews()
+            }
             // Start foreground polling if notifications are enabled
             startPollingIfNeeded()
         }
@@ -439,6 +454,11 @@ struct MainTabView: View {
                     body: "Es gibt neue Neuigkeiten.",
                     category: "news"
                 )
+            }
+        }
+        .onChange(of: anyContentUnread) { _, hasUnread in
+            if !hasUnread {
+                Task { try? await UNUserNotificationCenter.current().setBadgeCount(0) }
             }
         }
         .task {

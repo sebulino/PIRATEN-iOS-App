@@ -50,8 +50,8 @@ final class RealDiscourseRepository: DiscourseRepository {
 
     func fetchPosts(forTopicId topicId: Int) async throws -> [Post] {
         do {
-            // Fetch the topic to get the initial posts and the full post ID stream
-            let data = try await apiClient.fetchTopic(id: topicId)
+            // Fetch the topic with all posts in a single request (print=true)
+            let data = try await apiClient.fetchTopic(id: topicId, includeAllPosts: true)
             let response = try decodeTopicDetailResponse(from: data)
 
             var allPostDTOs = response.postStream.posts
