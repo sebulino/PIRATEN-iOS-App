@@ -28,6 +28,12 @@ struct MessageThreadDetailView: View {
     /// Callback when user taps "Nachricht senden" from a profile
     var onSendMessageFromProfile: ((UserProfile) -> Void)?
 
+    /// Callback when user taps the archive button
+    var onArchive: (() -> Void)?
+
+    /// Environment dismiss action for popping back after archive
+    @Environment(\.dismiss) private var dismiss
+
     /// Currently selected username for profile sheet
     @State private var selectedUsername: String?
 
@@ -165,6 +171,25 @@ struct MessageThreadDetailView: View {
                 guard !viewModel.posts.isEmpty, !hasScrolledToBottom else { return }
                 hasScrolledToBottom = true
                 proxy.scrollTo("messageListBottom", anchor: .bottom)
+            }
+            .overlay(alignment: .bottomLeading) {
+                if let onArchive, viewModel.isAuthenticated, !viewModel.isComposerVisible {
+                    Button {
+                        onArchive()
+                        dismiss()
+                    } label: {
+                        Image(systemName: "archivebox")
+                            .font(.system(size: 30, weight: .semibold))
+                            .foregroundColor(Color.piratenPrimary)
+                            .frame(width: 38, height: 38)
+                            .background(.white.opacity(0.8))
+                            .clipShape(Circle())
+                            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                    }
+                    .accessibilityLabel("Archivieren")
+                    .padding(.leading, 16)
+                    .padding(.bottom, 16)
+                }
             }
         }
     }

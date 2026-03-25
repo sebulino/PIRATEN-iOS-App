@@ -489,14 +489,16 @@ private struct MessageThreadListItem: View {
     let onRead: () -> Void
 
     @State private var isInteracting = false
+    @State private var cachedViewModel: MessageThreadDetailViewModel?
 
     var body: some View {
         NavigationLink {
             MessageThreadDetailView(
-                viewModel: factory(thread),
+                viewModel: cachedViewModel ?? factory(thread),
                 discourseAuthCoordinator: discourseAuthCoordinator,
                 userProfileViewModelFactory: userProfileViewModelFactory,
-                onSendMessageFromProfile: onSendMessageFromProfile
+                onSendMessageFromProfile: onSendMessageFromProfile,
+                onArchive: onArchive
             )
             .onDisappear {
                 onRead()
@@ -513,6 +515,11 @@ private struct MessageThreadListItem: View {
         }
         .buttonStyle(.plain)
         .disabled(isInteracting)
+        .onAppear {
+            if cachedViewModel == nil {
+                cachedViewModel = factory(thread)
+            }
+        }
     }
 }
 

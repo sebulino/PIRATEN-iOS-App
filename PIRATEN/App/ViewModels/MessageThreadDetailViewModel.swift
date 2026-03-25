@@ -159,14 +159,15 @@ final class MessageThreadDetailViewModel: ObservableObject {
 
         Task {
             do {
-                // Resolve current user for bubble styling
+                // Fetch posts and resolve current user in parallel
+                async let postsTask = discourseRepository.fetchPosts(forTopicId: thread.id)
+                async let usernameTask: String? = authRepository?.getCurrentUser()?.username
+
+                let fetchedPosts = try await postsTask
                 if currentUsername == nil {
-                    currentUsername = await authRepository?.getCurrentUser()?.username
+                    currentUsername = await usernameTask
                 }
 
-                // PM threads use the same topic ID system as regular topics
-                // The /t/{id}.json endpoint works for both
-                let fetchedPosts = try await discourseRepository.fetchPosts(forTopicId: thread.id)
                 self.posts = fetchedPosts
                 self.loadState = .loaded
 

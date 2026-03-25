@@ -8,6 +8,7 @@ import SwiftUI
 /// Card component for displaying a news item in the feed.
 struct NewsCardView: View {
     let item: NewsItem
+    var isNew: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -22,7 +23,7 @@ struct NewsCardView: View {
                 .foregroundStyle(.secondary)
         }
         .padding(12)
-        .background(Color.piratenSurface)
+        .background(isNew ? Color.orange.opacity(0.12) : Color.piratenSurface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 2, y: 1)
     }

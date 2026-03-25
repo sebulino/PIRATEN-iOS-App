@@ -28,6 +28,9 @@ final class NewsViewModel: ObservableObject {
     /// Whether there are new news items since the user last viewed the News tab
     @Published private(set) var hasNewContent: Bool = false
 
+    /// The last-seen message ID, used to determine which items are unread
+    @Published private(set) var lastSeenMessageId: Int64 = 0
+
     private static let lastSeenNewsKey = "news_last_seen_message_id"
 
     // MARK: - Dependencies
@@ -46,6 +49,7 @@ final class NewsViewModel: ObservableObject {
     init(newsRepository: NewsRepository, cache: NewsCacheStore) {
         self.newsRepository = newsRepository
         self.cache = cache
+        self.lastSeenMessageId = Int64(UserDefaults.standard.integer(forKey: Self.lastSeenNewsKey))
         startPolling()
     }
 
@@ -107,7 +111,13 @@ final class NewsViewModel: ObservableObject {
     func markAsViewed() {
         guard let newestId = items.first?.messageId else { return }
         UserDefaults.standard.set(newestId, forKey: Self.lastSeenNewsKey)
+        lastSeenMessageId = newestId
         hasNewContent = false
+    }
+
+    /// Returns true if the given news item is newer than the last-seen threshold.
+    func isNew(_ item: NewsItem) -> Bool {
+        lastSeenMessageId != 0 && item.messageId > lastSeenMessageId
     }
 
     // MARK: - Private Helpers
