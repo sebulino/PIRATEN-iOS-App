@@ -112,6 +112,7 @@ final class MessagesViewModel: ObservableObject {
                     for: currentUser.username
                 )
                 self.messageThreads = fetchedThreads
+                self.lastKnownMessageCount = fetchedThreads.count
                 self.loadState = .loaded
             } catch let error as DiscourseRepositoryError {
                 handleError(error)
@@ -188,11 +189,30 @@ final class MessagesViewModel: ObservableObject {
         do {
             let fetchedThreads = try await discourseRepository.fetchMessageThreads(for: currentUser.username)
             lastKnownMessageCount = fetchedThreads.count
-            // Only update the badge flag; don't replace the displayed list
-            // unless the user hasn't loaded anything yet
+            // Update messageThreads to reflect latest read/unread state from server
+            // Preserve locally marked-as-read threads if server hasn't synced yet
             if messageThreads.isEmpty {
                 messageThreads = fetchedThreads
                 loadState = .loaded
+            } else {
+                // Merge: use server's isRead unless we locally marked it read
+                var updatedThreads = fetchedThreads
+                for (index, thread) in updatedThreads.enumerated() {
+                    if let localIndex = messageThreads.firstIndex(where: { $0.id == thread.id }),
+                       messageThreads[localIndex].isRead {
+                        updatedThreads[index] = MessageThread(
+                            id: thread.id,
+                            title: thread.title,
+                            participants: thread.participants,
+                            createdAt: thread.createdAt,
+                            lastActivityAt: thread.lastActivityAt,
+                            postsCount: thread.postsCount,
+                            isRead: true,
+                            lastPoster: thread.lastPoster
+                        )
+                    }
+                }
+                messageThreads = updatedThreads
             }
         } catch {
             // Polling failures are silent — don't disturb the user
