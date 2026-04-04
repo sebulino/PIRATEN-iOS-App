@@ -385,7 +385,8 @@ final class AppContainer {
         // Notification poller (uses Discourse HTTP client for authenticated polling)
         self.notificationPoller = DiscourseNotificationPoller(
             httpClient: discourseHTTPClient,
-            baseURL: Self.discourseBaseURL
+            baseURL: Self.discourseBaseURL,
+            notificationSettingsManager: notificationSettingsManager
         )
 
         // Remaining presentation layer
@@ -466,7 +467,8 @@ final class AppContainer {
         self.notificationSettingsManager = NotificationSettingsManager()
         self.notificationPoller = DiscourseNotificationPoller(
             httpClient: URLSessionHTTPClient.withCaching(),
-            baseURL: Self.discourseBaseURL
+            baseURL: Self.discourseBaseURL,
+            notificationSettingsManager: notificationSettingsManager
         )
         self.deepLinkRouter = DeepLinkRouter()
 

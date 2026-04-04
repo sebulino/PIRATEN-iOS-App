@@ -35,6 +35,7 @@ final class DiscourseNotificationPollerTests: XCTestCase {
 
     private var sut: DiscourseNotificationPoller!
     private var mockHTTPClient: MockHTTPClient!
+    private var notificationSettingsManager: NotificationSettingsManager!
     private let baseURL = URL(string: "https://discourse.example.com")!
 
     // UserDefaults key
@@ -44,7 +45,12 @@ final class DiscourseNotificationPollerTests: XCTestCase {
         super.setUp()
         UserDefaults.standard.removeObject(forKey: lastTotalKey)
         mockHTTPClient = MockHTTPClient()
-        sut = DiscourseNotificationPoller(httpClient: mockHTTPClient, baseURL: baseURL)
+        notificationSettingsManager = NotificationSettingsManager()
+        sut = DiscourseNotificationPoller(
+            httpClient: mockHTTPClient,
+            baseURL: baseURL,
+            notificationSettingsManager: notificationSettingsManager
+        )
     }
 
     override func tearDown() {
@@ -66,7 +72,11 @@ final class DiscourseNotificationPollerTests: XCTestCase {
         _ = await sut.poll()
 
         // Then: creating a new poller reads the persisted value
-        let newPoller = DiscourseNotificationPoller(httpClient: mockHTTPClient, baseURL: baseURL)
+        let newPoller = DiscourseNotificationPoller(
+            httpClient: mockHTTPClient,
+            baseURL: baseURL,
+            notificationSettingsManager: notificationSettingsManager
+        )
         XCTAssertEqual(newPoller.lastKnownTotal, 5)
     }
 

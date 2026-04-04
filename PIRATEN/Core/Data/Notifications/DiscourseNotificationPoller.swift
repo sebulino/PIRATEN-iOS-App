@@ -24,6 +24,7 @@ final class DiscourseNotificationPoller: ObservableObject {
 
     private let httpClient: HTTPClient
     private let baseURL: URL
+    private let notificationSettingsManager: NotificationSettingsManager
 
     // MARK: - State
 
@@ -41,9 +42,11 @@ final class DiscourseNotificationPoller: ObservableObject {
     /// - Parameters:
     ///   - httpClient: An authenticated HTTP client (should be DiscourseHTTPClient)
     ///   - baseURL: Base URL of the Discourse instance
-    init(httpClient: HTTPClient, baseURL: URL) {
+    ///   - notificationSettingsManager: Manager for per-category notification preferences
+    init(httpClient: HTTPClient, baseURL: URL, notificationSettingsManager: NotificationSettingsManager) {
         self.httpClient = httpClient
         self.baseURL = baseURL
+        self.notificationSettingsManager = notificationSettingsManager
         self.lastKnownTotal = UserDefaults.standard.integer(forKey: Keys.lastKnownTotal)
     }
 
@@ -62,8 +65,12 @@ final class DiscourseNotificationPoller: ObservableObject {
             lastKnownTotal = newTotal
             UserDefaults.standard.set(newTotal, forKey: Keys.lastKnownTotal)
 
-            // Update app badge
-            try? await UNUserNotificationCenter.current().setBadgeCount(newTotal)
+            // Only update app badge if user has enabled at least one notification category
+            if notificationSettingsManager.anyNotificationsEnabled {
+                try? await UNUserNotificationCenter.current().setBadgeCount(newTotal)
+            } else {
+                try? await UNUserNotificationCenter.current().setBadgeCount(0)
+            }
 
             #if DEBUG
             print("[NotificationPoller] Polled: total=\(newTotal), previous=\(lastKnownTotal)")

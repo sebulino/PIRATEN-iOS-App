@@ -182,6 +182,7 @@ struct SessionExpiredView: View {
 
     let fakeKnowledgeRepo = FakeKnowledgeRepository()
     let progressStore = ReadingProgressStore()
+    let notificationSettingsManager = NotificationSettingsManager()
 
     RootView(
         authStateManager: AuthStateManager(authRepository: authRepository),
@@ -210,10 +211,11 @@ struct SessionExpiredView: View {
             discourseAPIKeyProvider: discourseAPIKeyProvider,
             credentialStore: credentialStore
         ),
-        notificationSettings: NotificationSettingsManager(),
+        notificationSettings: notificationSettingsManager,
         notificationPoller: DiscourseNotificationPoller(
             httpClient: URLSessionHTTPClient.withCaching(),
-            baseURL: URL(string: "https://diskussion.piratenpartei.de")!
+            baseURL: URL(string: "https://diskussion.piratenpartei.de")!,
+            notificationSettingsManager: notificationSettingsManager
         ),
         deepLinkRouter: DeepLinkRouter(),
         topicDetailViewModelFactory: { topic in
