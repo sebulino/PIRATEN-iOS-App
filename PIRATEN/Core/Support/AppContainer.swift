@@ -13,6 +13,10 @@ import Foundation
 @MainActor
 final class AppContainer {
 
+    /// Shared singleton instance for app-wide access.
+    /// Set automatically when the app launches via PIRATENApp.
+    static var shared: AppContainer?
+
     // MARK: - OIDC Configuration Constants
 
     /// Piratenlogin SSO issuer URL (Keycloak realm)

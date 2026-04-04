@@ -1,3 +1,5 @@
+> **ARCHIVED** — This document describes the APNs backend that was replaced by client-side polling with BGTaskScheduler on 2026-04-04.
+
 # Push Notifications — Rails Server Implementation Guide
 
 **For:** meine-piraten.de Rails server

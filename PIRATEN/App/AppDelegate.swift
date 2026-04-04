@@ -5,6 +5,7 @@
 //  Created by Claude Code on 03.02.26.
 //
 
+import BackgroundTasks
 import UIKit
 import UserNotifications
 
@@ -25,6 +26,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     ) -> Bool {
         // Set notification center delegate for handling notification taps
         UNUserNotificationCenter.current().delegate = self
+
+        // Register and schedule background polling
+        BackgroundTaskScheduler.shared.register()
+        BackgroundTaskScheduler.shared.scheduleAppRefresh()
 
         return true
     }

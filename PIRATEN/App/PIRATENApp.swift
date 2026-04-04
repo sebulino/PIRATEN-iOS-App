@@ -26,6 +26,7 @@ struct PIRATENApp: App {
         }
 
         self.container = AppContainer()
+        AppContainer.shared = container
 
         // Wire AppDelegate to DeepLinkRouter for notification routing
         appDelegate.deepLinkRouter = container.deepLinkRouter

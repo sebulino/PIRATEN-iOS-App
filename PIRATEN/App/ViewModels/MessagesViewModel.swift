@@ -43,9 +43,9 @@ final class MessagesViewModel: ObservableObject {
     /// The current load state of the messages
     @Published private(set) var loadState: MessagesLoadState = .idle
 
-    /// Whether there are unread message threads
+    /// Whether there are unread message threads or new content detected via polling
     var hasNewContent: Bool {
-        messageThreads.contains { !$0.isRead }
+        messageThreads.contains { !$0.isRead } || messageThreads.count != lastKnownMessageCount
     }
 
     /// Convenience property for backward compatibility
@@ -68,6 +68,15 @@ final class MessagesViewModel: ObservableObject {
     private let discourseRepository: DiscourseRepository
     private let authRepository: AuthRepository
 
+    /// Timer for periodic background polling (every 60 seconds)
+    private var pollingTimer: Timer?
+
+    /// Polling interval in seconds (60 seconds)
+    private static let pollingInterval: TimeInterval = 60
+
+    /// Last known message count for detecting new content
+    private var lastKnownMessageCount: Int = 0
+
     // MARK: - Initialization
 
     /// Creates a MessagesViewModel with the given repositories.
@@ -77,6 +86,11 @@ final class MessagesViewModel: ObservableObject {
     init(discourseRepository: DiscourseRepository, authRepository: AuthRepository) {
         self.discourseRepository = discourseRepository
         self.authRepository = authRepository
+        startPolling()
+    }
+
+    deinit {
+        pollingTimer?.invalidate()
     }
 
     // MARK: - Public Methods
@@ -154,6 +168,34 @@ final class MessagesViewModel: ObservableObject {
             loadState = .authenticationFailed(message: message)
         case .loadFailed(let message):
             loadState = .error(message: message)
+        }
+    }
+
+    // MARK: - Polling
+
+    /// Starts a repeating timer that polls for new messages every 60 seconds.
+    private func startPolling() {
+        pollingTimer = Timer.scheduledTimer(withTimeInterval: Self.pollingInterval, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                await self?.pollForNewContent()
+            }
+        }
+    }
+
+    /// Fetches messages in the background and updates the new-content badge.
+    private func pollForNewContent() async {
+        guard let currentUser = await authRepository.getCurrentUser() else { return }
+        do {
+            let fetchedThreads = try await discourseRepository.fetchMessageThreads(for: currentUser.username)
+            lastKnownMessageCount = fetchedThreads.count
+            // Only update the badge flag; don't replace the displayed list
+            // unless the user hasn't loaded anything yet
+            if messageThreads.isEmpty {
+                messageThreads = fetchedThreads
+                loadState = .loaded
+            }
+        } catch {
+            // Polling failures are silent — don't disturb the user
         }
     }
 }

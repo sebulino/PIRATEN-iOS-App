@@ -74,6 +74,12 @@ final class TodosViewModel: ObservableObject {
     private let todoRepository: TodoRepository
     private let authStateManager: AuthStateManager?
 
+    /// Timer for periodic background polling (every 5 minutes)
+    private var pollingTimer: Timer?
+
+    /// Polling interval in seconds (5 minutes)
+    private static let pollingInterval: TimeInterval = 300
+
     // MARK: - Initialization
 
     /// Creates a TodosViewModel with the given repository.
@@ -83,6 +89,11 @@ final class TodosViewModel: ObservableObject {
     init(todoRepository: TodoRepository, authStateManager: AuthStateManager? = nil) {
         self.todoRepository = todoRepository
         self.authStateManager = authStateManager
+        startPolling()
+    }
+
+    deinit {
+        pollingTimer?.invalidate()
     }
 
     // MARK: - Public Methods
@@ -145,5 +156,35 @@ final class TodosViewModel: ObservableObject {
         guard let newestId = todos.first?.id else { return }
         let lastSeen = UserDefaults.standard.integer(forKey: Self.lastSeenTodoKey)
         hasNewContent = lastSeen != 0 && newestId != lastSeen
+    }
+
+    // MARK: - Polling
+
+    /// Starts a repeating timer that polls for new todos every 5 minutes.
+    private func startPolling() {
+        pollingTimer = Timer.scheduledTimer(withTimeInterval: Self.pollingInterval, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                await self?.pollForNewContent()
+            }
+        }
+    }
+
+    /// Fetches todos in the background and updates the new-content badge
+    /// without disrupting the current view.
+    private func pollForNewContent() async {
+        do {
+            let fetchedTodos = try await todoRepository.fetchTodos()
+            // Only update the badge flag; don't replace the displayed list
+            // unless the user hasn't loaded anything yet
+            if todos.isEmpty {
+                todos = fetchedTodos
+                loadState = .loaded
+            }
+            guard let newestId = fetchedTodos.first?.id else { return }
+            let lastSeen = UserDefaults.standard.integer(forKey: Self.lastSeenTodoKey)
+            hasNewContent = lastSeen != 0 && newestId != lastSeen
+        } catch {
+            // Polling failures are silent — don't disturb the user
+        }
     }
 }

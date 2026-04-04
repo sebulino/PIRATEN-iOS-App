@@ -70,8 +70,8 @@ final class ForumViewModel: ObservableObject {
     /// Timer for periodic background polling (every 30 minutes)
     private var pollingTimer: Timer?
 
-    /// Polling interval in seconds (30 minutes)
-    private static let pollingInterval: TimeInterval = 1800
+    /// Polling interval in seconds (60 seconds)
+    private static let pollingInterval: TimeInterval = 60
 
     // MARK: - Initialization
 
