@@ -457,7 +457,9 @@ struct MainTabView: View {
             }
         }
         .onChange(of: anyContentUnread) { _, hasUnread in
-            if !hasUnread {
+            if hasUnread {
+                Task { try? await UNUserNotificationCenter.current().setBadgeCount(1) }
+            } else {
                 Task { try? await UNUserNotificationCenter.current().setBadgeCount(0) }
             }
         }
