@@ -12,7 +12,7 @@ import Foundation
 ///
 /// Based on Discourse API concepts but intentionally simplified for our domain needs.
 /// See: Discourse API /t/{topic_id}.json response structure
-struct Topic: Identifiable, Equatable, Hashable {
+struct Topic: Identifiable, Equatable, Hashable, Codable {
     /// Unique identifier for the topic
     let id: Int
 

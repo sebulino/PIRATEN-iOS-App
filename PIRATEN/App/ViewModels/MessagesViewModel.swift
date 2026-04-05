@@ -67,6 +67,7 @@ final class MessagesViewModel: ObservableObject {
 
     private let discourseRepository: DiscourseRepository
     private let authRepository: AuthRepository
+    private let cache: DiscourseCacheStore
 
     /// Timer for periodic background polling (every 60 seconds)
     private var pollingTimer: Timer?
@@ -83,9 +84,11 @@ final class MessagesViewModel: ObservableObject {
     /// - Parameters:
     ///   - discourseRepository: The repository to fetch message data from
     ///   - authRepository: The repository to get current user information from
-    init(discourseRepository: DiscourseRepository, authRepository: AuthRepository) {
+    ///   - cache: Cache store for persisting message threads across app launches
+    init(discourseRepository: DiscourseRepository, authRepository: AuthRepository, cache: DiscourseCacheStore = DiscourseCacheStore()) {
         self.discourseRepository = discourseRepository
         self.authRepository = authRepository
+        self.cache = cache
         startPolling()
     }
 
@@ -96,9 +99,17 @@ final class MessagesViewModel: ObservableObject {
     // MARK: - Public Methods
 
     /// Loads the list of message threads from the repository.
-    /// Updates published state for loading, threads, and errors.
+    /// Uses cache-first strategy: shows cached threads immediately, then fetches fresh data.
     func loadMessages() {
-        loadState = .loading
+        // Show cached threads immediately
+        let cached = cache.cachedMessageThreads()
+        if !cached.isEmpty {
+            messageThreads = cached
+            lastKnownMessageCount = cached.count
+            loadState = .loaded
+        } else {
+            loadState = .loading
+        }
 
         Task {
             // First, get the current user's username
@@ -114,10 +125,15 @@ final class MessagesViewModel: ObservableObject {
                 self.messageThreads = fetchedThreads
                 self.lastKnownMessageCount = fetchedThreads.count
                 self.loadState = .loaded
+                self.cache.saveMessageThreads(fetchedThreads)
             } catch let error as DiscourseRepositoryError {
-                handleError(error)
+                if self.messageThreads.isEmpty {
+                    handleError(error)
+                }
             } catch {
-                self.loadState = .error(message: "Ein unbekannter Fehler ist aufgetreten")
+                if self.messageThreads.isEmpty {
+                    self.loadState = .error(message: "Ein unbekannter Fehler ist aufgetreten")
+                }
             }
         }
     }

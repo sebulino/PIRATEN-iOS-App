@@ -70,6 +70,7 @@ final class HomeViewModel: ObservableObject {
     private let authRepository: AuthRepository
     private let todoRepository: TodoRepository
     private let discourseAPIKeyProvider: DiscourseAPIKeyProvider
+    private let discourseCache: DiscourseCacheStore
 
     // MARK: - Initialization
 
@@ -79,7 +80,8 @@ final class HomeViewModel: ObservableObject {
         readingProgressStorage: ReadingProgressStorage,
         authRepository: AuthRepository,
         todoRepository: TodoRepository,
-        discourseAPIKeyProvider: DiscourseAPIKeyProvider
+        discourseAPIKeyProvider: DiscourseAPIKeyProvider,
+        discourseCache: DiscourseCacheStore = DiscourseCacheStore()
     ) {
         self.discourseRepository = discourseRepository
         self.knowledgeRepository = knowledgeRepository
@@ -87,6 +89,7 @@ final class HomeViewModel: ObservableObject {
         self.authRepository = authRepository
         self.todoRepository = todoRepository
         self.discourseAPIKeyProvider = discourseAPIKeyProvider
+        self.discourseCache = discourseCache
     }
 
     // MARK: - Public Methods
@@ -113,30 +116,30 @@ final class HomeViewModel: ObservableObject {
 
         let hasDiscourseCredential = discourseAPIKeyProvider.hasValidCredential()
 
+        // Topics and contacts now read from the shared cache (no Discourse API calls).
+        // ForumViewModel and MessagesViewModel populate the cache.
+        self.recentTopics = loadRecentTopics()
+
         if hasDiscourseCredential {
             async let userNameResult = resolveUserName()
             async let contactsResult = loadRecentContacts()
             async let articlesResult = loadKnowledgeArticles()
-            async let topicsResult = loadRecentTopics()
             async let todosResult = loadClaimedTodos()
 
             self.userFirstName = await userNameResult
             let contactsData = await contactsResult
             let articles = await articlesResult
-            let topics = await topicsResult
             let todos = await todosResult
 
             self.recentContacts = contactsData.contacts
             self.unreadMessageCount = contactsData.unreadCount
             self.knowledgeArticles = articles
-            self.recentTopics = topics
             self.claimedTodos = todos
         } else {
             // No Discourse credential — skip Discourse sections, load the rest
             self.discourseNeedsAuth = true
             self.recentContacts = []
             self.unreadMessageCount = 0
-            self.recentTopics = []
 
             // Resolve name from auth repo only (skip Discourse fallback)
             if let user = await authRepository.getCurrentUser() {
@@ -180,37 +183,31 @@ final class HomeViewModel: ObservableObject {
         return resolvedName.components(separatedBy: " ").first
     }
 
-    /// Loads recent contacts and unread message count from message threads.
-    /// Extracts unique participants from the most recent threads.
+    /// Loads recent contacts and unread message count from the shared cache.
+    /// MessagesViewModel is responsible for fetching and caching message threads;
+    /// HomeViewModel reads the cache to avoid duplicate Discourse API calls.
     private func loadRecentContacts() async -> (contacts: [UserSummary], unreadCount: Int) {
         guard let currentUser = await authRepository.getCurrentUser() else {
             return ([], 0)
         }
 
-        do {
-            let threads = try await discourseRepository.fetchMessageThreads(for: currentUser.username)
-            var seen = Set<Int>()
-            var contacts: [UserSummary] = []
+        let threads = discourseCache.cachedMessageThreads()
+        var seen = Set<Int>()
+        var contacts: [UserSummary] = []
 
-            for thread in threads {
-                for participant in thread.participants {
-                    // Skip self and duplicates
-                    if participant.username != currentUser.username && !seen.contains(participant.id) {
-                        seen.insert(participant.id)
-                        contacts.append(participant)
-                    }
+        for thread in threads {
+            for participant in thread.participants {
+                // Skip self and duplicates
+                if participant.username != currentUser.username && !seen.contains(participant.id) {
+                    seen.insert(participant.id)
+                    contacts.append(participant)
                 }
-                if contacts.count >= 10 { break }
             }
-
-            let unreadCount = threads.filter { !$0.isRead }.count
-            return (contacts, unreadCount)
-        } catch let error as DiscourseRepositoryError where error == .notAuthenticated {
-            self.discourseNeedsAuth = true
-            return ([], 0)
-        } catch {
-            return ([], 0)
+            if contacts.count >= 10 { break }
         }
+
+        let unreadCount = threads.filter { !$0.isRead }.count
+        return (contacts, unreadCount)
     }
 
     /// Loads knowledge articles: in-progress topics first, then fill with unread.
@@ -263,16 +260,10 @@ final class HomeViewModel: ObservableObject {
         }
     }
 
-    /// Loads the most recent forum topics.
-    private func loadRecentTopics() async -> [Topic] {
-        do {
-            let topics = try await discourseRepository.fetchTopics()
-            return Array(topics.prefix(5))
-        } catch let error as DiscourseRepositoryError where error == .notAuthenticated {
-            self.discourseNeedsAuth = true
-            return []
-        } catch {
-            return []
-        }
+    /// Loads the most recent forum topics from the shared cache.
+    /// ForumViewModel is responsible for fetching and caching topics;
+    /// HomeViewModel reads the cache to avoid duplicate Discourse API calls.
+    private func loadRecentTopics() -> [Topic] {
+        return Array(discourseCache.cachedTopics().prefix(5))
     }
 }

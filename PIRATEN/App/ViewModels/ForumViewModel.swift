@@ -66,6 +66,7 @@ final class ForumViewModel: ObservableObject {
     // MARK: - Dependencies
 
     private let discourseRepository: DiscourseRepository
+    private let cache: DiscourseCacheStore
 
     /// Timer for periodic background polling (every 30 minutes)
     private var pollingTimer: Timer?
@@ -76,9 +77,12 @@ final class ForumViewModel: ObservableObject {
     // MARK: - Initialization
 
     /// Creates a ForumViewModel with the given repository.
-    /// - Parameter discourseRepository: The repository to fetch forum data from
-    init(discourseRepository: DiscourseRepository) {
+    /// - Parameters:
+    ///   - discourseRepository: The repository to fetch forum data from
+    ///   - cache: Cache store for persisting topics across app launches
+    init(discourseRepository: DiscourseRepository, cache: DiscourseCacheStore = DiscourseCacheStore()) {
         self.discourseRepository = discourseRepository
+        self.cache = cache
         startPolling()
     }
 
@@ -89,9 +93,16 @@ final class ForumViewModel: ObservableObject {
     // MARK: - Public Methods
 
     /// Loads the list of topics from the repository.
-    /// Updates published state for loading, topics, and errors.
+    /// Uses cache-first strategy: shows cached topics immediately, then fetches fresh data.
     func loadTopics() {
-        loadState = .loading
+        // Show cached topics immediately
+        let cached = cache.cachedTopics()
+        if !cached.isEmpty {
+            topics = cached
+            loadState = .loaded
+        } else {
+            loadState = .loading
+        }
 
         Task {
             do {
@@ -99,10 +110,15 @@ final class ForumViewModel: ObservableObject {
                 self.topics = fetchedTopics
                 self.loadState = .loaded
                 self.updateNewContentFlag()
+                self.cache.saveTopics(fetchedTopics)
             } catch let error as DiscourseRepositoryError {
-                handleError(error)
+                if self.topics.isEmpty {
+                    handleError(error)
+                }
             } catch {
-                self.loadState = .error(message: "Ein unbekannter Fehler ist aufgetreten")
+                if self.topics.isEmpty {
+                    self.loadState = .error(message: "Ein unbekannter Fehler ist aufgetreten")
+                }
             }
         }
     }

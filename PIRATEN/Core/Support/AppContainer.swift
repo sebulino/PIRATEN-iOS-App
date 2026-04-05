@@ -130,6 +130,9 @@ final class AppContainer {
     /// News cache storage for persisting news items offline.
     let newsCacheStore: NewsCacheStore
 
+    /// Discourse cache storage for persisting forum topics and message threads offline.
+    let discourseCacheStore: DiscourseCacheStore
+
     /// Reading progress storage for Knowledge Hub topics.
     let readingProgressStore: ReadingProgressStore
 
@@ -271,6 +274,7 @@ final class AppContainer {
         self.recentRecipientsStore = RecentRecipientsStore()
         self.messageDraftStore = MessageDraftStore()
         self.newsCacheStore = NewsCacheStore()
+        self.discourseCacheStore = DiscourseCacheStore()
         self.readingProgressStore = ReadingProgressStore()
 
         // Notification layer (deep link router has no external dependencies)
@@ -390,10 +394,11 @@ final class AppContainer {
         )
 
         // Remaining presentation layer
-        self.forumViewModel = ForumViewModel(discourseRepository: discourseRepository)
+        self.forumViewModel = ForumViewModel(discourseRepository: discourseRepository, cache: discourseCacheStore)
         self.messagesViewModel = MessagesViewModel(
             discourseRepository: discourseRepository,
-            authRepository: authRepository
+            authRepository: authRepository,
+            cache: discourseCacheStore
         )
         self.todosViewModel = TodosViewModel(todoRepository: todoRepository, authStateManager: authStateManager)
         self.knowledgeViewModel = KnowledgeViewModel(
@@ -408,7 +413,8 @@ final class AppContainer {
             readingProgressStorage: readingProgressStore,
             authRepository: authRepository,
             todoRepository: todoRepository,
-            discourseAPIKeyProvider: discourseAPIKeyProvider
+            discourseAPIKeyProvider: discourseAPIKeyProvider,
+            discourseCache: discourseCacheStore
         )
         self.profileViewModel = ProfileViewModel(authRepository: authRepository, discourseRepository: discourseRepository)
     }
@@ -462,6 +468,7 @@ final class AppContainer {
         self.recentRecipientsStore = RecentRecipientsStore()
         self.messageDraftStore = MessageDraftStore()
         self.newsCacheStore = NewsCacheStore()
+        self.discourseCacheStore = DiscourseCacheStore()
         self.readingProgressStore = ReadingProgressStore()
 
         // Notification layer (testing)
@@ -477,10 +484,11 @@ final class AppContainer {
             authRepository: authRepository,
             recentRecipientsStorage: recentRecipientsStore
         )
-        self.forumViewModel = ForumViewModel(discourseRepository: self.discourseRepository)
+        self.forumViewModel = ForumViewModel(discourseRepository: self.discourseRepository, cache: discourseCacheStore)
         self.messagesViewModel = MessagesViewModel(
             discourseRepository: self.discourseRepository,
-            authRepository: self.authRepository
+            authRepository: self.authRepository,
+            cache: discourseCacheStore
         )
         self.todosViewModel = TodosViewModel(todoRepository: self.todoRepository)
         self.knowledgeViewModel = KnowledgeViewModel(
@@ -495,7 +503,8 @@ final class AppContainer {
             readingProgressStorage: readingProgressStore,
             authRepository: self.authRepository,
             todoRepository: self.todoRepository,
-            discourseAPIKeyProvider: self.discourseAPIKeyProvider
+            discourseAPIKeyProvider: self.discourseAPIKeyProvider,
+            discourseCache: discourseCacheStore
         )
         self.profileViewModel = ProfileViewModel(authRepository: self.authRepository, discourseRepository: self.discourseRepository)
     }

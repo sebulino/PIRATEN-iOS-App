@@ -380,18 +380,24 @@ struct MainTabView: View {
         .onAppear {
             configureNavigationBarAppearance()
             configureTabBarAppearance()
-            // Load data at startup so badges reflect unread state immediately
+            // Phase 1: Load immediately — messages (cache-first), todos, news
+            // Messages uses cache-first, so only one Discourse network request fires
             if messagesViewModel.loadState == .idle {
                 messagesViewModel.loadMessages()
-            }
-            if forumViewModel.loadState == .idle {
-                forumViewModel.loadTopics()
             }
             if todosViewModel.loadState == .idle {
                 todosViewModel.loadTodos()
             }
             if newsViewModel.loadState == .idle {
                 newsViewModel.loadNews()
+            }
+            // Phase 2: Forum topics — delayed to avoid Discourse rate limit
+            // Cache-first shows cached topics instantly; network fetch starts after delay
+            if forumViewModel.loadState == .idle {
+                Task {
+                    try? await Task.sleep(for: .seconds(2))
+                    forumViewModel.loadTopics()
+                }
             }
             // Start foreground polling if notifications are enabled
             startPollingIfNeeded()
