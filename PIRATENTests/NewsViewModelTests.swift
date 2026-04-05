@@ -3,6 +3,7 @@
 //  PIRATENTests
 //
 
+import Combine
 import Foundation
 import Testing
 @testable import PIRATEN
@@ -15,6 +16,36 @@ struct NewsViewModelTests {
 
     private func makeViewModel(repository: NewsRepository? = nil) -> NewsViewModel {
         NewsViewModel(newsRepository: repository ?? FakeNewsRepository(), cache: NewsCacheStore())
+    }
+
+    /// Waits for loadState to reach `.loaded`.
+    private func waitForLoaded(_ vm: NewsViewModel) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            var cancellable: AnyCancellable?
+            cancellable = vm.$loadState
+                .dropFirst()
+                .filter { $0 == .loaded }
+                .first()
+                .sink { _ in
+                    cancellable?.cancel()
+                    continuation.resume()
+                }
+        }
+    }
+
+    /// Waits for loadState to reach any `.error` case.
+    private func waitForError(_ vm: NewsViewModel) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            var cancellable: AnyCancellable?
+            cancellable = vm.$loadState
+                .dropFirst()
+                .filter { if case .error = $0 { return true }; return false }
+                .first()
+                .sink { _ in
+                    cancellable?.cancel()
+                    continuation.resume()
+                }
+        }
     }
 
     // MARK: - Load State Tests
@@ -31,7 +62,7 @@ struct NewsViewModelTests {
         let vm = makeViewModel()
         vm.loadNews()
 
-        try await Task.sleep(nanoseconds: 300_000_000) // 300ms to allow fake delay
+        try await waitForLoaded(vm)
         #expect(vm.loadState == .loaded)
         #expect(!vm.items.isEmpty)
     }
@@ -43,7 +74,7 @@ struct NewsViewModelTests {
         let vm = makeViewModel(repository: failingRepo)
         vm.loadNews()
 
-        try await Task.sleep(nanoseconds: 300_000_000)
+        try await waitForError(vm)
         if case .error = vm.loadState {
             // Expected
         } else {
@@ -56,7 +87,7 @@ struct NewsViewModelTests {
         let vm = makeViewModel()
         vm.refresh()
 
-        try await Task.sleep(nanoseconds: 300_000_000)
+        try await waitForLoaded(vm)
         #expect(vm.loadState == .loaded)
         #expect(!vm.items.isEmpty)
     }
