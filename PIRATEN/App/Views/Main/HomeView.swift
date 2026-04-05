@@ -9,6 +9,7 @@ import SwiftUI
 
 struct HomeView: View {
     @ObservedObject var viewModel: HomeViewModel
+    @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
 
     /// Factory for creating TopicDetailViewModels (forum topics)
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
@@ -54,6 +55,9 @@ struct HomeView: View {
 
     /// The feedback ViewModel currently being presented (drives sheet)
     @State private var feedbackViewModel: FeedbackViewModel?
+
+    /// The current window for presenting auth session
+    @Environment(\.window) private var window: UIWindow?
 
     var body: some View {
         NavigationStack {
@@ -144,6 +148,12 @@ struct HomeView: View {
                     onDismiss: { feedbackViewModel = nil }
                 )
             }
+            .onChange(of: discourseAuthCoordinator.authState) { _, newState in
+                if newState == .authenticated {
+                    discourseAuthCoordinator.reset()
+                    viewModel.clearDiscourseAuthFlag()
+                }
+            }
         }
     }
 
@@ -151,53 +161,125 @@ struct HomeView: View {
 
     @ViewBuilder
     private var dashboardContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // Greeting
-                if let firstName = viewModel.userFirstName {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Ahoi \(firstName)!")
-                            .font(.piratenTitle2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.orange)
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // Scroll anchor - allows programmatic scroll to top
+                    Color.clear.frame(height: 1).id("top")
 
-                        if viewModel.unreadMessageCount == 0 {
-                            Text("Du hast keine neuen Nachrichten.")
-                                .font(.piratenSubheadline)
-                                .foregroundColor(.secondary)
-                        } else if viewModel.unreadMessageCount == 1 {
-                            Text("Du hast eine neue Nachricht.")
-                                .font(.piratenSubheadline)
-                                .foregroundColor(.secondary)
-                        } else {
-                            Text("Du hast \(viewModel.unreadMessageCount) neue Nachrichten.")
-                                .font(.piratenSubheadline)
-                                .foregroundColor(.secondary)
+                    // Greeting
+                    if let firstName = viewModel.userFirstName {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Ahoi \(firstName)!")
+                                .font(.piratenTitle2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.orange)
+
+                            if viewModel.unreadMessageCount == 0 {
+                                Text("Du hast keine neuen Nachrichten.")
+                                    .font(.piratenSubheadline)
+                                    .foregroundColor(.secondary)
+                            } else if viewModel.unreadMessageCount == 1 {
+                                Text("Du hast eine neue Nachricht.")
+                                    .font(.piratenSubheadline)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Text("Du hast \(viewModel.unreadMessageCount) neue Nachrichten.")
+                                    .font(.piratenSubheadline)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     }
+
+                    // Discourse re-auth banner
+                    if viewModel.discourseNeedsAuth {
+                        discourseAuthBanner
+                    }
+
+                    // Section 1: Recent Contacts
+                    recentContactsSection
+
+                    // Section 2: Feedback
+                    feedbackSection
+
+                    // Section 3: Knowledge Articles
+                    knowledgeSection
+
+                    // Section 4: Claimed Todos
+                    claimedTodosSection
+
+                    // Section 5: Recent Forum Topics
+                    recentTopicsSection
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+            }
+            .refreshable {
+                await viewModel.refresh()
+                proxy.scrollTo("top", anchor: .top)
+            }
+        }
+    }
+
+    // MARK: - Section 1: Recent Contacts
+
+    // MARK: - Discourse Auth Banner
+
+    @ViewBuilder
+    private var discourseAuthBanner: some View {
+        VStack(spacing: 12) {
+            switch discourseAuthCoordinator.authState {
+            case .idle, .failed:
+                HStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.lock")
+                        .font(.title2)
+                        .foregroundStyle(Color.piratenPrimary)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Forum nicht verbunden")
+                            .font(.piratenSubheadline)
+                            .fontWeight(.medium)
+                        Text("Verbinde die App mit dem Forum, um alle Inhalte zu sehen.")
+                            .font(.piratenCaption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
                 }
 
-                // Section 1: Recent Contacts
-                recentContactsSection
+                if case .failed(let message) = discourseAuthCoordinator.authState {
+                    Text(message)
+                        .font(.piratenCaption)
+                        .foregroundColor(.red)
+                }
 
-                // Section 2: Feedback
-                feedbackSection
+                Button {
+                    Task {
+                        await discourseAuthCoordinator.authenticate(from: window)
+                    }
+                } label: {
+                    Label("Mit Forum verbinden", systemImage: "link")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!discourseAuthCoordinator.isAuthAvailable)
 
-                // Section 3: Knowledge Articles
-                knowledgeSection
+            case .authenticating:
+                HStack {
+                    Spacer()
+                    ProgressView()
+                    Text("Verbindung wird hergestellt...")
+                        .font(.piratenSubheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
 
-                // Section 4: Claimed Todos
-                claimedTodosSection
-
-                // Section 5: Recent Forum Topics
-                recentTopicsSection
+            case .authenticated:
+                EmptyView()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
         }
-        .refreshable {
-            viewModel.refresh()
-        }
+        .padding()
+        .background(Color.orange.opacity(0.1))
+        .cornerRadius(12)
     }
 
     // MARK: - Section 1: Recent Contacts
@@ -477,7 +559,7 @@ struct HomeView: View {
             Text(message)
         } actions: {
             Button("Erneut versuchen") {
-                viewModel.refresh()
+                Task { await viewModel.refresh() }
             }
             .buttonStyle(.bordered)
         }
@@ -495,6 +577,7 @@ private struct SelectedUsername: Identifiable {
     let progressStore = ReadingProgressStore()
     let credentialStore = InMemoryCredentialStore()
     let authRepository = FakeAuthRepository(credentialStore: credentialStore)
+    let discourseAPIKeyProvider = KeychainDiscourseAPIKeyProvider(credentialStore: credentialStore)
 
     HomeView(
         viewModel: HomeViewModel(
@@ -502,7 +585,13 @@ private struct SelectedUsername: Identifiable {
             knowledgeRepository: fakeKnowledgeRepo,
             readingProgressStorage: progressStore,
             authRepository: authRepository,
-            todoRepository: FakeTodoRepository()
+            todoRepository: FakeTodoRepository(),
+            discourseAPIKeyProvider: discourseAPIKeyProvider
+        ),
+        discourseAuthCoordinator: DiscourseAuthCoordinator(
+            discourseAuthManager: nil,
+            discourseAPIKeyProvider: discourseAPIKeyProvider,
+            credentialStore: credentialStore
         )
     )
 }

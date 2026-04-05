@@ -140,7 +140,8 @@ struct StartupContainerView: View {
             knowledgeRepository: fakeKnowledgeRepo,
             readingProgressStorage: progressStore,
             authRepository: authRepository,
-            todoRepository: FakeTodoRepository()
+            todoRepository: FakeTodoRepository(),
+            discourseAPIKeyProvider: discourseAPIKeyProvider
         ),
         forumViewModel: ForumViewModel(discourseRepository: fakeDiscourseRepo),
         newsViewModel: NewsViewModel(newsRepository: FakeNewsRepository(), cache: NewsCacheStore()),

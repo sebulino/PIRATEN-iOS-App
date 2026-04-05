@@ -19,10 +19,11 @@ struct HomeViewModelTests {
     private func makeViewModel(
         discourseRepository: DiscourseRepository? = nil,
         knowledgeRepository: KnowledgeRepository? = nil,
-        authRepository: AuthRepository? = nil
+        authRepository: AuthRepository? = nil,
+        credentialStore: CredentialStore? = nil
     ) -> HomeViewModel {
-        let credentialStore = InMemoryCredentialStore()
-        let auth = authRepository ?? FakeAuthRepository(credentialStore: credentialStore)
+        let store = credentialStore ?? InMemoryCredentialStore()
+        let auth = authRepository ?? FakeAuthRepository(credentialStore: store)
         return HomeViewModel(
             discourseRepository: discourseRepository ?? FakeDiscourseRepository(),
             knowledgeRepository: knowledgeRepository ?? FakeKnowledgeRepository(),
@@ -30,7 +31,8 @@ struct HomeViewModelTests {
                 userDefaults: UserDefaults(suiteName: "test-home-\(UUID().uuidString)")!
             ),
             authRepository: auth,
-            todoRepository: FakeTodoRepository()
+            todoRepository: FakeTodoRepository(),
+            discourseAPIKeyProvider: KeychainDiscourseAPIKeyProvider(credentialStore: store)
         )
     }
 

@@ -59,6 +59,9 @@ final class HomeViewModel: ObservableObject {
         entitiesById[todo.entityId]
     }
 
+    /// Whether the Discourse forum needs (re-)authentication
+    @Published private(set) var discourseNeedsAuth: Bool = false
+
     // MARK: - Dependencies
 
     private let discourseRepository: DiscourseRepository
@@ -66,6 +69,7 @@ final class HomeViewModel: ObservableObject {
     private let readingProgressStorage: ReadingProgressStorage
     private let authRepository: AuthRepository
     private let todoRepository: TodoRepository
+    private let discourseAPIKeyProvider: DiscourseAPIKeyProvider
 
     // MARK: - Initialization
 
@@ -74,13 +78,15 @@ final class HomeViewModel: ObservableObject {
         knowledgeRepository: KnowledgeRepository,
         readingProgressStorage: ReadingProgressStorage,
         authRepository: AuthRepository,
-        todoRepository: TodoRepository
+        todoRepository: TodoRepository,
+        discourseAPIKeyProvider: DiscourseAPIKeyProvider
     ) {
         self.discourseRepository = discourseRepository
         self.knowledgeRepository = knowledgeRepository
         self.readingProgressStorage = readingProgressStorage
         self.authRepository = authRepository
         self.todoRepository = todoRepository
+        self.discourseAPIKeyProvider = discourseAPIKeyProvider
     }
 
     // MARK: - Public Methods
@@ -88,9 +94,26 @@ final class HomeViewModel: ObservableObject {
     /// Loads all dashboard sections concurrently.
     /// Each section fails independently — partial data is shown.
     func loadDashboard() {
+        Task { await performLoad() }
+    }
+
+    /// Refreshes all dashboard data and awaits completion.
+    func refresh() async {
+        await performLoad()
+    }
+
+    /// Clears the Discourse auth flag and reloads dashboard data.
+    func clearDiscourseAuthFlag() {
+        discourseNeedsAuth = false
+        loadDashboard()
+    }
+
+    private func performLoad() async {
         loadState = .loading
 
-        Task {
+        let hasDiscourseCredential = discourseAPIKeyProvider.hasValidCredential()
+
+        if hasDiscourseCredential {
             async let userNameResult = resolveUserName()
             async let contactsResult = loadRecentContacts()
             async let articlesResult = loadKnowledgeArticles()
@@ -108,13 +131,25 @@ final class HomeViewModel: ObservableObject {
             self.knowledgeArticles = articles
             self.recentTopics = topics
             self.claimedTodos = todos
-            self.loadState = .loaded
-        }
-    }
+        } else {
+            // No Discourse credential — skip Discourse sections, load the rest
+            self.discourseNeedsAuth = true
+            self.recentContacts = []
+            self.unreadMessageCount = 0
+            self.recentTopics = []
 
-    /// Refreshes all dashboard data.
-    func refresh() {
-        loadDashboard()
+            // Resolve name from auth repo only (skip Discourse fallback)
+            if let user = await authRepository.getCurrentUser() {
+                self.userFirstName = user.displayName.components(separatedBy: " ").first
+            }
+
+            async let articlesResult = loadKnowledgeArticles()
+            async let todosResult = loadClaimedTodos()
+            self.knowledgeArticles = await articlesResult
+            self.claimedTodos = await todosResult
+        }
+
+        self.loadState = .loaded
     }
 
     /// Updates the unread message count from an external source (e.g. after closing Messages sheet).
@@ -129,9 +164,16 @@ final class HomeViewModel: ObservableObject {
     private func resolveUserName() async -> String? {
         guard let user = await authRepository.getCurrentUser() else { return nil }
         let resolvedName: String
-        if user.displayName.lowercased().contains("none"),
-           let profile = try? await discourseRepository.fetchUserProfile(username: user.username) {
-            resolvedName = profile.displayText
+        if user.displayName.lowercased().contains("none") {
+            do {
+                let profile = try await discourseRepository.fetchUserProfile(username: user.username)
+                resolvedName = profile.displayText
+            } catch let error as DiscourseRepositoryError where error == .notAuthenticated {
+                self.discourseNeedsAuth = true
+                resolvedName = user.displayName
+            } catch {
+                resolvedName = user.displayName
+            }
         } else {
             resolvedName = user.displayName
         }
@@ -163,6 +205,9 @@ final class HomeViewModel: ObservableObject {
 
             let unreadCount = threads.filter { !$0.isRead }.count
             return (contacts, unreadCount)
+        } catch let error as DiscourseRepositoryError where error == .notAuthenticated {
+            self.discourseNeedsAuth = true
+            return ([], 0)
         } catch {
             return ([], 0)
         }
@@ -223,6 +268,9 @@ final class HomeViewModel: ObservableObject {
         do {
             let topics = try await discourseRepository.fetchTopics()
             return Array(topics.prefix(5))
+        } catch let error as DiscourseRepositoryError where error == .notAuthenticated {
+            self.discourseNeedsAuth = true
+            return []
         } catch {
             return []
         }
