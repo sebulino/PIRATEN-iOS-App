@@ -45,12 +45,15 @@ protocol DiscourseRepository {
     func fetchTopic(byId id: Int) async throws -> Topic
 
     /// Fetches private message threads for the specified user.
-    /// - Parameter username: The username to fetch private messages for
-    /// - Returns: Array of message threads (PM inbox)
+    /// - Parameters:
+    ///   - username: The username to fetch private messages for
+    ///   - includeSent: Whether to also fetch the sent/outbox mailbox (an extra request).
+    ///     Set `false` for cheap tab-switch refreshes that only need the inbox.
+    /// - Returns: Array of message threads (inbox + optionally sent), deduped by ID
     /// - Throws: DiscourseRepositoryError if fetch fails
     ///
-    /// API Endpoint: GET /topics/private-messages/{username}.json
-    func fetchMessageThreads(for username: String) async throws -> [MessageThread]
+    /// API Endpoint: GET /topics/private-messages/{username}.json (+ -sent when includeSent)
+    func fetchMessageThreads(for username: String, includeSent: Bool) async throws -> [MessageThread]
 
     /// Replies to an existing message thread (PM).
     /// - Parameters:

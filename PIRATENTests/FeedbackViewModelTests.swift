@@ -97,7 +97,7 @@ private final class MockFeedbackDiscourseRepository: DiscourseRepository {
     func fetchTopic(byId id: Int) async throws -> Topic {
         throw DiscourseRepositoryError.loadFailed(message: "stub")
     }
-    func fetchMessageThreads(for username: String) async throws -> [MessageThread] { [] }
+    func fetchMessageThreads(for username: String, includeSent: Bool) async throws -> [MessageThread] { [] }
     func replyToThread(topicId: Int, content: String) async throws {}
     func replyToForumPost(topicId: Int, content: String, replyToPostNumber: Int?) async throws {}
     func searchUsers(query: String) async throws -> [UserSearchResult] { [] }

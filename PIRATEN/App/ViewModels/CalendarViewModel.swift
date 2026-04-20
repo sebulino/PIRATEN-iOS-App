@@ -63,29 +63,24 @@ final class CalendarViewModel: ObservableObject {
     // MARK: - Dependencies
 
     private let calendarRepository: CalendarRepository
-
-    /// Timer for periodic background polling (every 5 minutes)
-    private var pollingTimer: Timer?
-
-    /// Polling interval in seconds (5 minutes)
-    private static let pollingInterval: TimeInterval = 300
+    private let stalenessGuard = StalenessGuard(minInterval: 900)
 
     // MARK: - Initialization
 
     init(calendarRepository: CalendarRepository) {
         self.calendarRepository = calendarRepository
-        startPolling()
-    }
-
-    deinit {
-        pollingTimer?.invalidate()
     }
 
     // MARK: - Public Methods
 
-    /// Loads events from the repository.
+    /// Loads events from the repository. Hits the network only if the
+    /// StalenessGuard says the cached data has aged out.
     func loadEvents() {
-        loadState = .loading
+        guard stalenessGuard.isStale else { return }
+
+        if events.isEmpty {
+            loadState = .loading
+        }
 
         Task {
             do {
@@ -93,16 +88,22 @@ final class CalendarViewModel: ObservableObject {
                 self.events = fetchedEvents
                 self.loadState = .loaded
                 self.updateNewContentFlag()
+                self.stalenessGuard.markFetched()
             } catch let error as CalendarError {
-                self.loadState = .error(message: error.localizedDescription)
+                if self.events.isEmpty {
+                    self.loadState = .error(message: error.localizedDescription)
+                }
             } catch {
-                self.loadState = .error(message: "Ein unbekannter Fehler ist aufgetreten")
+                if self.events.isEmpty {
+                    self.loadState = .error(message: "Ein unbekannter Fehler ist aufgetreten")
+                }
             }
         }
     }
 
-    /// Refreshes the event list.
+    /// Pull-to-refresh: bypasses the StalenessGuard and always fetches fresh events.
     func refresh() {
+        stalenessGuard.invalidate()
         loadEvents()
     }
 
@@ -120,35 +121,5 @@ final class CalendarViewModel: ObservableObject {
         let lastSeenCount = UserDefaults.standard.integer(forKey: Self.lastSeenEventCountKey)
         // Show as new if we have events and the count changed since last viewed
         hasNewContent = lastSeenCount != 0 && currentCount != lastSeenCount
-    }
-
-    // MARK: - Polling
-
-    /// Starts a repeating timer that polls for new events every 5 minutes.
-    private func startPolling() {
-        pollingTimer = Timer.scheduledTimer(withTimeInterval: Self.pollingInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                await self?.pollForNewContent()
-            }
-        }
-    }
-
-    /// Fetches events in the background and updates the new-content badge
-    /// without disrupting the current view.
-    private func pollForNewContent() async {
-        do {
-            let fetchedEvents = try await calendarRepository.fetchEvents()
-            // Only update the badge flag; don't replace the displayed list
-            // unless the user hasn't loaded anything yet
-            if events.isEmpty {
-                events = fetchedEvents
-                loadState = .loaded
-            }
-            let currentCount = fetchedEvents.filter { $0.startDate >= Date() }.count
-            let lastSeenCount = UserDefaults.standard.integer(forKey: Self.lastSeenEventCountKey)
-            hasNewContent = lastSeenCount != 0 && currentCount != lastSeenCount
-        } catch {
-            // Polling failures are silent — don't disturb the user
-        }
     }
 }

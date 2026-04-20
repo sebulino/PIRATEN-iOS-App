@@ -67,12 +67,7 @@ final class ForumViewModel: ObservableObject {
 
     private let discourseRepository: DiscourseRepository
     private let cache: DiscourseCacheStore
-
-    /// Timer for periodic background polling (every 30 minutes)
-    private var pollingTimer: Timer?
-
-    /// Polling interval in seconds (60 seconds)
-    private static let pollingInterval: TimeInterval = 60
+    private let stalenessGuard = StalenessGuard(minInterval: 120)
 
     // MARK: - Initialization
 
@@ -83,24 +78,23 @@ final class ForumViewModel: ObservableObject {
     init(discourseRepository: DiscourseRepository, cache: DiscourseCacheStore = DiscourseCacheStore()) {
         self.discourseRepository = discourseRepository
         self.cache = cache
-        startPolling()
-    }
-
-    deinit {
-        pollingTimer?.invalidate()
     }
 
     // MARK: - Public Methods
 
     /// Loads the list of topics from the repository.
-    /// Uses cache-first strategy: shows cached topics immediately, then fetches fresh data.
+    /// Uses cache-first strategy: shows cached topics immediately, then fetches fresh data
+    /// — but only if the StalenessGuard says the cached data has aged out.
     func loadTopics() {
-        // Show cached topics immediately
         let cached = cache.cachedTopics()
         if !cached.isEmpty {
             topics = cached
             loadState = .loaded
-        } else {
+        }
+
+        guard stalenessGuard.isStale else { return }
+
+        if topics.isEmpty {
             loadState = .loading
         }
 
@@ -111,6 +105,7 @@ final class ForumViewModel: ObservableObject {
                 self.loadState = .loaded
                 self.updateNewContentFlag()
                 self.cache.saveTopics(fetchedTopics)
+                self.stalenessGuard.markFetched()
             } catch let error as DiscourseRepositoryError {
                 if self.topics.isEmpty {
                     handleError(error)
@@ -123,8 +118,9 @@ final class ForumViewModel: ObservableObject {
         }
     }
 
-    /// Refreshes the topic list.
+    /// Pull-to-refresh: bypasses the StalenessGuard and always fetches fresh data.
     func refresh() {
+        stalenessGuard.invalidate()
         loadTopics()
     }
 
@@ -163,37 +159,6 @@ final class ForumViewModel: ObservableObject {
         guard let newestId = topics.first?.id else { return }
         let lastSeen = UserDefaults.standard.integer(forKey: Self.lastSeenTopicKey)
         hasNewContent = lastSeen != 0 && newestId != lastSeen
-    }
-
-    /// Starts a repeating timer that polls for new forum content every 30 minutes.
-    /// Only updates the new-content flag without replacing the visible topic list,
-    /// so the user isn't disrupted while browsing.
-    private func startPolling() {
-        pollingTimer = Timer.scheduledTimer(withTimeInterval: Self.pollingInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                await self?.pollForNewContent()
-            }
-        }
-    }
-
-    /// Fetches topics in the background and updates the new-content badge
-    /// without replacing the visible topic list.
-    private func pollForNewContent() async {
-        do {
-            let fetchedTopics = try await discourseRepository.fetchTopics()
-            // Only update the badge flag; don't replace the displayed list
-            // unless the user hasn't loaded anything yet
-            if topics.isEmpty {
-                topics = fetchedTopics
-                loadState = .loaded
-            }
-            // Check if there's new content by comparing newest topic ID
-            guard let newestId = fetchedTopics.first?.id else { return }
-            let lastSeen = UserDefaults.standard.integer(forKey: Self.lastSeenTopicKey)
-            hasNewContent = lastSeen != 0 && newestId != lastSeen
-        } catch {
-            // Polling failures are silent — don't disturb the user
-        }
     }
 
     private func handleError(_ error: DiscourseRepositoryError) {

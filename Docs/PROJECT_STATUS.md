@@ -1,12 +1,24 @@
 # Project Status
 
-Last updated: 2026-03-18
+Last updated: 2026-04-17
 
 ---
 
 ## Current State
 
-No active milestone. The app is in an **enhancement and stabilisation phase** following the completion of all planned milestones (M1–M8). Recent work consists of UI improvements, bug fixes, and new cross-cutting features.
+No active milestone. All planned milestones (M1–M9) are complete. The app is in an **enhancement and stabilisation phase**. Recent work consists of UI improvements, bug fixes, and cross-cutting features.
+
+### Milestone 9: Operational Hardening & Governance — Complete ✅
+**Completed:** 2026-04-17
+
+Goal: Security reviews, privacy documentation, reliability improvements, accessibility, and release process readiness.
+
+**Delivered:**
+- Sensitive logging audit + centralized redaction utilities; `Docs/THREAT_MODEL.md` updated
+- In-app Privacy page in Settings; no analytics introduced
+- VoiceOver labels, Dynamic Type support, and contrast fixes across core flows
+- Consistent loading/error/empty states; bounded retry with exponential backoff (`RetryingHTTPClient`); URLSession caching configured
+- `Docs/RELEASE_CHECKLIST.md` and `Docs/CI_NOTES.md` created; no secrets committed
 
 ---
 
