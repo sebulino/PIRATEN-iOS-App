@@ -119,50 +119,48 @@ final class RealDiscourseRepository: DiscourseRepository {
         }
     }
 
-    func fetchMessageThreads(for username: String) async throws -> [MessageThread] {
+    func fetchMessageThreads(for username: String, includeSent: Bool) async throws -> [MessageThread] {
         do {
-            // Fetch both inbox and sent messages in parallel
-            async let inboxDataTask = apiClient.fetchPrivateMessages(for: username)
-            async let sentDataTask = apiClient.fetchSentPrivateMessages(for: username)
+            if includeSent {
+                // Fetch inbox and sent in parallel, then dedupe + merge by ID
+                async let inboxDataTask = apiClient.fetchPrivateMessages(for: username)
+                async let sentDataTask = apiClient.fetchSentPrivateMessages(for: username)
 
-            let inboxData = try await inboxDataTask
-            let sentData = try await sentDataTask
+                let inboxData = try await inboxDataTask
+                let sentData = try await sentDataTask
 
-            let inboxResponse = try decodePrivateMessagesResponse(from: inboxData)
-            let sentResponse = try decodePrivateMessagesResponse(from: sentData)
+                let inboxResponse = try decodePrivateMessagesResponse(from: inboxData)
+                let sentResponse = try decodePrivateMessagesResponse(from: sentData)
 
-            // Map inbox DTOs to domain models
-            let inboxThreads = inboxResponse.topicList.topics.compactMap { dto in
-                dto.toDomainModel(users: inboxResponse.users)
-            }
+                let inboxThreads = inboxResponse.topicList.topics.compactMap { dto in
+                    dto.toDomainModel(users: inboxResponse.users)
+                }
+                let sentThreads = sentResponse.topicList.topics.compactMap { dto in
+                    dto.toDomainModel(users: sentResponse.users)
+                }
 
-            // Map sent DTOs to domain models
-            let sentThreads = sentResponse.topicList.topics.compactMap { dto in
-                dto.toDomainModel(users: sentResponse.users)
-            }
-
-            // Merge and deduplicate by ID (inbox takes precedence for duplicates)
-            var seenIds = Set<Int>()
-            var mergedThreads: [MessageThread] = []
-
-            for thread in inboxThreads {
-                if !seenIds.contains(thread.id) {
+                var seenIds = Set<Int>()
+                var mergedThreads: [MessageThread] = []
+                for thread in inboxThreads where !seenIds.contains(thread.id) {
                     seenIds.insert(thread.id)
                     mergedThreads.append(thread)
                 }
-            }
-
-            for thread in sentThreads {
-                if !seenIds.contains(thread.id) {
+                for thread in sentThreads where !seenIds.contains(thread.id) {
                     seenIds.insert(thread.id)
                     mergedThreads.append(thread)
                 }
+
+                mergedThreads.sort { $0.lastActivityAt > $1.lastActivityAt }
+                return mergedThreads
+            } else {
+                let inboxData = try await apiClient.fetchPrivateMessages(for: username)
+                let inboxResponse = try decodePrivateMessagesResponse(from: inboxData)
+                var inboxThreads = inboxResponse.topicList.topics.compactMap { dto in
+                    dto.toDomainModel(users: inboxResponse.users)
+                }
+                inboxThreads.sort { $0.lastActivityAt > $1.lastActivityAt }
+                return inboxThreads
             }
-
-            // Sort by last activity (most recent first)
-            mergedThreads.sort { $0.lastActivityAt > $1.lastActivityAt }
-
-            return mergedThreads
         } catch let error as DiscourseError {
             throw mapToRepositoryError(error)
         } catch {

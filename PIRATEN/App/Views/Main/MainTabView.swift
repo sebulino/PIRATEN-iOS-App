@@ -365,12 +365,13 @@ struct MainTabView: View {
         }
         .tint(Color.piratenPrimary)
         .onChange(of: deepLinkRouter.selectedTab) { _, newTab in
+            // Forum tab switch calls loadTopics() (not refresh) so the StalenessGuard
+            // decides whether a network call is actually needed. Calendar and Todos
+            // handle their initial load via their own view-level .onAppear.
             switch newTab {
             case 1:
                 forumViewModel.markAsViewed()
-                if forumViewModel.loadState == .loaded {
-                    forumViewModel.refresh()
-                }
+                forumViewModel.loadTopics()
             case 3: knowledgeViewModel.markAsViewed()
             case 4: calendarViewModel.markAsViewed()
             case 5: todosViewModel.markAsViewed()
@@ -380,25 +381,36 @@ struct MainTabView: View {
         .onAppear {
             configureNavigationBarAppearance()
             configureTabBarAppearance()
-            // Phase 1: Load immediately — messages (cache-first), todos, news
-            // Messages uses cache-first, so only one Discourse network request fires
+            // App launch — requests are staggered to avoid a thundering-herd at startup.
+            // Each ViewModel still shows its cache instantly; the StalenessGuard decides
+            // whether loadXxx() hits the network.
+
+            // Phase 1 (immediate): Messages (inbox only) + News
             if messagesViewModel.loadState == .idle {
-                messagesViewModel.loadMessages()
-            }
-            if todosViewModel.loadState == .idle {
-                todosViewModel.loadTodos()
+                messagesViewModel.loadMessages(includeSent: false)
             }
             if newsViewModel.loadState == .idle {
                 newsViewModel.loadNews()
             }
-            // Phase 2: Forum topics — delayed to avoid Discourse rate limit
-            // Cache-first shows cached topics instantly; network fetch starts after delay
+
+            // Phase 2 (+1s): Todos — needs auth token readiness
+            if todosViewModel.loadState == .idle {
+                Task {
+                    try? await Task.sleep(for: .seconds(1))
+                    todosViewModel.loadTodos()
+                }
+            }
+
+            // Phase 3 (+3s): Forum — cushions the Discourse rate-limit on cold start
             if forumViewModel.loadState == .idle {
                 Task {
-                    try? await Task.sleep(for: .seconds(2))
+                    try? await Task.sleep(for: .seconds(3))
                     forumViewModel.loadTopics()
                 }
             }
+
+            // Calendar and Knowledge: loaded lazily when their tab is first opened.
+
             // Start foreground polling if notifications are enabled
             startPollingIfNeeded()
         }

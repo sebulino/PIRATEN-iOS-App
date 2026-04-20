@@ -37,12 +37,7 @@ final class NewsViewModel: ObservableObject {
 
     private let newsRepository: NewsRepository
     private let cache: NewsCacheStore
-
-    /// Timer for periodic background polling (every 30 minutes)
-    private var pollingTimer: Timer?
-
-    /// Polling interval in seconds (60 seconds)
-    private static let pollingInterval: TimeInterval = 60
+    private let stalenessGuard = StalenessGuard(minInterval: 600)
 
     // MARK: - Initialization
 
@@ -50,24 +45,23 @@ final class NewsViewModel: ObservableObject {
         self.newsRepository = newsRepository
         self.cache = cache
         self.lastSeenMessageId = Int64(UserDefaults.standard.integer(forKey: Self.lastSeenNewsKey))
-        startPolling()
-    }
-
-    deinit {
-        pollingTimer?.invalidate()
     }
 
     // MARK: - Public Methods
 
     /// Loads news items with cache-first strategy.
-    /// Shows cached items immediately, then fetches from network.
+    /// Shows cached items immediately, then fetches from network if the
+    /// StalenessGuard says the cached data has aged out.
     func loadNews() {
-        // Show cached items immediately
         let cached = cache.cachedItems()
         if !cached.isEmpty {
             items = cached
             loadState = .loaded
-        } else {
+        }
+
+        guard stalenessGuard.isStale else { return }
+
+        if items.isEmpty {
             loadState = .loading
         }
 
@@ -78,6 +72,7 @@ final class NewsViewModel: ObservableObject {
                 self.loadState = .loaded
                 self.errorMessage = nil
                 self.updateNewContentFlag()
+                self.stalenessGuard.markFetched()
             } catch {
                 if self.items.isEmpty {
                     self.loadState = .error(message: "News konnten nicht geladen werden. Bitte überprüfe deine Verbindung.")
@@ -88,23 +83,10 @@ final class NewsViewModel: ObservableObject {
         }
     }
 
-    /// Refreshes the news feed from the network.
+    /// Pull-to-refresh: bypasses the StalenessGuard and always fetches fresh news.
     func refresh() {
-        Task {
-            do {
-                let fetched = try await newsRepository.fetchNews()
-                self.items = fetched
-                self.loadState = .loaded
-                self.errorMessage = nil
-                self.updateNewContentFlag()
-            } catch {
-                if self.items.isEmpty {
-                    self.loadState = .error(message: "News konnten nicht geladen werden. Bitte überprüfe deine Verbindung.")
-                } else {
-                    self.errorMessage = "Aktualisierung fehlgeschlagen."
-                }
-            }
-        }
+        stalenessGuard.invalidate()
+        loadNews()
     }
 
     /// Marks the News tab as viewed, clearing the new content indicator.
@@ -121,32 +103,6 @@ final class NewsViewModel: ObservableObject {
     }
 
     // MARK: - Private Helpers
-
-    /// Starts a repeating timer that polls for new news content every 30 minutes.
-    private func startPolling() {
-        pollingTimer = Timer.scheduledTimer(withTimeInterval: Self.pollingInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                await self?.pollForNewContent()
-            }
-        }
-    }
-
-    /// Fetches news in the background and updates the new-content badge
-    /// without disrupting the current view.
-    private func pollForNewContent() async {
-        do {
-            let fetched = try await newsRepository.fetchNews()
-            if items.isEmpty {
-                items = fetched
-                loadState = .loaded
-            }
-            guard let newestId = fetched.first?.messageId else { return }
-            let lastSeen = Int64(UserDefaults.standard.integer(forKey: Self.lastSeenNewsKey))
-            hasNewContent = lastSeen != 0 && newestId != lastSeen
-        } catch {
-            // Polling failures are silent
-        }
-    }
 
     private func updateNewContentFlag() {
         guard let newestId = items.first?.messageId else { return }

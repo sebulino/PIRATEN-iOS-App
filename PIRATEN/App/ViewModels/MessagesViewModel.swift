@@ -68,12 +68,7 @@ final class MessagesViewModel: ObservableObject {
     private let discourseRepository: DiscourseRepository
     private let authRepository: AuthRepository
     private let cache: DiscourseCacheStore
-
-    /// Timer for periodic background polling (every 60 seconds)
-    private var pollingTimer: Timer?
-
-    /// Polling interval in seconds (60 seconds)
-    private static let pollingInterval: TimeInterval = 60
+    private let stalenessGuard = StalenessGuard(minInterval: 120)
 
     /// Last known message count for detecting new content
     private var lastKnownMessageCount: Int = 0
@@ -89,25 +84,26 @@ final class MessagesViewModel: ObservableObject {
         self.discourseRepository = discourseRepository
         self.authRepository = authRepository
         self.cache = cache
-        startPolling()
-    }
-
-    deinit {
-        pollingTimer?.invalidate()
     }
 
     // MARK: - Public Methods
 
     /// Loads the list of message threads from the repository.
-    /// Uses cache-first strategy: shows cached threads immediately, then fetches fresh data.
-    func loadMessages() {
-        // Show cached threads immediately
+    /// Uses cache-first strategy: shows cached threads immediately, then fetches fresh data
+    /// if the StalenessGuard says the cached data has aged out.
+    /// - Parameter includeSent: Whether to also fetch sent messages (Outbox). Default `true`.
+    ///   Pass `false` for tab-switch loads to save one request.
+    func loadMessages(includeSent: Bool = true) {
         let cached = cache.cachedMessageThreads()
         if !cached.isEmpty {
             messageThreads = cached
             lastKnownMessageCount = cached.count
             loadState = .loaded
-        } else {
+        }
+
+        guard stalenessGuard.isStale else { return }
+
+        if messageThreads.isEmpty {
             loadState = .loading
         }
 
@@ -120,12 +116,14 @@ final class MessagesViewModel: ObservableObject {
 
             do {
                 let fetchedThreads = try await discourseRepository.fetchMessageThreads(
-                    for: currentUser.username
+                    for: currentUser.username,
+                    includeSent: includeSent
                 )
                 self.messageThreads = fetchedThreads
                 self.lastKnownMessageCount = fetchedThreads.count
                 self.loadState = .loaded
                 self.cache.saveMessageThreads(fetchedThreads)
+                self.stalenessGuard.markFetched()
             } catch let error as DiscourseRepositoryError {
                 if self.messageThreads.isEmpty {
                     handleError(error)
@@ -138,9 +136,11 @@ final class MessagesViewModel: ObservableObject {
         }
     }
 
-    /// Refreshes the message thread list.
+    /// Pull-to-refresh: bypasses the StalenessGuard and always fetches fresh data,
+    /// including the sent/outbox half of the mailbox.
     func refresh() {
-        loadMessages()
+        stalenessGuard.invalidate()
+        loadMessages(includeSent: true)
     }
 
     /// Updates the local thread list to mark a thread as read (no network call).
@@ -185,53 +185,6 @@ final class MessagesViewModel: ObservableObject {
             loadState = .authenticationFailed(message: message)
         case .loadFailed(let message):
             loadState = .error(message: message)
-        }
-    }
-
-    // MARK: - Polling
-
-    /// Starts a repeating timer that polls for new messages every 60 seconds.
-    private func startPolling() {
-        pollingTimer = Timer.scheduledTimer(withTimeInterval: Self.pollingInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                await self?.pollForNewContent()
-            }
-        }
-    }
-
-    /// Fetches messages in the background and updates the new-content badge.
-    private func pollForNewContent() async {
-        guard let currentUser = await authRepository.getCurrentUser() else { return }
-        do {
-            let fetchedThreads = try await discourseRepository.fetchMessageThreads(for: currentUser.username)
-            lastKnownMessageCount = fetchedThreads.count
-            // Update messageThreads to reflect latest read/unread state from server
-            // Preserve locally marked-as-read threads if server hasn't synced yet
-            if messageThreads.isEmpty {
-                messageThreads = fetchedThreads
-                loadState = .loaded
-            } else {
-                // Merge: use server's isRead unless we locally marked it read
-                var updatedThreads = fetchedThreads
-                for (index, thread) in updatedThreads.enumerated() {
-                    if let localIndex = messageThreads.firstIndex(where: { $0.id == thread.id }),
-                       messageThreads[localIndex].isRead {
-                        updatedThreads[index] = MessageThread(
-                            id: thread.id,
-                            title: thread.title,
-                            participants: thread.participants,
-                            createdAt: thread.createdAt,
-                            lastActivityAt: thread.lastActivityAt,
-                            postsCount: thread.postsCount,
-                            isRead: true,
-                            lastPoster: thread.lastPoster
-                        )
-                    }
-                }
-                messageThreads = updatedThreads
-            }
-        } catch {
-            // Polling failures are silent — don't disturb the user
         }
     }
 }
