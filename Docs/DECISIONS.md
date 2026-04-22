@@ -1155,6 +1155,57 @@ Replace the APNs push infrastructure with client-side polling of Discourse's `/n
 
 ---
 
+## D-037: Per-Source Background Notification Coordinator
+
+**Date:** 2026-04-22
+**Status:** Accepted
+**Implements:** OPEN-12, FR-NOTIF-003, FR-NOTIF-004, FR-PROF-002
+
+### Context
+D-036 introduced `DiscourseNotificationPoller` and a `BGAppRefreshTask`, but:
+
+1. The background task only polled Discourse's aggregate `/notifications/totals.json` — it could not distinguish Forum from Messages, and it never polled Todos, News, Knowledge, or Events at all.
+2. Notification dispatch (`UNUserNotificationCenter.add(request)`) lived exclusively in SwiftUI `.onChange` observers inside `MainTabView`. When iOS wakes the app headless for `BGAppRefreshTask`, no view hierarchy exists — the observers never fire. Net result: the app delivered zero local notifications when truly backgrounded. This was logged as OPEN-12 and is an explicit v1 ship blocker (FR-NOTIF-004).
+3. `NotificationSettingsManager` had only four toggles (Messages, Forum, Todos, News). FR-PROF-002 specifies six categories, adding Knowledge and Events.
+
+### Decision
+Introduce a plain-object `BackgroundRefreshCoordinator` invoked from `BGAppRefreshTask.handleAppRefresh`. Give it:
+
+- A dependency on each of the six repositories (Discourse, Todos, News, Knowledge, Calendar) plus `AuthRepository`.
+- A `run()` method that spins up a `TaskGroup` with one child per source. Each child fetches, computes a "newest id" (or count for Events), compares against a `bg_<source>_last_seen_*` key in UserDefaults, and — on increase *and* the matching toggle enabled — invokes a shared `LocalNotificationScheduler` to submit a `UNMutableNotificationContent`. Each child's failure is caught and logged; failures do not abort siblings.
+- Independent "last seen" counters (`bg_*` prefix) from the foreground ViewModels' existing `forum_last_seen_topic_id` / etc. keys. The two paths track new-content independently so neither clears the other's state.
+
+Extract the existing notification dispatch helper out of `MainTabView` into a `LocalNotificationScheduler` type that both the coordinator (headless) and the SwiftUI `.onChange` observers (in-view, zero latency) call. Notification titles/bodies are defined once on a `NotificationCategory` enum — no more duplicated German strings.
+
+Extend `NotificationSettingsManager` with `knowledgeEnabled` and `eventsEnabled` to reach the six toggles FR-PROF-002 requires.
+
+### Added
+- `PIRATEN/Core/Data/Notifications/BackgroundRefreshCoordinator.swift`
+- `PIRATEN/Core/Data/Notifications/LocalNotificationScheduler.swift` (+ `NotificationCategory` enum)
+- Two new settings: `NotificationSettingsManager.knowledgeEnabled`, `.eventsEnabled`
+- Two new UserDefaults key prefixes: `bg_knowledge_last_seen_topic_id`, `bg_events_last_seen_count`
+- `AppContainer.backgroundRefreshCoordinator` + `.localNotificationScheduler`
+
+### Changed
+- `BackgroundTaskScheduler.handleAppRefresh` now calls `coordinator.run()` before `poller.poll()`; also cancels the in-flight `Task` on expiration.
+- `MainTabView.scheduleLocalNotification(title:body:category:)` replaced by `dispatchLocalNotification(_ category: NotificationCategory)` that delegates to the shared scheduler.
+- Two new `.onChange` observers added for `knowledgeViewModel.hasNewContent` and `calendarViewModel.hasNewContent`.
+
+### Rationale
+1. **Fixes OPEN-12 directly.** A plain object runs with or without a view hierarchy; this is the lifecycle fix.
+2. **Independent pollers.** One failing source (e.g. GitHub rate-limited Knowledge fetch) must not block the other five from noticing new activity. `TaskGroup` with per-child catches gives that.
+3. **Single source of truth for strings.** German titles/bodies lived in two places — inside `.onChange` observers AND implicitly in any future background path. `NotificationCategory` consolidates them so foreground and background notifications are visually identical.
+4. **Privacy preserved (T-007).** Notification bodies are fixed strings; we never put a topic title or message sender into the banner.
+5. **Minimal keyspace collision.** `bg_` prefixed UserDefaults keys keep the background and foreground "last seen" trackers independent; each path can dispatch at most one notification per its own marker per event. A notification dispatched in BG does not suppress the foreground tab-dot when the user returns.
+
+### Consequences
+- Six background polls per `BGAppRefreshTask` wake-up. iOS throttles the overall 30-minute cadence, not per-request, so this is within budget; each poll is one API call. The Knowledge poll (GitHub Contents API) is conditional-GETable and near-free when nothing changed.
+- On first install, the first BG wake-up populates `bg_*` markers but dispatches no notifications — the "!= 0" guard prevents a flood for pre-existing content. This is intentional (see NOTIFICATIONS_TODO.md §5 T-1).
+- Two deprecated-but-still-present code paths: `DiscourseNotificationPoller` is kept for the aggregate-unread badge update (badge math is unchanged by D-037). It can be folded into the coordinator later but has its own persistent `lastKnownTotal` that's not worth migrating right now.
+- On logout: `BackgroundRefreshCoordinator.reset()` must be invoked alongside `DiscourseNotificationPoller.reset()` so the next login does not fire "new activity" for everything accumulated while signed out. (Wire-up of this call: see follow-up — currently tied to `NotificationSettingsManager.clearAllSettings()` path.)
+
+---
+
 ## Future Decisions
 
 Decisions pending external input:
@@ -1162,4 +1213,4 @@ Decisions pending external input:
 - Todo pagination strategy (when data volume requires it)
 - Knowledge progress sync across devices (if needed, see Q-016)
 - piragitator.de RRULE support (see Q-020)
-- Add BGTaskScheduler for background notification polling (extends D-036)
+- Fold `DiscourseNotificationPoller` into `BackgroundRefreshCoordinator` once the badge-count source of truth stabilizes

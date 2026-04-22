@@ -143,6 +143,16 @@ final class AppContainer {
     /// Notification poller for polling Discourse notification counts.
     let notificationPoller: DiscourseNotificationPoller
 
+    /// Shared scheduler that submits local notifications to UNUserNotificationCenter.
+    /// Used both by `MainTabView` for foreground zero-latency banners and by
+    /// `BackgroundRefreshCoordinator` for headless dispatch (see OPEN-12).
+    let localNotificationScheduler: LocalNotificationScheduling
+
+    /// Coordinator invoked by `BGAppRefreshTask`. Polls all six volatile
+    /// sources independently and schedules local notifications for any
+    /// source with new activity + enabled category (FR-NOTIF-003 / 004).
+    let backgroundRefreshCoordinator: BackgroundRefreshCoordinator
+
     /// Deep link router for handling notification-based navigation.
     let deepLinkRouter: DeepLinkRouter
 
@@ -393,6 +403,25 @@ final class AppContainer {
             notificationSettingsManager: notificationSettingsManager
         )
 
+        // Shared local-notification dispatch helper. One instance for both the
+        // foreground MainTabView `.onChange` path and the headless
+        // `BackgroundRefreshCoordinator`, so titles/bodies stay in sync.
+        self.localNotificationScheduler = LocalNotificationScheduler()
+
+        // Coordinator for BGAppRefreshTask — polls six sources in parallel
+        // and fires local notifications for any enabled category with new
+        // activity. This is the fix for OPEN-12 / FR-NOTIF-004.
+        self.backgroundRefreshCoordinator = BackgroundRefreshCoordinator(
+            discourseRepository: discourseRepository,
+            todoRepository: todoRepository,
+            newsRepository: newsRepository,
+            knowledgeRepository: realKnowledgeRepository,
+            calendarRepository: calendarRepository,
+            authRepository: authRepository,
+            settings: notificationSettingsManager,
+            scheduler: localNotificationScheduler
+        )
+
         // Remaining presentation layer
         self.forumViewModel = ForumViewModel(discourseRepository: discourseRepository, cache: discourseCacheStore)
         self.messagesViewModel = MessagesViewModel(
@@ -477,6 +506,17 @@ final class AppContainer {
             httpClient: URLSessionHTTPClient.withCaching(),
             baseURL: Self.discourseBaseURL,
             notificationSettingsManager: notificationSettingsManager
+        )
+        self.localNotificationScheduler = LocalNotificationScheduler()
+        self.backgroundRefreshCoordinator = BackgroundRefreshCoordinator(
+            discourseRepository: self.discourseRepository,
+            todoRepository: self.todoRepository,
+            newsRepository: self.newsRepository,
+            knowledgeRepository: self.knowledgeRepository,
+            calendarRepository: self.calendarRepository,
+            authRepository: self.authRepository,
+            settings: notificationSettingsManager,
+            scheduler: localNotificationScheduler
         )
         self.deepLinkRouter = DeepLinkRouter()
 

@@ -2,6 +2,7 @@
 
 **Branch:** `feature/api-call-optimization`
 **Captured:** 2026-04-20
+**Last updated:** 2026-04-22 — T-1 and T-2 landed (see D-037). G-1, G-2 closed.
 **Status of this doc:** gap analysis, not a spec. Intended behavior is the
 project owner's description; actual behavior is what the code on this branch
 does today.
@@ -66,23 +67,21 @@ does today.
 
 ## 3. Gaps vs. intent
 
-### G-1: Background polling is not per-section
-- Only Discourse's aggregate `unread_notifications` is fetched.
-- Cannot distinguish Messages vs Forum in the background.
-- **Todos (`meine-piraten.de/tasks.json`) and News
-  (`meine-piraten.de/api/news`) are never checked in the background.**
-  An app closed for days will not notice new todos or news.
+### G-1: Background polling is not per-section ✅ CLOSED (D-037, 2026-04-22)
+- ~~Only Discourse's aggregate `unread_notifications` is fetched.~~
+- ~~Cannot distinguish Messages vs Forum in the background.~~
+- ~~**Todos, News never checked in background.**~~
+- Now: `BackgroundRefreshCoordinator.run()` polls all six sources (Forum,
+  Messages, Todos, News, Knowledge, Events) in parallel via TaskGroup. Each
+  source has its own `bg_*_last_seen_*` UserDefaults marker.
 
-### G-2: Background polling never raises a local notification
-- `poll()` only calls `setBadgeCount`. It never calls
-  `UNUserNotificationCenter.add(request)`.
-- The only code path that schedules notifications is the SwiftUI
-  `.onChange` observers in `MainTabView`. Those only fire while
-  `MainTabView` is rendered, i.e. while the app is running.
-- When iOS wakes the app headless for a `BGAppRefreshTask`, no view
-  hierarchy exists; the observers never fire.
-- Net: with the app truly in the background, no local notifications
-  are delivered regardless of category settings.
+### G-2: Background polling never raises a local notification ✅ CLOSED (D-037, 2026-04-22)
+- ~~`poll()` only calls `setBadgeCount`.~~
+- ~~Only code path was SwiftUI `.onChange` observers in `MainTabView`.~~
+- Now: dispatch logic extracted into `LocalNotificationScheduler` (plain
+  object). Both the headless `BackgroundRefreshCoordinator` and the
+  foreground `.onChange` observers call the shared scheduler. Titles/bodies
+  consolidated on the `NotificationCategory` enum. OPEN-12 fixed.
 
 ### G-3: Per-category settings gate display, not polling
 - `notificationSettings.messagesEnabled` etc. are checked inside the
@@ -161,34 +160,32 @@ collected here for context.
 
 Each item is independently reviewable. Order is suggested, not required.
 
-### T-1: Make background polling per-section and notification-capable
-- Introduce a `BackgroundRefreshCoordinator` (not a SwiftUI view) invoked
-  by `BackgroundTaskScheduler.handleAppRefresh`.
-- For each enabled category in `NotificationSettingsManager`:
-  - Messages: fetch inbox via `DiscourseRepository
-    .fetchMessageThreads(for:, includeSent: false)`, compare newest id
-    to persisted `lastKnownMessageId`, schedule local notification on
-    increase.
-  - Forum: fetch topics via `DiscourseRepository.fetchTopics()`, compare
-    newest id, schedule notification on increase.
-  - Todos: fetch via `TodoRepository.fetchTodos()`, compare newest id.
-  - News: fetch via `NewsRepository.fetchNews()`, compare newest
-    `messageId`.
-- Persist per-section "last seen id" in UserDefaults (same keys the
-  ViewModels already use — e.g. `Self.lastSeenTopicKey`).
-- Compute composite app-icon badge from per-section counts or use
-  Discourse totals + additive deltas for Todos/News.
-- Make the whole step respect each category's on/off toggle: disabled
-  sections skip both fetch and notification.
+### T-1: Make background polling per-section and notification-capable ✅ DONE (D-037, 2026-04-22)
+- Introduced `BackgroundRefreshCoordinator` invoked by
+  `BackgroundTaskScheduler.handleAppRefresh`.
+- Polls all six sources (Forum, Messages, Todos, News, Knowledge, Events)
+  in parallel via `TaskGroup`. Each child has its own `do/catch` so one
+  source's failure does not block the siblings.
+- Uses its own `bg_*` prefixed UserDefaults keys (deliberately separate
+  from the ViewModels' existing keys — see D-037 rationale §5).
+- Each poll respects its category toggle: the fetch runs regardless
+  (so that flipping a toggle on later does not flood with stale items)
+  but the dispatch is gated on `settings.<category>Enabled`.
+- Composite app-icon badge: NOT changed. `DiscourseNotificationPoller`
+  still owns the aggregate-unread badge; coordinator runs before it
+  in the same BG wake-up. Folding the two is deferred (see D-037
+  Consequences / Future Decisions).
 
-### T-2: Schedule notifications from the coordinator, not from the view
-- Move `scheduleLocalNotification(...)` out of `MainTabView` into the
-  coordinator (or a shared `LocalNotificationScheduler`) so the same
-  code works headless (background wake-up) and in-view (foreground
-  state change).
-- Keep the `.onChange` handlers only if we want foreground to also
-  raise banners when the user isn't looking at the tab, otherwise
-  delete them.
+### T-2: Schedule notifications from the coordinator, not from the view ✅ DONE (D-037, 2026-04-22)
+- `scheduleLocalNotification(...)` removed from `MainTabView`. Logic now
+  lives in `LocalNotificationScheduler` (plain struct, protocol-based so
+  tests can fake it).
+- Titles/bodies moved to the `NotificationCategory` enum — one definition
+  covers both paths.
+- Kept the `.onChange` observers for foreground zero-latency banners (now
+  calling `dispatchLocalNotification(_ category:)` which delegates to the
+  same scheduler). Added two new observers for Knowledge and Events to
+  reach parity with the six-category background coordinator.
 
 ### T-3: Fix foreground tab-dot refresh
 - Decide per Q-N5. Simplest option: add a single foreground "refresh
