@@ -375,42 +375,50 @@ final class DiscourseAPIClient {
         }
     }
 
-    /// Likes a post on behalf of the current user.
-    /// Endpoint: POST /post_actions.json with post_action_type_id=2
-    /// - Parameter postId: The ID of the post to like
-    /// - Returns: Raw response data (not decoded - confirmation only)
-    /// - Throws: DiscourseError if the request fails
-    func likePost(postId: Int) async throws -> Data {
-        let body = PostActionRequest(id: postId, postActionTypeId: 2)
-        let bodyData: Data
-        do {
-            bodyData = try JSONEncoder().encode(body)
-        } catch {
-            throw DiscourseError.unknown(statusCode: nil, message: "Failed to encode like request")
-        }
+    // MARK: - Likes (OPEN-02 strategy endpoints)
+    //
+    // The piratenpartei Discourse instance silently drops POST
+    // /post_actions.json (returns 2xx, but the like never persists).
+    // See `LikeStrategy.swift` for the strategy chain. The methods below
+    // are the per-strategy primitives; `RealDiscourseRepository.likePost`
+    // owns the orchestration.
 
+    /// Calls the legacy `/post_actions.json` endpoint. Used by both
+    /// `PostActionsJSONStrategy` (formEncoded: false) and
+    /// `PostActionsFormStrategy` (formEncoded: true).
+    ///
+    /// Returns `true` when Discourse confirms the action by echoing back
+    /// a JSON object containing `acted` or `actions_summary`. Returns
+    /// `false` on a 2xx that is empty or omits the confirmation marker —
+    /// this is the silent-failure path the OPEN-02 strategy chain exists
+    /// to detect.
+    func postActionLike(postId: Int, formEncoded: Bool) async throws -> Bool {
         var headers = commonHeaders()
-        headers["Content-Type"] = "application/json"
+        let bodyData: Data
+
+        if formEncoded {
+            // Matches what the Discourse web UI sends from the browser.
+            headers["Content-Type"] = "application/x-www-form-urlencoded"
+            let payload = "id=\(postId)&post_action_type_id=2"
+            bodyData = Data(payload.utf8)
+        } else {
+            headers["Content-Type"] = "application/json"
+            let body = PostActionRequest(id: postId, postActionTypeId: 2)
+            do {
+                bodyData = try JSONEncoder().encode(body)
+            } catch {
+                throw DiscourseError.unknown(statusCode: nil, message: "Failed to encode like request")
+            }
+        }
 
         let request = HTTPRequest.post(url(for: "/post_actions.json"), body: bodyData, headers: headers)
-        do {
-            let response = try await httpClient.execute(request)
-            guard response.isSuccess else {
-                throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
-            }
-            return response.data
-        } catch let error as HTTPError {
-            throw mapHTTPError(error)
-        } catch let error as DiscourseAuthError {
-            throw mapDiscourseAuthError(error)
-        }
+        return try await executeAndConfirm(request)
     }
 
-    /// Removes a like from a post on behalf of the current user.
-    /// Endpoint: DELETE /post_actions/{postId}.json?post_action_type_id=2
-    /// - Parameter postId: The ID of the post to unlike
-    /// - Throws: DiscourseError if the request fails
-    func unlikePost(postId: Int) async throws {
+    /// DELETE /post_actions/{postId}.json — used by both
+    /// PostActions strategies. Discourse uses the same DELETE shape
+    /// regardless of how the original like was created.
+    func postActionUnlike(postId: Int) async throws -> Bool {
         var components = URLComponents(
             url: url(for: "/post_actions/\(postId).json"),
             resolvingAgainstBaseURL: false
@@ -422,16 +430,81 @@ final class DiscourseAPIClient {
         }
 
         let request = HTTPRequest(url: finalURL, method: .delete, headers: commonHeaders())
+        let response: HTTPResponse
         do {
-            let response = try await httpClient.execute(request)
-            guard response.isSuccess else {
-                throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
-            }
+            response = try await httpClient.execute(request)
         } catch let error as HTTPError {
             throw mapHTTPError(error)
         } catch let error as DiscourseAuthError {
             throw mapDiscourseAuthError(error)
         }
+        guard response.isSuccess else {
+            throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
+        }
+        // DELETE returns 200 with empty body on success — no confirmation
+        // shape to inspect. Treat 2xx as success.
+        return true
+    }
+
+    /// POSTs to the discourse-reactions plugin endpoint:
+    /// `/discourse-reactions/posts/{postId}/custom-reactions/{reaction}/toggle.json`.
+    /// Returns `true` on confirmed toggle, `false` if the endpoint is
+    /// missing (404 → plugin not installed) — caller should fall through
+    /// to the next strategy.
+    func toggleReaction(postId: Int, reaction: String) async throws -> Bool {
+        let path = "/discourse-reactions/posts/\(postId)/custom-reactions/\(reaction)/toggle.json"
+        var headers = commonHeaders()
+        headers["Content-Type"] = "application/json"
+
+        let request = HTTPRequest.post(url(for: path), body: Data(), headers: headers)
+        let response: HTTPResponse
+        do {
+            response = try await httpClient.execute(request)
+        } catch let error as HTTPError {
+            throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
+        }
+
+        // 404 = plugin not installed on this instance — soft failure so
+        // the strategy chain moves on without surfacing an error.
+        if response.statusCode == 404 {
+            return false
+        }
+        guard response.isSuccess else {
+            throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
+        }
+        // The reactions plugin echoes a JSON object containing the post's
+        // current reactions — non-empty body is sufficient confirmation.
+        return !response.data.isEmpty
+    }
+
+    /// Executes a request and inspects the 2xx response body for a
+    /// confirmation marker. Used by `postActionLike` to detect Discourse's
+    /// silent-failure mode where the server replies 200 OK but did not
+    /// actually persist the action.
+    private func executeAndConfirm(_ request: HTTPRequest) async throws -> Bool {
+        let response: HTTPResponse
+        do {
+            response = try await httpClient.execute(request)
+        } catch let error as HTTPError {
+            throw mapHTTPError(error)
+        } catch let error as DiscourseAuthError {
+            throw mapDiscourseAuthError(error)
+        }
+
+        guard response.isSuccess else {
+            throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
+        }
+
+        // Discourse's success response for POST /post_actions.json includes
+        // an "actions_summary" array with the user's like recorded. An
+        // empty body, or a body lacking this marker, is the silent-failure
+        // signature OPEN-02 documents.
+        guard let bodyString = String(data: response.data, encoding: .utf8) else {
+            return false
+        }
+        return bodyString.contains("actions_summary") || bodyString.contains("\"acted\":true")
     }
 
     /// Posts a reply to a forum topic post.
