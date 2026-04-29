@@ -78,26 +78,20 @@ enum LikeStrategyRegistry {
     /// `true`. The winning strategy's identifier is cached in UserDefaults
     /// and tried first on subsequent likes.
     ///
-    /// 2026-04-22: Owner verified in the browser Network tab that liking
-    /// a post on https://diskussion.piratenpartei.de hits
-    /// `POST /post_actions` (the canonical endpoint), NOT the
-    /// discourse-reactions plugin. `DiscourseReactionsStrategy` was
-    /// dropped from the chain — it would only have returned 404 here.
+    /// 2026-04-22: Owner captured the live instance's like request in
+    /// the browser Network tab. Definitive evidence:
+    /// - URL: `POST /post_actions` (NOT the reactions plugin)
+    /// - Content-Type: `application/x-www-form-urlencoded; charset=UTF-8`
+    /// - Payload: `id=...&post_action_type_id=2&flag_topic=false`
+    /// - Headers include `X-Requested-With: XMLHttpRequest`
     ///
-    /// Remaining hypotheses for OPEN-02's silent-2xx behavior:
-    /// 1. The previous request used JSON; the controller may parse the
-    ///    body but only persist the action when given form-encoded
-    ///    input (matches what the web UI sends). → form-encoded first.
-    /// 2. The User API Key scope mapping might not include post actions
-    ///    under `write` on this instance — but that should produce 4xx,
-    ///    not silent 2xx. Less likely. Tracked as a follow-up in
-    ///    ADR-0014 if neither strategy below works.
-    ///
-    /// To narrow further to a single strategy after TestFlight
-    /// observation, leave only the winning entry.
+    /// `PostActionsFormStrategy` reproduces this byte-for-byte. The
+    /// chain is therefore narrowed to a single strategy. The other
+    /// strategy implementations remain in this file as documentation
+    /// — they are no longer wired in but illustrate the alternatives
+    /// considered, and can be re-added if Discourse changes behavior.
     static let all: [LikeStrategy] = [
-        PostActionsFormStrategy(),
-        PostActionsJSONStrategy()
+        PostActionsFormStrategy()
     ]
 }
 

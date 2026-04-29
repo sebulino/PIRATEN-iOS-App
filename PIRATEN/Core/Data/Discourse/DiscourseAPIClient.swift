@@ -387,6 +387,18 @@ final class DiscourseAPIClient {
     /// `PostActionsJSONStrategy` (formEncoded: false) and
     /// `PostActionsFormStrategy` (formEncoded: true).
     ///
+    /// The form-encoded variant reproduces what the Discourse web UI
+    /// sends to the live instance byte-for-byte (verified 2026-04-22):
+    /// payload `id=...&post_action_type_id=2&flag_topic=false`,
+    /// `Content-Type: application/x-www-form-urlencoded; charset=UTF-8`,
+    /// `X-Requested-With: XMLHttpRequest`. The third field
+    /// (`flag_topic=false`) is included even for likes because some
+    /// Discourse builds short-circuit when it's absent.
+    ///
+    /// CSRF tokens are NOT sent — Discourse bypasses CSRF protection
+    /// for User-Api-Key authenticated requests (see
+    /// `default_current_user_provider.rb` in the Discourse source).
+    ///
     /// Returns `true` when Discourse confirms the action by echoing back
     /// a JSON object containing `acted` or `actions_summary`. Returns
     /// `false` on a 2xx that is empty or omits the confirmation marker —
@@ -398,8 +410,9 @@ final class DiscourseAPIClient {
 
         if formEncoded {
             // Matches what the Discourse web UI sends from the browser.
-            headers["Content-Type"] = "application/x-www-form-urlencoded"
-            let payload = "id=\(postId)&post_action_type_id=2"
+            headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
+            headers["X-Requested-With"] = "XMLHttpRequest"
+            let payload = "id=\(postId)&post_action_type_id=2&flag_topic=false"
             bodyData = Data(payload.utf8)
         } else {
             headers["Content-Type"] = "application/json"
@@ -429,7 +442,11 @@ final class DiscourseAPIClient {
             throw DiscourseError.unknown(statusCode: nil, message: "Failed to construct unlike URL")
         }
 
-        let request = HTTPRequest(url: finalURL, method: .delete, headers: commonHeaders())
+        // Match the web UI's XHR markers — defensive against Discourse
+        // controllers that gate write actions on this header.
+        var headers = commonHeaders()
+        headers["X-Requested-With"] = "XMLHttpRequest"
+        let request = HTTPRequest(url: finalURL, method: .delete, headers: headers)
         let response: HTTPResponse
         do {
             response = try await httpClient.execute(request)

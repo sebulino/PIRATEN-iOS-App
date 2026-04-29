@@ -46,20 +46,43 @@ The chain is defined in
 [`PIRATEN/Core/Data/Discourse/LikeStrategy.swift`](../../PIRATEN/Core/Data/Discourse/LikeStrategy.swift)
 as `LikeStrategyRegistry.all`.
 
-The initial chain shipped with three strategies, but the owner verified
-in the browser Network tab on 2026-04-22 that the live instance uses
-`POST /post_actions` directly — the discourse-reactions plugin is not
-installed. `DiscourseReactionsStrategy` was therefore dropped from the
-chain (it would only have returned 404). The remaining two strategies,
-in order:
+The initial chain shipped with three strategies. Two rounds of
+empirical narrowing on 2026-04-22 collapsed it to a single strategy:
 
-1. `PostActionsFormStrategy` — `POST /post_actions.json` with
-   `Content-Type: application/x-www-form-urlencoded` and
-   `id=…&post_action_type_id=2`. Matches what the Discourse web UI
-   sends. Targets hypothesis B.
-2. `PostActionsJSONStrategy` — current shipping behaviour with JSON
-   body. Kept as a fallback so we don't regress if a future Discourse
-   release reverses the parser preference.
+**Round 1 (URL).** Owner captured a like in the browser Network tab.
+The request went to `POST /post_actions` directly — the
+discourse-reactions plugin is not installed on this instance.
+`DiscourseReactionsStrategy` dropped (would have returned 404).
+
+**Round 2 (request shape).** Same browser capture revealed the precise
+shape:
+
+```
+POST /post_actions HTTP/1.1
+Content-Type: application/x-www-form-urlencoded; charset=UTF-8
+X-Requested-With: XMLHttpRequest
+Content-Length: 46
+
+id=1911&post_action_type_id=2&flag_topic=false
+```
+
+Three things the previous JSON shipping behaviour got wrong:
+
+- Body was JSON, not form-encoded. Likely cause of OPEN-02's silent
+  failure: Rails' default `wrap_parameters` initializer wraps JSON
+  bodies under a key matching the controller name
+  (`post_actions_controller` → `post_action`), which can route the
+  request through a different code path than the form-encoded variant
+  even though Rails-level `params[:id]` is technically still populated.
+- `flag_topic=false` was missing. Even on like requests, some Discourse
+  builds short-circuit when this field is absent.
+- `X-Requested-With: XMLHttpRequest` was missing. Defensive against
+  controllers that gate write actions on the AJAX-marker header.
+
+`PostActionsFormStrategy` was updated to reproduce all three. The
+chain is now `[PostActionsFormStrategy]` only. The other strategy
+implementations remain in `LikeStrategy.swift` as documentation of
+alternatives considered; they are not wired in.
 
 A success is defined as either:
 
@@ -93,30 +116,32 @@ plugin endpoint, and the `PostActions` strategies share a single
   swapping plugins on the Discourse side does not require an app
   release; the cache invalidates on next mismatch and the chain
   re-discovers.
-- **Negative.** The first like per install may issue up to two
-  requests instead of one (down from three before the chain was
-  narrowed by browser observation). After the first success, the cache
-  absorbs this cost.
+- **Negative.** The chain machinery (probe-and-cache) is now overkill
+  for a single-strategy registry. It's kept anyway because (a) it costs
+  one indirection per like, (b) it gives a single place to re-add
+  strategies if Discourse changes behaviour, and (c) the cached
+  identifier in UserDefaults is observable in DEBUG builds, useful for
+  quick diagnosis without redeploying. Removing the chain in favour
+  of a direct call would be a one-line refactor if it ever feels
+  worth it.
 - **Negative.** "Confirmed success" relies on string matching against
   the response body for `/post_actions.json` strategies. If Discourse
   changes its response shape, the marker check would false-negative
   and we'd fall through unnecessarily. Mitigated by trying the
   reactions strategy first, where confirmation is body-non-empty.
 - **Follow-ups.**
-  - Browser-Network-tab confirmed the canonical `/post_actions`
-    endpoint is in use; reactions plugin dropped from the chain
-    on 2026-04-22.
-  - One additional browser observation will narrow the chain to a
-    single strategy: read the request `Content-Type` header and the
-    payload encoding (Form Data vs Request Payload) for the Discourse
-    web UI's like POST. If `application/x-www-form-urlencoded` →
-    keep only `PostActionsFormStrategy`. If `application/json` →
-    something else is going on; pursue hypothesis C (User API Key
-    scope) via a follow-up ADR amending the
-    `/user-api-key/new` handshake scopes.
-  - Once TestFlight observation confirms a single winning strategy,
-    narrow the registry to that one strategy and remove the others.
-    Expected before App Store submission.
+  - Browser-Network-tab observation 2026-04-22 narrowed the chain in
+    two rounds: first to drop the reactions plugin, then to commit to
+    `PostActionsFormStrategy` exclusively after capturing the exact
+    request shape (form-encoded body with `flag_topic=false`,
+    `X-Requested-With: XMLHttpRequest`, no CSRF token because User
+    API Key auth bypasses Discourse's CSRF protection).
+  - Verification: tap a like in TestFlight; reload the topic from a
+    separate Discourse client and confirm the like appears. If it
+    does, OPEN-02 is fully closed. If it does not despite the request
+    shape now matching the web UI byte-for-byte, the next hypothesis
+    is User API Key scope mapping — pursued via a follow-up ADR
+    amending the `/user-api-key/new` handshake scopes.
   - `RealDiscourseRepository.runStrategyChain` is a candidate for
     extraction into a generic `OperationStrategyChain<T>` if a second
     operation ends up needing the same probe-and-cache pattern.
