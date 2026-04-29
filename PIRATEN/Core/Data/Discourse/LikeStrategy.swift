@@ -78,18 +78,24 @@ enum LikeStrategyRegistry {
     /// `true`. The winning strategy's identifier is cached in UserDefaults
     /// and tried first on subsequent likes.
     ///
-    /// Current ordering picks the discourse-reactions plugin endpoint
-    /// first because that's the most common cause of `/post_actions.json`
-    /// silently returning 200 OK without persisting a like (OPEN-02
-    /// signature). If the plugin isn't installed, that strategy returns
-    /// `false` on a 404 and the chain falls through to the form-encoded
-    /// `/post_actions.json` variant (matches what the Discourse web UI
-    /// sends), and finally the JSON variant (current shipping behavior).
+    /// 2026-04-22: Owner verified in the browser Network tab that liking
+    /// a post on https://diskussion.piratenpartei.de hits
+    /// `POST /post_actions` (the canonical endpoint), NOT the
+    /// discourse-reactions plugin. `DiscourseReactionsStrategy` was
+    /// dropped from the chain — it would only have returned 404 here.
     ///
-    /// To change the ordering: re-arrange the array. To narrow to a
-    /// single endpoint after diagnosis: keep only that strategy.
+    /// Remaining hypotheses for OPEN-02's silent-2xx behavior:
+    /// 1. The previous request used JSON; the controller may parse the
+    ///    body but only persist the action when given form-encoded
+    ///    input (matches what the web UI sends). → form-encoded first.
+    /// 2. The User API Key scope mapping might not include post actions
+    ///    under `write` on this instance — but that should produce 4xx,
+    ///    not silent 2xx. Less likely. Tracked as a follow-up in
+    ///    ADR-0014 if neither strategy below works.
+    ///
+    /// To narrow further to a single strategy after TestFlight
+    /// observation, leave only the winning entry.
     static let all: [LikeStrategy] = [
-        DiscourseReactionsStrategy(),
         PostActionsFormStrategy(),
         PostActionsJSONStrategy()
     ]

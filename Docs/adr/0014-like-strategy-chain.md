@@ -44,16 +44,22 @@ returns confirmed success, and caches the winner in UserDefaults.**
 
 The chain is defined in
 [`PIRATEN/Core/Data/Discourse/LikeStrategy.swift`](../../PIRATEN/Core/Data/Discourse/LikeStrategy.swift)
-as `LikeStrategyRegistry.all`. The default ordering is:
+as `LikeStrategyRegistry.all`.
 
-1. `DiscourseReactionsStrategy` —
-   `POST /discourse-reactions/posts/{id}/custom-reactions/heart/toggle.json`.
-   Targets hypothesis A.
-2. `PostActionsFormStrategy` — `POST /post_actions.json` with
+The initial chain shipped with three strategies, but the owner verified
+in the browser Network tab on 2026-04-22 that the live instance uses
+`POST /post_actions` directly — the discourse-reactions plugin is not
+installed. `DiscourseReactionsStrategy` was therefore dropped from the
+chain (it would only have returned 404). The remaining two strategies,
+in order:
+
+1. `PostActionsFormStrategy` — `POST /post_actions.json` with
    `Content-Type: application/x-www-form-urlencoded` and
-   `id=…&post_action_type_id=2`. Targets hypothesis B.
-3. `PostActionsJSONStrategy` — current shipping behaviour, kept last as
-   the historical baseline.
+   `id=…&post_action_type_id=2`. Matches what the Discourse web UI
+   sends. Targets hypothesis B.
+2. `PostActionsJSONStrategy` — current shipping behaviour with JSON
+   body. Kept as a fallback so we don't regress if a future Discourse
+   release reverses the parser preference.
 
 A success is defined as either:
 
@@ -87,23 +93,30 @@ plugin endpoint, and the `PostActions` strategies share a single
   swapping plugins on the Discourse side does not require an app
   release; the cache invalidates on next mismatch and the chain
   re-discovers.
-- **Negative.** The first like per install may issue up to three
-  requests instead of one. The reactions endpoint is cheap on the
-  Discourse rate budget (single POST, no body) but adds latency. After
-  the first success, the cache absorbs this cost.
+- **Negative.** The first like per install may issue up to two
+  requests instead of one (down from three before the chain was
+  narrowed by browser observation). After the first success, the cache
+  absorbs this cost.
 - **Negative.** "Confirmed success" relies on string matching against
   the response body for `/post_actions.json` strategies. If Discourse
   changes its response shape, the marker check would false-negative
   and we'd fall through unnecessarily. Mitigated by trying the
   reactions strategy first, where confirmation is body-non-empty.
 - **Follow-ups.**
-  - Once production telemetry / TestFlight feedback confirms a single
-    winning strategy, the registry can be narrowed to that one
-    strategy and the others removed. Expected to land before App
-    Store submission.
-  - If the winner turns out to be neither (B nor A), the most likely
-    next root cause is hypothesis C (scope) — pursued via a follow-up
-    ADR amending the User API Key handshake scopes.
+  - Browser-Network-tab confirmed the canonical `/post_actions`
+    endpoint is in use; reactions plugin dropped from the chain
+    on 2026-04-22.
+  - One additional browser observation will narrow the chain to a
+    single strategy: read the request `Content-Type` header and the
+    payload encoding (Form Data vs Request Payload) for the Discourse
+    web UI's like POST. If `application/x-www-form-urlencoded` →
+    keep only `PostActionsFormStrategy`. If `application/json` →
+    something else is going on; pursue hypothesis C (User API Key
+    scope) via a follow-up ADR amending the
+    `/user-api-key/new` handshake scopes.
+  - Once TestFlight observation confirms a single winning strategy,
+    narrow the registry to that one strategy and remove the others.
+    Expected before App Store submission.
   - `RealDiscourseRepository.runStrategyChain` is a candidate for
     extraction into a generic `OperationStrategyChain<T>` if a second
     operation ends up needing the same probe-and-cache pattern.
