@@ -108,25 +108,42 @@ reading Swift.
 
 ## OPEN-12 — Background task does not dispatch local notifications
 
-**Status:** OPEN — **blocker for v1 ship** (FR-NOTIF-004)
+**Status:** RESOLVED 2026-04-22 — implementation in
+[ADR-0015](./adr/0015-background-notification-coordinator.md).
+End-to-end verification on a real device (TestFlight) is pending; the
+simulator's `simctl push` path is not equivalent to a real
+`BGAppRefreshTask` fire.
 
-**Context.** The code to dispatch local iOS notifications
-(`scheduleLocalNotification`) is wired to SwiftUI `.onChange` observers
-in `MainTabView`, which only fire while the app is running. When the
-`BGAppRefreshTask` fires in the background, it polls the APIs and updates
-the aggregate badge — but no banner notification is delivered, even if the
-user has enabled that category in Profile.
+**Context.** Notification dispatch (`scheduleLocalNotification`) lived
+inside SwiftUI `.onChange` observers in `MainTabView`, which only fire
+while the view is rendered. When iOS wakes the app headless for a
+`BGAppRefreshTask`, no view hierarchy exists; the observers never fire.
+Additionally the background poll only hit Discourse's aggregate-totals
+endpoint, so Todos, News, Knowledge, and Events were never checked at
+all.
 
-**Next step.** Move the notification dispatch logic out of SwiftUI
-observers and into the background task handler in
-`BackgroundTaskScheduler`. The handler should:
+**Resolution summary.** Introduced
+`PIRATEN/Core/Data/Notifications/BackgroundRefreshCoordinator.swift`, a
+plain `@MainActor` object invoked from
+`BGAppRefreshTask.handleAppRefresh`. Polls all six sources (Forum,
+Messages, Todos, News, Knowledge, Events) in parallel via `TaskGroup`;
+each child has its own `do/catch` so one source failing does not block
+the siblings. Per-source persisted markers (`bg_*_last_seen_*` in
+UserDefaults) detect new activity. For each source with new activity
+and an enabled `NotificationSettingsManager` toggle, a notification is
+dispatched via the new shared `LocalNotificationScheduler`. The same
+scheduler is also called from the foreground `.onChange` observers so
+in-view and headless paths use identical titles/bodies.
+`NotificationSettingsManager` extended with `knowledgeEnabled` and
+`eventsEnabled` to reach the six categories FR-PROF-002 specifies.
 
-1. Poll each of the six sources (Forum, Messages, News, ToDos, Knowledge,
-   Events).
-2. For each source with new activity, check whether the user has enabled
-   notifications for that category.
-3. If enabled, schedule a `UNMutableNotificationContent` via
-   `UNUserNotificationCenter.current().add(...)`.
+**Verification follow-up before App Store submission:**
+
+- Background the app, post fresh content from another device in each
+  of the six categories, confirm a banner arrives for every category
+  the user has enabled in Profile.
+- Confirm `BackgroundRefreshCoordinator.reset()` fires on logout (see
+  ADR-0015 follow-ups).
 
 ---
 
