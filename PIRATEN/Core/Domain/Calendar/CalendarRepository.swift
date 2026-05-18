@@ -25,7 +25,7 @@ enum CalendarError: Error, Equatable {
     }
 }
 
-/// Repository for fetching calendar events from the piragitator.de iCal feed.
+/// Repository for fetching calendar events from the agitatorrr.de iCal feed.
 /// The endpoint is public and does not require authentication.
 @MainActor
 protocol CalendarRepository {

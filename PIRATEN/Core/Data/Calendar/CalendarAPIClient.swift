@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// API client for fetching iCal data from piragitator.de.
+/// API client for fetching iCal data from agitatorrr.de.
 /// Uses the base HTTPClient (not authenticated) since the endpoint is public.
 /// Follows the same pattern as TodoAPIClient.
 @MainActor
@@ -32,7 +32,7 @@ final class CalendarAPIClient {
 
     // MARK: - Public API
 
-    /// Fetches the raw iCal data from the piragitator.de feed.
+    /// Fetches the raw iCal data from the agitatorrr.de feed.
     /// - Returns: The iCal text content as a String
     /// - Throws: CalendarError if the request fails
     func fetchICalData() async throws -> String {

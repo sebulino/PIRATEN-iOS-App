@@ -29,7 +29,7 @@ final class FakeCalendarRepository: CalendarRepository {
                 startDate: calendar.date(byAdding: .day, value: 7, to: now)!,
                 endDate: calendar.date(byAdding: .day, value: 8, to: now)!,
                 location: "Dortmund, Westfalenhalle",
-                url: URL(string: "https://piragitator.de/veranstaltung/1/"),
+                url: URL(string: "https://agitatorrr.de/veranstaltung/1/"),
                 categories: ["Parteitag"]
             ),
             CalendarEvent(
@@ -59,7 +59,7 @@ final class FakeCalendarRepository: CalendarRepository {
                 startDate: calendar.date(byAdding: .day, value: 30, to: now)!,
                 endDate: calendar.date(byAdding: .day, value: 31, to: now)!,
                 location: "Kassel, Kongress Palais",
-                url: URL(string: "https://piragitator.de/veranstaltung/4/"),
+                url: URL(string: "https://agitatorrr.de/veranstaltung/4/"),
                 categories: ["Parteitag", "Bund"]
             ),
             CalendarEvent(

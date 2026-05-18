@@ -84,7 +84,7 @@ final class AppContainer {
     let newsRepository: NewsRepository
 
     /// Calendar repository implementation.
-    /// Production uses RealCalendarRepository (piragitator.de iCal); tests use FakeCalendarRepository.
+    /// Production uses RealCalendarRepository (agitatorrr.de iCal); tests use FakeCalendarRepository.
     let calendarRepository: CalendarRepository
 
     // MARK: - Presentation Layer (ViewModels)
@@ -367,16 +367,16 @@ final class AppContainer {
         )
         self.knowledgeRepository = realKnowledgeRepository
 
-        // piragitator.de calendar API client and repository
-        // Base URL read from Info.plist (set via xcconfig PIRAGITATOR_BASE_URL)
-        let piragitatorBaseURL: URL
-        if let urlString = Bundle.main.infoDictionary?["PIRAGITATOR_BASE_URL"] as? String,
+        // agitatorrr.de calendar API client and repository
+        // Base URL read from Info.plist (set via xcconfig AGITATORRR_BASE_URL)
+        let agitatorrrBaseURL: URL
+        if let urlString = Bundle.main.infoDictionary?["AGITATORRR_BASE_URL"] as? String,
            let url = URL(string: urlString) {
-            piragitatorBaseURL = url
+            agitatorrrBaseURL = url
         } else {
-            piragitatorBaseURL = URL(string: "https://piragitator.de")!
+            agitatorrrBaseURL = URL(string: "https://agitatorrr.de")!
         }
-        let calendarAPIClient = CalendarAPIClient(httpClient: baseHTTPClient, baseURL: piragitatorBaseURL)
+        let calendarAPIClient = CalendarAPIClient(httpClient: baseHTTPClient, baseURL: agitatorrrBaseURL)
         self.calendarRepository = RealCalendarRepository(apiClient: calendarAPIClient, parser: ICalParser())
 
         // News API client and repository (meine-piraten.de Rails backend)

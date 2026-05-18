@@ -8,7 +8,7 @@
 import Foundation
 
 /// Production implementation of CalendarRepository.
-/// Fetches iCal data from piragitator.de and parses it into CalendarEvent objects.
+/// Fetches iCal data from agitatorrr.de and parses it into CalendarEvent objects.
 @MainActor
 final class RealCalendarRepository: CalendarRepository {
 

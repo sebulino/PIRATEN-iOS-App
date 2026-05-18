@@ -1,7 +1,7 @@
 {
   "project": "piraten-ios-m10-termine-profile",
   "branchName": "ralph/m10-termine-profile",
-  "description": "Milestone 10: Move Profile from bottom tab bar to a floating top-right icon that opens a sheet. Replace the Profile tab with a new Termine (Events) tab that displays calendar entries imported from an iCal feed (piragitator.de).",
+  "description": "Milestone 10: Move Profile from bottom tab bar to a floating top-right icon that opens a sheet. Replace the Profile tab with a new Termine (Events) tab that displays calendar entries imported from an iCal feed (agitatorrr.de).",
   "userStories": [
     {
       "id": "M10-001",

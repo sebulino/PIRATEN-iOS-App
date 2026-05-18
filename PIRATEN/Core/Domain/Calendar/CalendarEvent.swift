@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// Domain model representing a calendar event from the piragitator.de iCal feed.
+/// Domain model representing a calendar event from the agitatorrr.de iCal feed.
 /// Maps from VEVENT entries in the iCalendar (RFC 5545) format.
 struct CalendarEvent: Identifiable, Equatable {
     /// Unique identifier (VEVENT UID)

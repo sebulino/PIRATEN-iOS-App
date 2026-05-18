@@ -6,7 +6,7 @@ Two structural UI changes to the app's main navigation:
 
 1. **Profile → Floating Overlay**: The Profile tab is removed from the bottom tab bar and replaced with a floating icon (top-right corner) that opens the ProfileView as a sheet sliding up from the bottom. All existing profile functionality (settings, notifications, privacy) is preserved.
 
-2. **New Termine Tab**: A new "Termine" (Events) tab replaces the Profile tab at position 4 in the bottom bar. It displays calendar events imported from the Piragitator iCal feed (`piragitator.de`).
+2. **New Termine Tab**: A new "Termine" (Events) tab replaces the Profile tab at position 4 in the bottom bar. It displays calendar events imported from the Agitatorrr iCal feed (`agitatorrr.de`).
 
 ## Tab Layout After Changes
 
@@ -22,7 +22,7 @@ Two structural UI changes to the app's main navigation:
 ## Data Source
 
 - **URL**: Configured via `ICAL_FEED_URL` in `.xcconfig` (not hardcoded)
-- **Endpoint**: `https://piragitator.de/api/veranstaltung/ical/1/`
+- **Endpoint**: `https://agitatorrr.de/api/veranstaltung/ical/1/`
 - **Format**: Standard iCalendar (RFC 5545)
 - **Auth**: None required (public endpoint)
 - **Fields used**: SUMMARY, DTSTART, DTEND, LOCATION, DESCRIPTION, CATEGORIES, URL, UID

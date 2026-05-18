@@ -22,7 +22,7 @@ struct ICalParserTests {
         BEGIN:VCALENDAR
         VERSION:2.0
         BEGIN:VEVENT
-        UID:event-1@piragitator.de
+        UID:event-1@agitatorrr.de
         SUMMARY:Landesparteitag
         DTSTART:20260315T140000
         DTEND:20260315T180000
@@ -36,7 +36,7 @@ struct ICalParserTests {
         #expect(events.count == 1)
 
         let event = events[0]
-        #expect(event.id == "event-1@piragitator.de")
+        #expect(event.id == "event-1@agitatorrr.de")
         #expect(event.title == "Landesparteitag")
         #expect(event.location == "Dortmund")
         #expect(event.categories == ["Parteitag", "NRW"])
@@ -197,12 +197,12 @@ struct ICalParserTests {
         UID:url-1
         SUMMARY:Event with URL
         DTSTART:20260315T140000
-        URL:https://piragitator.de/event/1/
+        URL:https://agitatorrr.de/event/1/
         END:VEVENT
         """
 
         let events = parser.parse(ical)
         #expect(events.count == 1)
-        #expect(events[0].url?.absoluteString == "https://piragitator.de/event/1/")
+        #expect(events[0].url?.absoluteString == "https://agitatorrr.de/event/1/")
     }
 }
