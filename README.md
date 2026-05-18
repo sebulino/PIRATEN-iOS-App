@@ -1,96 +1,91 @@
-# PIRATEN iOS App
+# MeinePIRATEN
 
-Unofficial iOS app for members of the Piratenpartei Deutschland.
+An unofficial iOS app for members of the **Piratenpartei Deutschland**.
 
-## Overview
+## Why this app exists
 
-This is a native iOS app built with Swift and SwiftUI. It provides members access to:
-- **Forum**: Discourse-based discussion forums
-- **Messages**: Private messaging via Discourse
-- **Knowledge**: Internal knowledge base
-- **Todos**: Task management via meine-piraten.de
-- **Profile**: User profile and settings
+The party's digital life is fragmented: Discourse for discussion, meine-piraten.de
+for tasks and news, Agitatorrr for events, a GitHub-backed Kanon for internal
+knowledge, and — for most members — Telegram as the place where things
+actually happen. MeinePIRATEN bundles the member-facing pieces into one
+mobile client with a Telegram-adjacent feel, so that reading the forum, replying
+to a DM, claiming a todo, or checking the next event takes one tap instead of
+five apps.
 
-The app follows a **privacy-first** approach with no analytics or tracking.
+Discourse remains the **backend of record** for all discussion; this app is a
+thin client, not a parallel data store. No analytics, no tracking, no copies of
+anything that isn't already on a server the party controls.
 
-## Current Status
+- **Platform:** iOS only
+- **Minimum iOS:** 26.2
+- **UI language:** German
+- **Code, docs, commits:** English
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| **SSO Login** | ✅ Implemented | Keycloak OAuth2/OIDC via AppAuth |
-| **Token Management** | ✅ Implemented | Secure Keychain storage, auto-refresh |
-| **Discourse Auth** | ✅ Implemented | User API Key flow (RSA encrypted) |
-| **Forum (Topics)** | ✅ Read-only | Fetches from Discourse API |
-| **Forum (Posts)** | ✅ Read-only | Topic detail with posts, tappable usernames |
-| **Private Messages** | ✅ Read + Compose | Inbox, thread detail, compose with recipient picker |
-| **User Profiles** | ✅ Implemented | Tappable usernames, direct messaging from profile |
-| **Todos** | ✅ Stubbed (write) | Create, claim, complete, comment, detail view (fake data, awaiting meine-piraten.de API) |
-| **Push Notifications** | ✅ Scaffolded | APNs token registration, deep links, backend contract documented |
-| **Profile** | ✅ Implemented | SSO user info, notification preferences |
-| **Knowledge** | ✅ Implemented | Interactive lessons from GitHub repo, progress tracking, quizzes, checklists, offline cache |
-| **Posting/Replies** | ❌ Not started | Future milestone |
+## Features
 
-See [PROJECT_STATUS.md](Docs/PROJECT_STATUS.md) for detailed milestone progress.
+Be aware that this project is a work in progress. The list below reflects what
+is currently in `main`.
 
-## Requirements
+| Area | What works today | Not yet |
+|---|---|---|
+| **Kajüte** (home) | Greeting, recent contacts, in-progress Kanon articles ("weiterlesen"), übernommene Aufgaben, feedback widget | — |
+| **Forum** | List topics, read threads, reply, like, read-state tracking | Category pins, new-topic creation, inline images |
+| **Wissen** (Kanon) | GitHub-hosted lessons, offline cache, quizzes, reading-progress tracking | — |
+| **Termine** | Events from the Agitatorrr iCal feed, upcoming & past sections | EventKit integration ("add to calendar") |
+| **ToDos** | List, claim, complete, release, comment — against meine-piraten.de | — |
+| **Nachrichten** | Inbox, thread detail, reply, compose new DM via recipient picker | — |
+| **News** | Feed from `meine-piraten.de/api/news` with detail view | — |
+| **Profil** | SSO user info, notification toggles, feedback submission, admin-access request, logout | — |
 
-- Xcode 16.0 or later
-- iOS 18.0+ deployment target
-- macOS 14.0+ for development
+## Getting started
 
-## Dependencies
+### Prerequisites
 
-The app uses Swift Package Manager for external dependencies:
+- A recent Xcode with iOS 26.2 SDK
+- An iOS 26.2 simulator or device
+- Piratenpartei membership (SSO login is required for most features)
 
-| Package | Purpose |
-|---------|---------|
-| [AppAuth-iOS](https://github.com/openid/AppAuth-iOS) | OAuth2/OIDC authentication with PKCE support |
-
-## Getting Started
-
-### 1. Clone the repository
+### 1. Clone
 
 ```bash
 git clone <repository-url>
 cd PIRATEN
 ```
 
-### 2. Configure secrets
-
-Copy the sample secrets file and fill in your values:
+### 2. Create your local secrets file
 
 ```bash
 cp Config/Secrets.sample.xcconfig Config/Secrets.xcconfig
 ```
 
-Edit `Config/Secrets.xcconfig` with the required values:
+`Config/Secrets.xcconfig` is git-ignored and must never be committed.
+
+### 3. Fill in real values
+
+Edit `Config/Secrets.xcconfig`:
 
 | Key | Description |
 |-----|-------------|
-| `SSO_CLIENT_ID` | OAuth2 client ID for Piratenlogin |
-| `SSO_REDIRECT_URI` | OAuth callback URI (e.g., `piratenapp://callback`) |
-| `DISCOURSE_CLIENT_ID` | Unique identifier for Discourse User API Key |
-| `DISCOURSE_AUTH_REDIRECT_SCHEME` | URL scheme for Discourse auth callback |
-| `DISCOURSE_AUTH_REDIRECT_HOST` | Host component for Discourse callback URL |
-| `DISCOURSE_APP_NAME` | App name shown in Discourse when requesting API key |
+| `SSO_CLIENT_ID` | OAuth2 client ID registered with PiratenSSO (Keycloak) |
+| `SSO_REDIRECT_URI` | OAuth callback URI for the app's custom URL scheme |
+| `KEYCLOAK_BASE_URL` | Keycloak realm base URL for PiratenSSO |
+| `DISCOURSE_BASE_URL` | Base URL of the Discourse forum |
+| `DISCOURSE_CLIENT_ID` | Client identifier used when requesting a Discourse User API Key |
+| `DISCOURSE_AUTH_REDIRECT_SCHEME` | URL scheme for the Discourse auth callback |
+| `DISCOURSE_AUTH_REDIRECT_HOST` | Host component for the Discourse callback URL |
+| `DISCOURSE_APP_NAME` | App name shown to the user during Discourse auth |
+| `KNOWLEDGE_REPO_OWNER` | GitHub owner of the PIRATEN-Kanon repository |
+| `KNOWLEDGE_REPO_NAME` | GitHub repository name for the Kanon |
+| `KNOWLEDGE_REPO_BRANCH` | Branch of the Kanon repository to pull from |
+| `MEINE_PIRATEN_BASE_URL` | Base URL of the meine-piraten.de backend |
+| `AGITATORRR_BASE_URL` | Base URL of the Agitatorrr events/calendar service |
 
-**Note:** `Config/Secrets.xcconfig` is git-ignored and must never be committed.
+### 4. Build and run
 
-### 3. Open in Xcode
+Open `PIRATEN.xcodeproj` in Xcode, select the **PIRATEN** scheme and an iOS 26.2
+destination, then press Run.
 
-```bash
-open PIRATEN.xcodeproj
-```
-
-Or build from the command line:
-
-```bash
-xcodebuild -scheme PIRATEN -configuration Debug build
-```
-
-### 4. Run in Simulator
-
-Select a simulator in Xcode and press `Cmd+R`, or build from command line:
+Command line:
 
 ```bash
 xcodebuild -scheme PIRATEN \
@@ -98,130 +93,42 @@ xcodebuild -scheme PIRATEN \
   build
 ```
 
-## Build Commands
+## Architecture overview
 
-**Important:** Use UDID-based simulator destinations to prevent simulator clones (see [D-007](Docs/DECISIONS.md)).
+Clean Architecture + MVVM with strict layer separation: SwiftUI views + view
+models in `PIRATEN/App/`, domain entities and repository protocols in
+`PIRATEN/Core/Domain/`, API clients and repository implementations in
+`PIRATEN/Core/Data/`, system wrappers (Keychain, config, background tasks) in
+`PIRATEN/Core/Support/`. Dependencies are wired exclusively through
+`AppContainer` via constructor injection — no hidden singletons, no globals
+inside features.
 
-```bash
-# Build for simulator (pinned UDID)
-xcodebuild -scheme PIRATEN \
-  -destination 'platform=iOS Simulator,id=F0291949-CCB9-4C91-B947-292F98247041' \
-  build
-
-# Run unit tests
-xcodebuild -scheme PIRATEN \
-  -destination 'platform=iOS Simulator,id=F0291949-CCB9-4C91-B947-292F98247041' \
-  test
-
-# Run specific test class
-xcodebuild -scheme PIRATEN \
-  -destination 'platform=iOS Simulator,id=F0291949-CCB9-4C91-B947-292F98247041' \
-  -only-testing:PIRATENTests/KeychainServiceTests \
-  test
-
-# Clean build artifacts
-xcodebuild -scheme PIRATEN clean
-```
-
-If the pinned simulator UDID is unavailable after an Xcode update, run `xcrun simctl list devices available` and update the UDID.
-
-## Authentication
-
-The app uses a two-layer authentication system:
-
-### 1. Keycloak SSO (Primary Login)
-Users authenticate via the Piratenpartei SSO (Keycloak) using OAuth2/OIDC with PKCE. This is handled by AppAuth-iOS and provides the user's identity.
-
-### 2. Discourse User API Key (Forum Access)
-Discourse requires its own authentication. The app implements the [Discourse User API Keys specification](https://meta.discourse.org/t/user-api-keys-specification/48536):
-
-```
-┌─────────┐              ┌─────────┐              ┌───────────┐
-│ iOS App │              │ Browser │              │ Discourse │
-└────┬────┘              └────┬────┘              └─────┬─────┘
-     │                        │                        │
-     │ 1. Generate RSA key pair, store in Keychain     │
-     │                        │                        │
-     │ 2. Build auth URL with public key + nonce       │
-     │───────────────────────>│                        │
-     │    ASWebAuthSession    │ 3. Open URL            │
-     │                        │───────────────────────>│
-     │                        │                        │
-     │                        │ 4. User logs in via SSO│
-     │                        │<──────────────────────>│
-     │                        │                        │
-     │                        │ 5. User approves key   │
-     │                        │<──────────────────────>│
-     │                        │                        │
-     │<───────────────────────│ 6. Encrypted callback  │
-     │  Callback with RSA-encrypted API key            │
-     │                        │                        │
-     │ 7. Decrypt with private key                     │
-     │ 8. Verify nonce (replay protection)             │
-     │ 9. Store credential in Keychain                 │
-     │                        │                        │
-     │ 10. All API calls use User-Api-Key header       │
-     │─────────────────────────────────────────────────>
-```
-
-**Security properties:**
-- API key encrypted in transit (RSA)
-- Private key never leaves device Keychain
-- Nonce prevents replay attacks
-- Scoped permissions (notifications, session_info)
-- Revocable on logout
-
-## Architecture
-
-The app follows **Clean Architecture + MVVM**:
-
-```
-PIRATEN/
-├── App/                    # Presentation layer
-│   ├── Views/              # SwiftUI views (Forum, Messages, Todos, Profile)
-│   ├── ViewModels/         # View models for each feature
-│   ├── PIRATENApp.swift    # App entry point
-│   └── RootView.swift      # Root navigation (login vs main)
-├── Core/
-│   ├── Domain/             # Business logic layer
-│   │   ├── Auth/           # Auth entities, protocols, state machine
-│   │   ├── DeepLink/       # Deep link routing from notifications
-│   │   ├── Discourse/      # Forum/message entities, API key models
-│   │   ├── HTTP/           # HTTP client protocol, request/response types
-│   │   ├── Knowledge/      # Knowledge entities, repository protocol, progress models
-│   │   └── Todos/          # Todo entities, comments, and repository protocol
-│   ├── Data/               # Data layer implementations
-│   │   ├── Auth/           # OIDC auth repository
-│   │   ├── Discourse/      # Discourse API client, auth manager
-│   │   ├── HTTP/           # URLSession client, authenticated clients
-│   │   ├── Knowledge/      # GitHub API client, parsers, cache, repository
-│   │   ├── OIDC/           # AppAuth integration services
-│   │   └── Todos/          # Todo repository (fake/in-memory)
-│   └── Support/            # System wrappers
-│       ├── AppContainer.swift    # Dependency injection root
-│       ├── KeychainService.swift # Secure credential storage
-│       └── RSAKeyManager.swift   # RSA key operations for Discourse auth
-├── Config/                 # xcconfig files (Debug, Release, Secrets)
-├── Resources/              # Assets, brand files
-└── Docs/                   # Project documentation
-```
-
-See `CLAUDE.md` for detailed architecture rules.
+See `CLAUDE.md` for the full architectural rulebook and `Docs/DECISIONS.md` for
+the reasoning behind individual choices.
 
 ## Documentation
 
-- [Project Status](Docs/PROJECT_STATUS.md) - Current milestone and progress
-- [Decisions](Docs/DECISIONS.md) - Architectural decisions and rationale
-- [Open Questions](Docs/OPEN_QUESTIONS.md) - Unresolved questions blocking work
-- [Threat Model](Docs/THREAT_MODEL.md) - Security considerations
+Engineering documentation lives in [`Docs/`](Docs/README.md) — start there for
+the index of project status, decisions, open questions, threat model, API
+request map, and release checklists.
 
 ## Contributing
 
-1. Work on one milestone at a time
-2. Follow the architecture rules in `CLAUDE.md`
-3. Update documentation with every change
-4. Run tests before committing
+- Code, documentation, and commit messages are in **English**; UI strings are in
+  **German**.
+- Every PR must build cleanly and pass the existing test suite (`xcodebuild …
+  test`).
+- A full `CONTRIBUTING.md` is coming soon; until then, follow the rules in
+  `CLAUDE.md` and the patterns visible in the codebase.
 
-## License
+## Versioning
 
-Proprietary - Piratenpartei Deutschland
+Marketing version `1.0` is a legacy artefact from the initial project setup and
+does not track releases. The real counter is the **build number**
+(`CURRENT_PROJECT_VERSION`, currently **17**), which is incremented for every
+TestFlight / App Store build.
+
+## Licence
+
+MeinePIRATEN is released under the **EUPL-1.2** (European Union Public Licence,
+version 1.2).
