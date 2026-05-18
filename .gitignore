@@ -13,3 +13,4 @@ DerivedData/
 
 # Secrets configuration (never commit)
 Config/Secrets.xcconfig
+.build/
