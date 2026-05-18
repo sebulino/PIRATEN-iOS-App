@@ -113,18 +113,35 @@ final class AuthStateManager: ObservableObject {
         }
     }
 
-    /// Handles authentication errors from API calls (401/403 responses).
+    /// Handles authentication errors from PiratenSSO-authenticated API calls
+    /// (currently only meine-piraten.de; Discourse uses User API Key auth on a
+    /// separate path and does NOT route through here, per ADR-0009).
     ///
-    /// NOTE: This method is currently disabled. With onAuthError: nil for the Discourse
-    /// HTTP client, there is no caller for this method. Discourse 401/403 errors are
-    /// handled locally in the views without triggering session expiration.
+    /// Called from `AuthenticatedHTTPClient` when the server returns 401 or 403.
+    /// In practice on meine-piraten.de, both status codes indicate the SSO
+    /// session is no longer accepted — 403 for "permission denied" is rare to
+    /// non-existent for an SSO-authenticated user, and the `TodoAPIError`
+    /// layer collapses them to a single `.unauthorized` case anyway.
     ///
-    /// When proper Discourse auth is implemented (see Q-002), this can be re-enabled
-    /// for actual SSO session expiration scenarios.
+    /// Uses a single-attempt guard (`isHandlingAuthError`) so a burst of
+    /// simultaneous 401s from parallel API calls only triggers one logout
+    /// transition, not one per failing request. The guard is reset when the
+    /// user successfully re-authenticates or logs out explicitly.
+    ///
+    /// Transitions to `.sessionExpired` (a distinct AuthState case, not just
+    /// `.unauthenticated`) so the UI can show a "session expired, please log
+    /// in again" message via `SessionExpiredView` rather than the generic
+    /// initial-launch login screen.
+    ///
+    /// Related: OPEN-09 (#72), FR-AUTH-004, ADR-0009.
     func handleAuthenticationError() {
-        // DISABLED: No-op to prevent accidental session expiration
-        // If this is being called, there's a bug - we should debug rather than
-        // silently expire the session
-        print("WARNING: handleAuthenticationError() called but is disabled")
+        guard !isHandlingAuthError else { return }
+        isHandlingAuthError = true
+
+        Task {
+            await authRepository.logout()
+            recentRecipientsStorage?.clearAll()
+            currentState = .sessionExpired
+        }
     }
 }
