@@ -247,24 +247,88 @@ final class RealDiscourseRepository: DiscourseRepository {
         }
     }
 
+    // MARK: - Likes (OPEN-02 / FR-FORUM-004 strategy chain)
+
+    /// UserDefaults key caching the identifier of the strategy that last
+    /// successfully persisted a like. On subsequent calls we try the
+    /// cached winner first to avoid re-discovering it on every like.
+    private static let winningLikeStrategyKey = "discourse_like_winning_strategy"
+
     func likePost(id: Int) async throws {
-        do {
-            _ = try await apiClient.likePost(postId: id)
-        } catch let error as DiscourseError {
-            throw mapToRepositoryError(error)
-        } catch {
-            throw DiscourseRepositoryError.loadFailed(message: "Gefällt mir konnte nicht gesetzt werden")
-        }
+        try await runStrategyChain(
+            postId: id,
+            errorMessage: "Gefällt mir konnte nicht gesetzt werden",
+            invoke: { strategy in try await strategy.like(postId: id, via: apiClient) }
+        )
     }
 
     func unlikePost(id: Int) async throws {
-        do {
-            try await apiClient.unlikePost(postId: id)
-        } catch let error as DiscourseError {
-            throw mapToRepositoryError(error)
-        } catch {
-            throw DiscourseRepositoryError.loadFailed(message: "Gefällt mir konnte nicht entfernt werden")
+        try await runStrategyChain(
+            postId: id,
+            errorMessage: "Gefällt mir konnte nicht entfernt werden",
+            invoke: { strategy in try await strategy.unlike(postId: id, via: apiClient) }
+        )
+    }
+
+    /// Walks `LikeStrategyRegistry.all` in order, trying each strategy
+    /// until one returns `true` (server confirmed the action). The
+    /// winning strategy is cached so subsequent likes try it first.
+    ///
+    /// On a "soft failure" (strategy returns `false` — server replied
+    /// 2xx but the action did not persist, OPEN-02's signature), we
+    /// move to the next strategy. Hard errors (4xx/5xx, transport
+    /// failures) abort the chain immediately so we don't mask a
+    /// genuine auth or network problem.
+    private func runStrategyChain(
+        postId: Int,
+        errorMessage: String,
+        invoke: (LikeStrategy) async throws -> Bool
+    ) async throws {
+        let registry = LikeStrategyRegistry.all
+        guard !registry.isEmpty else {
+            throw DiscourseRepositoryError.loadFailed(
+                message: "\(errorMessage) (Konfigurationsfehler: keine Strategie aktiv)"
+            )
         }
+
+        let cachedWinner = UserDefaults.standard.string(forKey: Self.winningLikeStrategyKey)
+        let ordered = orderedStrategies(prioritizing: cachedWinner, in: registry)
+
+        for strategy in ordered {
+            do {
+                let confirmed = try await invoke(strategy)
+                if confirmed {
+                    UserDefaults.standard.set(strategy.identifier, forKey: Self.winningLikeStrategyKey)
+                    return
+                }
+                // Soft failure — try the next one.
+            } catch let error as DiscourseError {
+                throw mapToRepositoryError(error)
+            } catch {
+                throw DiscourseRepositoryError.loadFailed(message: errorMessage)
+            }
+        }
+
+        // Every strategy returned `false` — the server accepted each
+        // request but never persisted the action. This is the OPEN-02
+        // condition surfacing as an explicit failure rather than a
+        // silent UI lie.
+        throw DiscourseRepositoryError.loadFailed(message: errorMessage)
+    }
+
+    /// Returns the strategy chain with the cached winner moved to the
+    /// front. If the cached identifier is no longer in the registry
+    /// (e.g. you removed it from `LikeStrategyRegistry.all`), falls
+    /// back to the registry's natural order.
+    private func orderedStrategies(prioritizing cachedId: String?, in registry: [LikeStrategy]) -> [LikeStrategy] {
+        guard let cachedId,
+              let winnerIndex = registry.firstIndex(where: { $0.identifier == cachedId }) else {
+            return registry
+        }
+        var reordered = registry
+        let winner = reordered.remove(at: winnerIndex)
+        reordered.insert(winner, at: 0)
+        return reordered
     }
 
     func markTopicAsRead(topicId: Int, highestPostNumber: Int) async throws {
