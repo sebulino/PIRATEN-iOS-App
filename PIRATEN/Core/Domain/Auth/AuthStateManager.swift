@@ -98,17 +98,22 @@ final class AuthStateManager: ObservableObject {
     }
 
     /// Requests a valid access token, refreshing if necessary.
-    /// If refresh fails, transitions to unauthenticated state.
-    /// - Returns: A valid access token, or nil if not authenticated
+    /// - Returns: A valid access token, or nil if the session cannot be renewed.
+    ///
+    /// The meine-piraten.de access token is short-lived (5 minutes per the
+    /// API contract). On expiry, `authRepository.getValidAccessToken()`
+    /// refreshes via the SSO provider's refresh token. If that refresh
+    /// throws — which happens when the refresh token itself is revoked or
+    /// expired — the session is genuinely gone. Route through the central
+    /// `handleAuthenticationError()` rather than inlining the transition,
+    /// so the single-attempt guard works across both failure paths
+    /// (local refresh fail vs. server 401) and the UI lands on the same
+    /// `.sessionExpired` state.
     func getValidAccessToken() async -> String? {
         do {
             return try await authRepository.getValidAccessToken()
         } catch {
-            // Token refresh failed - session is no longer valid
-            // Clear tokens and return to unauthenticated state
-            // User will see login screen and can try again
-            await authRepository.logout()
-            currentState = .unauthenticated
+            handleAuthenticationError()
             return nil
         }
     }

@@ -97,13 +97,31 @@ the original M3B-006 semantics now intentional rather than dead:
    expired" message instead of the initial-launch login screen).
 4. Guard is reset on successful `authenticate()` or explicit `logout()`.
 
-The 401/403 distinction in `AuthenticatedHTTPClient` is left as-is:
-both still trigger `onAuthError`. On meine-piraten.de — the only
-SSO-Bearer-authed surface — a 403 to an authenticated user
-essentially does not occur (per project owner's confirmation), and
-the `TodoAPIError` layer already collapses both status codes to
-`.unauthorized` anyway. Distinguishing them in the HTTP client would
-be dead-code distinction that no caller observes.
+**401 vs 403** in `AuthenticatedHTTPClient` is now distinguished per
+the meine-piraten.de API contract (<https://meine-piraten.de/api>):
+
+- **401** (missing/invalid/expired token) → triggers `onAuthError` →
+  central session-expiry transition.
+- **403** (valid token, insufficient permissions) → throws
+  `HTTPError.forbidden` without invoking the central handler. The
+  user keeps their session and the caller surfaces the permission
+  error to the UI.
+
+Per the project owner's confirmation, 403 is rare in practice on
+meine-piraten.de because most user actions are permitted when SSO is
+valid — but the distinction is required because the access token TTL
+is only 5 minutes and 401s for token expiry need to flow through the
+single-attempt guard cleanly, while a 403 from a permission boundary
+must NOT log the user out.
+
+`AuthStateManager.getValidAccessToken()` now routes through the same
+`handleAuthenticationError()` path when the local refresh fails
+(refresh token revoked/expired), rather than inlining its own
+`.unauthenticated` transition. The single-attempt guard therefore
+covers both failure modes:
+
+- Local refresh fail in `getValidAccessToken()`
+- Server-side 401 reaching `AuthenticatedHTTPClient`
 
 The workaround in `TodosViewModel.loadTodos()` is removed (silent
 catch instead — the central handler is already transitioning the
