@@ -53,6 +53,26 @@ final class NotificationSettingsManager: ObservableObject {
         }
     }
 
+    /// Whether push notifications for Knowledge-Hub updates are enabled.
+    /// Fires when the PIRATEN-Kanon repo publishes a new or changed topic.
+    /// Added in FR-PROF-002 (six opt-in categories, default off).
+    @Published var knowledgeEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(knowledgeEnabled, forKey: Keys.knowledgeEnabled)
+            if knowledgeEnabled { requestPermissionIfNeeded() }
+        }
+    }
+
+    /// Whether push notifications for new calendar events are enabled.
+    /// Fires when piragitator.de publishes a new event that has not been seen locally.
+    /// Added in FR-PROF-002 (six opt-in categories, default off).
+    @Published var eventsEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(eventsEnabled, forKey: Keys.eventsEnabled)
+            if eventsEnabled { requestPermissionIfNeeded() }
+        }
+    }
+
     /// The current system authorization status
     @Published private(set) var authorizationStatus: UNAuthorizationStatus = .notDetermined
 
@@ -63,7 +83,7 @@ final class NotificationSettingsManager: ObservableObject {
 
     /// Whether any notification category is enabled
     var anyNotificationsEnabled: Bool {
-        messagesEnabled || forumEnabled || todosEnabled || newsEnabled
+        messagesEnabled || forumEnabled || todosEnabled || newsEnabled || knowledgeEnabled || eventsEnabled
     }
 
     /// Whether system permission has been granted
@@ -83,6 +103,8 @@ final class NotificationSettingsManager: ObservableObject {
         static let forumEnabled = "notification_forum_enabled"
         static let todosEnabled = "notification_todos_enabled"
         static let newsEnabled = "notification_news_enabled"
+        static let knowledgeEnabled = "notification_knowledge_enabled"
+        static let eventsEnabled = "notification_events_enabled"
     }
 
     // MARK: - Initialization

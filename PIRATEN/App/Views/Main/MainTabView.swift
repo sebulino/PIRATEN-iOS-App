@@ -441,38 +441,32 @@ struct MainTabView: View {
         }
         .onChange(of: messagesViewModel.hasNewContent) { old, new in
             if new && !old && notificationSettings.messagesEnabled {
-                scheduleLocalNotification(
-                    title: "Neue Nachrichten",
-                    body: "Du hast neue private Nachrichten.",
-                    category: "messages"
-                )
+                dispatchLocalNotification(.messages)
             }
         }
         .onChange(of: forumViewModel.hasNewContent) { old, new in
             if new && !old && notificationSettings.forumEnabled {
-                scheduleLocalNotification(
-                    title: "Neuer Forumsbeitrag",
-                    body: "Es gibt neue Beiträge im Forum.",
-                    category: "forum"
-                )
+                dispatchLocalNotification(.forum)
             }
         }
         .onChange(of: todosViewModel.hasNewContent) { old, new in
             if new && !old && notificationSettings.todosEnabled {
-                scheduleLocalNotification(
-                    title: "Neue Aufgaben",
-                    body: "Es gibt neue oder geänderte Aufgaben.",
-                    category: "todos"
-                )
+                dispatchLocalNotification(.todos)
             }
         }
         .onChange(of: newsViewModel.hasNewContent) { old, new in
             if new && !old && notificationSettings.newsEnabled {
-                scheduleLocalNotification(
-                    title: "Neue Neuigkeiten",
-                    body: "Es gibt neue Neuigkeiten.",
-                    category: "news"
-                )
+                dispatchLocalNotification(.news)
+            }
+        }
+        .onChange(of: knowledgeViewModel.hasNewContent) { old, new in
+            if new && !old && notificationSettings.knowledgeEnabled {
+                dispatchLocalNotification(.knowledge)
+            }
+        }
+        .onChange(of: calendarViewModel.hasNewContent) { old, new in
+            if new && !old && notificationSettings.eventsEnabled {
+                dispatchLocalNotification(.events)
             }
         }
         .onChange(of: anyContentUnread) { _, hasUnread in
@@ -554,21 +548,16 @@ struct MainTabView: View {
         pollingTimer = nil
     }
 
-    /// Schedules a local notification for a specific content category.
-    private func scheduleLocalNotification(title: String, body: String, category: String) {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = .default
-
-        let request = UNNotificationRequest(
-            identifier: "\(category)-\(UUID().uuidString)",
-            content: content,
-            trigger: nil
-        )
-
+    /// Dispatches a local notification for a specific content category via the
+    /// shared `LocalNotificationScheduler`. Ensures the foreground-fired and
+    /// background-fired notifications use identical titles/bodies (both come
+    /// from `NotificationCategory`).
+    ///
+    /// See OPEN-12 / FR-NOTIF-004 — the background path lives in
+    /// `BackgroundRefreshCoordinator`; this method is the foreground twin.
+    private func dispatchLocalNotification(_ category: NotificationCategory) {
         Task {
-            try? await UNUserNotificationCenter.current().add(request)
+            await LocalNotificationScheduler().schedule(category)
             await refreshDeliveredNotificationsCount()
         }
     }
