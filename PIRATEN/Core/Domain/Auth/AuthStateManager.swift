@@ -98,33 +98,55 @@ final class AuthStateManager: ObservableObject {
     }
 
     /// Requests a valid access token, refreshing if necessary.
-    /// If refresh fails, transitions to unauthenticated state.
-    /// - Returns: A valid access token, or nil if not authenticated
+    /// - Returns: A valid access token, or nil if the session cannot be renewed.
+    ///
+    /// The meine-piraten.de access token is short-lived (5 minutes per the
+    /// API contract). On expiry, `authRepository.getValidAccessToken()`
+    /// refreshes via the SSO provider's refresh token. If that refresh
+    /// throws — which happens when the refresh token itself is revoked or
+    /// expired — the session is genuinely gone. Route through the central
+    /// `handleAuthenticationError()` rather than inlining the transition,
+    /// so the single-attempt guard works across both failure paths
+    /// (local refresh fail vs. server 401) and the UI lands on the same
+    /// `.sessionExpired` state.
     func getValidAccessToken() async -> String? {
         do {
             return try await authRepository.getValidAccessToken()
         } catch {
-            // Token refresh failed - session is no longer valid
-            // Clear tokens and return to unauthenticated state
-            // User will see login screen and can try again
-            await authRepository.logout()
-            currentState = .unauthenticated
+            handleAuthenticationError()
             return nil
         }
     }
 
-    /// Handles authentication errors from API calls (401/403 responses).
+    /// Handles authentication errors from PiratenSSO-authenticated API calls
+    /// (currently only meine-piraten.de; Discourse uses User API Key auth on a
+    /// separate path and does NOT route through here, per ADR-0009).
     ///
-    /// NOTE: This method is currently disabled. With onAuthError: nil for the Discourse
-    /// HTTP client, there is no caller for this method. Discourse 401/403 errors are
-    /// handled locally in the views without triggering session expiration.
+    /// Called from `AuthenticatedHTTPClient` when the server returns 401 or 403.
+    /// In practice on meine-piraten.de, both status codes indicate the SSO
+    /// session is no longer accepted — 403 for "permission denied" is rare to
+    /// non-existent for an SSO-authenticated user, and the `TodoAPIError`
+    /// layer collapses them to a single `.unauthorized` case anyway.
     ///
-    /// When proper Discourse auth is implemented (see Q-002), this can be re-enabled
-    /// for actual SSO session expiration scenarios.
+    /// Uses a single-attempt guard (`isHandlingAuthError`) so a burst of
+    /// simultaneous 401s from parallel API calls only triggers one logout
+    /// transition, not one per failing request. The guard is reset when the
+    /// user successfully re-authenticates or logs out explicitly.
+    ///
+    /// Transitions to `.sessionExpired` (a distinct AuthState case, not just
+    /// `.unauthenticated`) so the UI can show a "session expired, please log
+    /// in again" message via `SessionExpiredView` rather than the generic
+    /// initial-launch login screen.
+    ///
+    /// Related: OPEN-09 (#72), FR-AUTH-004, ADR-0009.
     func handleAuthenticationError() {
-        // DISABLED: No-op to prevent accidental session expiration
-        // If this is being called, there's a bug - we should debug rather than
-        // silently expire the session
-        print("WARNING: handleAuthenticationError() called but is disabled")
+        guard !isHandlingAuthError else { return }
+        isHandlingAuthError = true
+
+        Task {
+            await authRepository.logout()
+            recentRecipientsStorage?.clearAll()
+            currentState = .sessionExpired
+        }
     }
 }

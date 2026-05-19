@@ -61,15 +61,89 @@ actually enforces this does not exist yet.
 
 ## OPEN-09 — `handleAuthenticationError()` is disabled
 
-**Status:** OPEN — target before v1 ship
+**Status:** RESOLVED 2026-05-18 — handler re-enabled with proper
+semantics. Real-device verification pending before App Store
+submission.
 
-**Context.** `AuthStateManager.swift:128` has a published auth-error
-handler that is intentionally inert — it prints a warning and does
-nothing. The reason for the disabling is unknown.
+**Context.** `AuthStateManager.handleAuthenticationError()` was disabled
+in commit `6f4b73b` (2026-02-01) at the same time that Discourse User
+API Key auth (ADR-0009) landed. The original handler was generic
+"any 401/403 → logout", which incorrectly wiped valid PiratenSSO
+sessions when a Discourse User API Key got revoked (a separate auth
+concern). The quick fix at the time was to pass `onAuthError: nil` to
+the Discourse HTTP client and disable the handler "since no one calls
+it anymore".
 
-**Next step.** Investigate: what triggers this code path, why it was
-disabled, and what the correct behaviour should be (force logout / show
-error screen / silent retry).
+Later, commit `209bfb2` re-wired the meine-piraten.de Todo HTTP client
+to call the (now disabled) handler. Commit `ab2578e` (2026-03-23)
+added a workaround in `TodosViewModel.loadTodos()` that caught
+`TodoError.unauthorized` directly and called
+`authStateManager?.logout()` — bypassing the dead handler entirely.
+
+Net effect: a fragile pattern where every ViewModel touching
+meine-piraten.de had to remember to catch auth errors itself, while
+the central handler infrastructure (single-attempt guard,
+`AuthState.sessionExpired` case, `SessionExpiredView`) sat unused.
+
+**Resolution summary.** `handleAuthenticationError()` re-enabled with
+the original M3B-006 semantics now intentional rather than dead:
+
+1. Single-attempt guard (`isHandlingAuthError`) so a burst of
+   simultaneous 401s from parallel API calls triggers exactly one
+   logout transition.
+2. Calls `authRepository.logout()` + clears recent-recipients cache.
+3. Transitions to `.sessionExpired` (distinct from `.unauthenticated`
+   so `RootView` routes to `SessionExpiredView` with a clear "session
+   expired" message instead of the initial-launch login screen).
+4. Guard is reset on successful `authenticate()` or explicit `logout()`.
+
+**401 vs 403** in `AuthenticatedHTTPClient` is now distinguished per
+the meine-piraten.de API contract (<https://meine-piraten.de/api>):
+
+- **401** (missing/invalid/expired token) → triggers `onAuthError` →
+  central session-expiry transition.
+- **403** (valid token, insufficient permissions) → throws
+  `HTTPError.forbidden` without invoking the central handler. The
+  user keeps their session and the caller surfaces the permission
+  error to the UI.
+
+Per the project owner's confirmation, 403 is rare in practice on
+meine-piraten.de because most user actions are permitted when SSO is
+valid — but the distinction is required because the access token TTL
+is only 5 minutes and 401s for token expiry need to flow through the
+single-attempt guard cleanly, while a 403 from a permission boundary
+must NOT log the user out.
+
+`AuthStateManager.getValidAccessToken()` now routes through the same
+`handleAuthenticationError()` path when the local refresh fails
+(refresh token revoked/expired), rather than inlining its own
+`.unauthenticated` transition. The single-attempt guard therefore
+covers both failure modes:
+
+- Local refresh fail in `getValidAccessToken()`
+- Server-side 401 reaching `AuthenticatedHTTPClient`
+
+The workaround in `TodosViewModel.loadTodos()` is removed (silent
+catch instead — the central handler is already transitioning the
+auth state). The now-unused `authStateManager` parameter is removed
+from `TodosViewModel.init`.
+
+Discourse-side auth (User API Key revocation) is unchanged — it
+continues to flow through `DiscourseHTTPClient` clearing the
+credential, separate from this handler, per ADR-0009.
+
+**Verification follow-up before App Store submission:**
+
+- Revoke or expire the PiratenSSO session manually, exercise a
+  meine-piraten.de API call (e.g. open Aufgaben tab) on a real
+  device, confirm `SessionExpiredView` is shown.
+- Trigger multiple concurrent API calls when the session is invalid
+  (e.g. on cold launch from the Home dashboard which fans out to
+  several endpoints) and confirm exactly one logout transition fires,
+  not one per failing request.
+- After re-authenticating, confirm the single-attempt guard resets
+  correctly (re-trigger an auth failure, ensure it transitions to
+  `.sessionExpired` again rather than silently no-op'ing).
 
 ---
 

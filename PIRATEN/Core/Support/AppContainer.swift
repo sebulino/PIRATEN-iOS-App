@@ -429,7 +429,7 @@ final class AppContainer {
             authRepository: authRepository,
             cache: discourseCacheStore
         )
-        self.todosViewModel = TodosViewModel(todoRepository: todoRepository, authStateManager: authStateManager)
+        self.todosViewModel = TodosViewModel(todoRepository: todoRepository)
         self.knowledgeViewModel = KnowledgeViewModel(
             repository: realKnowledgeRepository,
             progressStore: readingProgressStore

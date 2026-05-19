@@ -60,6 +60,12 @@ struct MainTabView: View {
     /// Callback when user taps the logout button
     var onLogout: (() -> Void)?
 
+    /// DEBUG-only callback wired to `AuthStateManager.handleAuthenticationError()`,
+    /// forwarded to `ProfileView` for the "Simulate session expiry" button
+    /// used to verify OPEN-09 without server-side token revocation.
+    /// Stripped from Release builds in the call sites (see `RootView`).
+    var onSimulateSessionExpiry: (() -> Void)?
+
     // MARK: - Toolbar Sheet State
 
     /// Whether the profile sheet is being shown
@@ -354,7 +360,8 @@ struct MainTabView: View {
                     notificationSettings: notificationSettings,
                     adminRequestViewModelFactory: adminRequestViewModelFactory,
                     checkAdminStatus: checkAdminStatus,
-                    onLogout: onLogout
+                    onLogout: onLogout,
+                    onSimulateSessionExpiry: onSimulateSessionExpiry
                 )
             }
         }

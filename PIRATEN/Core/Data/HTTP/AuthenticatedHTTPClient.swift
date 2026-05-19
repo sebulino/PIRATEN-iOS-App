@@ -81,16 +81,20 @@ final class AuthenticatedHTTPClient: HTTPClient, @unchecked Sendable {
             throw error
         }
 
-        // Check for auth errors and notify handler
-        if response.statusCode == 401 || response.statusCode == 403 {
+        // Check for auth errors. Per the meine-piraten.de API contract:
+        //   401 — missing/invalid/expired token → session is gone
+        //   403 — valid token, insufficient permissions → user lacks rights
+        //         for THIS request, but their session is fine
+        //
+        // Only 401 triggers the central session-expiry handler. A 403
+        // throws .forbidden so the caller can surface it as a "you don't
+        // have permission" error without wiping the user's session.
+        if response.statusCode == 401 {
             await onAuthError?()
-
-            // Map to appropriate error
-            if response.statusCode == 401 {
-                throw HTTPError.unauthorized
-            } else {
-                throw HTTPError.forbidden
-            }
+            throw HTTPError.unauthorized
+        }
+        if response.statusCode == 403 {
+            throw HTTPError.forbidden
         }
 
         return response

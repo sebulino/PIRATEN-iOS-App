@@ -72,18 +72,21 @@ final class TodosViewModel: ObservableObject {
     // MARK: - Dependencies
 
     private let todoRepository: TodoRepository
-    private let authStateManager: AuthStateManager?
     private let stalenessGuard = StalenessGuard(minInterval: 300)
 
     // MARK: - Initialization
 
     /// Creates a TodosViewModel with the given repository.
-    /// - Parameters:
-    ///   - todoRepository: The repository to fetch todo data from
-    ///   - authStateManager: Optional auth state manager for handling session expiry
-    init(todoRepository: TodoRepository, authStateManager: AuthStateManager? = nil) {
+    /// - Parameter todoRepository: The repository to fetch todo data from
+    ///
+    /// Auth-error handling for meine-piraten.de 401 responses is centralized
+    /// in `AuthStateManager.handleAuthenticationError()`, invoked from
+    /// `AuthenticatedHTTPClient`. ViewModels do not need to handle the
+    /// `TodoError.unauthorized` case explicitly — the central handler
+    /// transitions to `.sessionExpired` and the UI rerenders to
+    /// `SessionExpiredView`. See OPEN-09 (#72) / ADR-0009.
+    init(todoRepository: TodoRepository) {
         self.todoRepository = todoRepository
-        self.authStateManager = authStateManager
     }
 
     // MARK: - Public Methods
@@ -113,7 +116,11 @@ final class TodosViewModel: ObservableObject {
                 self.updateNewContentFlag()
                 self.stalenessGuard.markFetched()
             } catch let error as TodoError where error == .unauthorized {
-                self.authStateManager?.logout()
+                // Auth error already handled centrally by
+                // AuthStateManager.handleAuthenticationError() via
+                // AuthenticatedHTTPClient → onAuthError. The UI will
+                // rerender to SessionExpiredView shortly. Don't show a
+                // network-error message for what's actually session expiry.
             } catch {
                 if self.todos.isEmpty {
                     self.loadState = .error(message: "Aufgaben konnten nicht geladen werden. Bitte überprüfe deine Verbindung.")
