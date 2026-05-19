@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		0FDDAB2B2F2E0E2200207967 /* AppAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A1B2C3D4E5F60002 /* AppAuth */; };
-		0FE7A8492F641F0400524C3E /* Secrets.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 0FE7A8482F641F0400524C3E /* Secrets.xcconfig */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -201,7 +200,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2620;
-				LastUpgradeCheck = 2630;
+				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					0FE526D02F2BD101002C9449 = {
 						CreatedOnToolsVersion = 26.2;
@@ -245,7 +244,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0FE7A8492F641F0400524C3E /* Secrets.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
