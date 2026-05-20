@@ -631,6 +631,156 @@ Content is sourced from the [PIRATEN-Kanon](https://github.com/sebulino/PIRATEN-
 | FR-KNOW-005 | Should | Categories (Wahlen und Parlamente, Kommunalpolitik, Partei-intern, Organisation und Ämter …) are shown as a grid. |
 | FR-KNOW-006 | Could | Quiz results are optionally reported back to the member's profile ("achievements"). Requires backend support that does not yet exist. |
 
+#### Extended specs — Wissen (knowledge)
+
+##### FR-KNOW-001 — Render Kanon entries
+
+**User goal.** As a member (especially a new one), I want to read
+introductory and reference material about the party in a comfortable,
+phone-friendly format so I can learn while I have a few minutes.
+
+**Acceptance criteria.**
+
+- Each Kanon entry renders as a dedicated screen with title, body,
+  estimated reading time, and level badge ("Einsteiger" /
+  "Fortgeschritten").
+- Body content uses readable typography (line spacing, font sizing
+  appropriate for prose).
+- The reading-time estimate is computed from word count (≈200 wpm).
+- Level badge color is consistent across the section.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                  |
+|----------|-------------|------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `KnowledgeTopicDetailView`, `KnowledgeTopicDetailViewModel`, custom Markdown rendering. |
+| Android  | Not started | Same content shape; Compose Markdown library exists.                  |
+
+---
+
+##### FR-KNOW-002 — Offline cache + SHA-tracked re-download
+
+**User goal.** As a member with spotty mobile signal, I want Kanon
+content available offline — and I want updates to land automatically
+when the maintainers push new content, without me having to think
+about refreshing.
+
+**Acceptance criteria.**
+
+- All Kanon entries are cached to local storage after first fetch.
+- App startup does not block on network — cached content renders
+  immediately.
+- On startup, the app fetches the latest remote commit SHA from the
+  Kanon GitHub repository.
+- If the remote SHA differs from the stored SHA, content is
+  re-downloaded in the background and the cache is replaced
+  atomically (see [ADR-0011](./adr/0011-kanon-sha-tracking.md)).
+- The stored SHA is persisted to UserDefaults for the next launch.
+- Cache failure does not block reading existing content.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                            |
+|----------|-------------|------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `RealKnowledgeRepository` + `KnowledgeCacheManager` + ETag-based fetch via `GitHubAPIClient`. |
+| Android  | Not started | Same GitHub Contents API; Room or DataStore for cache.            |
+
+---
+
+##### FR-KNOW-003 — Per-entry multiple-choice quiz
+
+**User goal.** As a new member working through introductory content,
+I want short quizzes at the end of entries to test whether I've
+actually understood the material.
+
+**Acceptance criteria.**
+
+- Each Kanon entry can define a quiz in its YAML frontmatter (zero
+  or more multiple-choice questions).
+- The quiz renders below the entry body.
+- Each question has one correct answer; the UI marks correct/incorrect
+  after submission.
+- Per-quiz progress is tracked in `ReadingProgressStore` (UserDefaults,
+  device-local).
+- Progress is keyed per PiratenSSO `sub` so multi-user devices don't
+  cross-contaminate.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                |
+|----------|-------------|----------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `QuizCard` view + `ReadingProgressStore` keyed by `sub`.            |
+| Android  | Not started | Same YAML frontmatter; same DataStore-keyed-per-`sub` pattern.       |
+
+---
+
+##### FR-KNOW-004 — Topic search
+
+**User goal.** As a member looking for a specific topic ("Was ist die
+Kreisparteitags-Geschäftsordnung?"), I want to find it in seconds
+rather than browsing the category tree.
+
+**Acceptance criteria.**
+
+- A search bar at the top of the Wissen tab filters by title and
+  tags.
+- Filtering is in-memory against the local cache (no network call
+  per keystroke).
+- Empty search shows the full grid.
+- "Keine Treffer" empty state when filter excludes everything.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                       |
+|----------|-------------|-------------------------------------------------------------|
+| iOS      | Not started | Search bar UI exists in some forms; verify implementation.  |
+| Android  | Not started | Same approach; Compose `OutlinedTextField` + filter logic.  |
+
+---
+
+##### FR-KNOW-005 — Category grid
+
+**User goal.** As a member browsing without a specific search in
+mind, I want to see the available categories at a glance and pick
+something that looks relevant.
+
+**Acceptance criteria.**
+
+- The Wissen tab top-level shows a grid of categories with name +
+  icon.
+- Categories come from `kanon.json` (the index file in the Kanon repo).
+- Tapping a category opens its entry list.
+- Grid layout adapts to phone width (2 columns portrait, 3 landscape).
+
+**Platforms.**
+
+| Platform | Status      | Notes                                       |
+|----------|-------------|---------------------------------------------|
+| iOS      | ✅ Shipped  | `KnowledgeView` `LazyVGrid`.                 |
+| Android  | Not started | Compose `LazyVerticalGrid`.                 |
+
+---
+
+##### FR-KNOW-006 — Quiz achievements (deferred)
+
+**User goal.** As a member who's completed several quizzes, I want
+some kind of recognition or progress display in my profile so I can
+see how much I've learned.
+
+**Acceptance criteria (target post-v1).**
+
+- Quiz completions accumulate as an "achievement" count.
+- Visible from the Profile screen.
+- Requires backend support to persist across devices — currently no
+  such backend exists.
+
+**Platforms.**
+
+| Platform | Status   | Notes                                                                          |
+|----------|----------|--------------------------------------------------------------------------------|
+| iOS      | Deferred | Post-v1. Requires `meine-piraten.de` API extension.                            |
+| Android  | Deferred | Post-v1. Same.                                                                 |
+
 ### 3.5 Termine — events (EVT)
 
 Source: Agitatorrr iCal feed.
