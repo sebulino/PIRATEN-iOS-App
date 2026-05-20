@@ -294,20 +294,46 @@ final class RealDiscourseRepository: DiscourseRepository {
         let cachedWinner = UserDefaults.standard.string(forKey: Self.winningLikeStrategyKey)
         let ordered = orderedStrategies(prioritizing: cachedWinner, in: registry)
 
+        #if DEBUG
+        print("[OPEN-02] runStrategyChain: postId=\(postId)")
+        print("[OPEN-02] Registry: \(registry.map(\.identifier))")
+        print("[OPEN-02] Cached winner: \(cachedWinner ?? "<none>")")
+        print("[OPEN-02] Try order: \(ordered.map(\.identifier))")
+        #endif
+
         for strategy in ordered {
             do {
+                #if DEBUG
+                print("[OPEN-02] → Invoking strategy: \(strategy.identifier)")
+                #endif
                 let confirmed = try await invoke(strategy)
+                #if DEBUG
+                print("[OPEN-02] ← Strategy \(strategy.identifier) confirmed=\(confirmed)")
+                #endif
                 if confirmed {
                     UserDefaults.standard.set(strategy.identifier, forKey: Self.winningLikeStrategyKey)
+                    #if DEBUG
+                    print("[OPEN-02] ✓ Cached winner: \(strategy.identifier)")
+                    #endif
                     return
                 }
                 // Soft failure — try the next one.
             } catch let error as DiscourseError {
+                #if DEBUG
+                print("[OPEN-02] ✗ Strategy \(strategy.identifier) threw DiscourseError: \(error)")
+                #endif
                 throw mapToRepositoryError(error)
             } catch {
+                #if DEBUG
+                print("[OPEN-02] ✗ Strategy \(strategy.identifier) threw: \(error)")
+                #endif
                 throw DiscourseRepositoryError.loadFailed(message: errorMessage)
             }
         }
+
+        #if DEBUG
+        print("[OPEN-02] ✗✗ All strategies returned soft-fail — server accepted but did not persist.")
+        #endif
 
         // Every strategy returned `false` — the server accepted each
         // request but never persisted the action. This is the OPEN-02

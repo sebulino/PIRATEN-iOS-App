@@ -425,6 +425,14 @@ final class DiscourseAPIClient {
         }
 
         let request = HTTPRequest.post(url(for: "/post_actions.json"), body: bodyData, headers: headers)
+
+        #if DEBUG
+        print("[OPEN-02] postActionLike: postId=\(postId) formEncoded=\(formEncoded)")
+        print("[OPEN-02] → URL: \(request.url.absoluteString)")
+        print("[OPEN-02] → Headers: \(headers)")
+        print("[OPEN-02] → Body: \(String(data: bodyData, encoding: .utf8) ?? "<binary>")")
+        #endif
+
         return try await executeAndConfirm(request)
     }
 
@@ -505,12 +513,30 @@ final class DiscourseAPIClient {
         do {
             response = try await httpClient.execute(request)
         } catch let error as HTTPError {
+            #if DEBUG
+            print("[OPEN-02] ← HTTPError: \(error)")
+            #endif
             throw mapHTTPError(error)
         } catch let error as DiscourseAuthError {
+            #if DEBUG
+            print("[OPEN-02] ← DiscourseAuthError: \(error)")
+            #endif
             throw mapDiscourseAuthError(error)
         }
 
+        #if DEBUG
+        print("[OPEN-02] ← Status: \(response.statusCode)")
+        print("[OPEN-02] ← Response headers: \(response.headers)")
+        let bodyForLog = String(data: response.data, encoding: .utf8) ?? "<binary, \(response.data.count) bytes>"
+        // Truncate body in log if very large
+        let truncatedBody = bodyForLog.count > 2000 ? String(bodyForLog.prefix(2000)) + "…[truncated, total \(bodyForLog.count) chars]" : bodyForLog
+        print("[OPEN-02] ← Body: \(truncatedBody)")
+        #endif
+
         guard response.isSuccess else {
+            #if DEBUG
+            print("[OPEN-02] ← Non-2xx — throwing")
+            #endif
             throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
         }
 
@@ -519,9 +545,18 @@ final class DiscourseAPIClient {
         // empty body, or a body lacking this marker, is the silent-failure
         // signature OPEN-02 documents.
         guard let bodyString = String(data: response.data, encoding: .utf8) else {
+            #if DEBUG
+            print("[OPEN-02] ← Body not UTF-8 — treating as soft fail")
+            #endif
             return false
         }
-        return bodyString.contains("actions_summary") || bodyString.contains("\"acted\":true")
+        let hasMarker = bodyString.contains("actions_summary") || bodyString.contains("\"acted\":true")
+        #if DEBUG
+        print("[OPEN-02] ← actions_summary present: \(bodyString.contains("actions_summary"))")
+        print("[OPEN-02] ← acted:true present: \(bodyString.contains("\"acted\":true"))")
+        print("[OPEN-02] ← Confirmed: \(hasMarker)")
+        #endif
+        return hasMarker
     }
 
     /// Posts a reply to a forum topic post.
