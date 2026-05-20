@@ -49,6 +49,18 @@ final class DiscourseHTTPClient: HTTPClient, @unchecked Sendable {
         headers["User-Api-Key"] = credential.apiKey
         headers["User-Api-Client-Id"] = credential.clientId
 
+        #if DEBUG
+        // TEMPORARY for OPEN-02 diagnosis — logs the FULL User-Api-Key so
+        // it can be replayed via curl on macOS to isolate URLSession from
+        // Discourse. Revert this commit before any TestFlight / App Store
+        // build — exposing the API key in logs is a credential leak.
+        if request.url.path.contains("/post_actions") {
+            print("[OPEN-02-AUTH] URL: \(request.url.absoluteString)")
+            print("[OPEN-02-AUTH] User-Api-Key: \(credential.apiKey)")
+            print("[OPEN-02-AUTH] User-Api-Client-Id: \(credential.clientId)")
+        }
+        #endif
+
         // Create authenticated request
         let authenticatedRequest = HTTPRequest(
             url: request.url,
