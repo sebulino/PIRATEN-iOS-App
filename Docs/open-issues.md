@@ -83,20 +83,39 @@ match the like path and the web UI for consistency.
 
 ## OPEN-06 — CI pipeline
 
-**Status:** OPEN — target before v1 ship
+**Status:** RESOLVED 2026-05-20 — initial CI pipeline shipped.
+Phased strictness: lint and format check are warn-only at first; flip
+to blocking after a single bulk cleanup pass.
 
-**Context.** NFR-011 requires a fresh-checkout build. A CI pipeline that
-actually enforces this does not exist yet.
+**Resolution summary.** Three new files at the repo root:
 
-**Scope (Q-050, Q-051):**
+- `.github/workflows/ci.yml` — runs on every PR and push to `main`.
+  Builds the app for a generic iOS Simulator destination, runs unit
+  tests (PIRATENTests only) on an iPhone 16 simulator, and runs
+  SwiftLint + SwiftFormat as separate non-blocking jobs.
+- `.github/workflows/ui-tests.yml` — runs the PIRATENUITests target
+  on a booted simulator. Excluded from the per-PR loop because of
+  flakiness and ~10-15 min runtime. Triggers: manual dispatch +
+  nightly at 03:00 UTC against `main`.
+- `.swiftlint.yml` — minimal opinionated config (a few opt-in rules
+  catching real bugs like `empty_count`, `first_where`,
+  `unused_import`; verbose style rules like `line_length` /
+  `cyclomatic_complexity` deliberately disabled until the bulk
+  cleanup pass).
+- `.swiftformat` — records project style choices (4-space indent,
+  Swift 5.10, soft 140-col line target) without enforcing a one-shot
+  reformat of the existing codebase.
 
-- GitHub Actions workflow running on every pull request and push to `main`.
-- Build (`xcodebuild` for iOS 26.2 simulator).
-- Tests (unit + UI).
-- Lint: SwiftLint.
-- Format check: SwiftFormat.
+**Follow-ups documented for the bulk cleanup pass:**
 
-`.swiftlint.yml` and `.swiftformat` config files need to be added.
+- Reformat the codebase once with `swiftformat .` and review the
+  diff before committing.
+- Drive SwiftLint warning count to zero (one cleanup PR, no behavior
+  changes).
+- Remove `continue-on-error: true` from both the `lint` and `format`
+  jobs in `ci.yml` to make them blocking checks.
+- Consider tightening `.swiftlint.yml` (re-enable `line_length`,
+  `function_body_length`, etc.) after the bulk pass.
 
 ---
 

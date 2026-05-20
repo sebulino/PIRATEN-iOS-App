@@ -1,0 +1,73 @@
+name: UI Tests
+
+# Runs the PIRATENUITests target on a booted simulator.
+#
+# UI tests are excluded from the per-PR CI loop (.github/workflows/ci.yml)
+# because:
+#   - They're slow (~10-15 min total including simulator boot)
+#   - They need a real booted simulator, not just a generic destination
+#   - They're occasionally flaky in ways that block merges for no
+#     real correctness reason
+#
+# Instead, this workflow runs:
+#   - On manual dispatch (workflow_dispatch) — typically before a
+#     TestFlight cut
+#   - Nightly against `main` (catches regressions without delaying PRs)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or commit SHA to test (default = current ref)
+        required: false
+        default: ""
+  schedule:
+    # Nightly at 03:00 UTC — Europe night, North America evening
+    - cron: "0 3 * * *"
+
+jobs:
+  ui-tests:
+    name: UI tests on iPhone 16
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Select Xcode (latest stable available on runner)
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcrun --show-sdk-version --sdk iphonesimulator
+
+      - name: Prepare Config/Secrets.xcconfig
+        run: cp Config/Secrets.sample.xcconfig Config/Secrets.xcconfig
+
+      - name: Resolve Swift Package Manager dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -scheme PIRATEN \
+            -derivedDataPath build
+
+      - name: Boot simulator
+        run: |
+          xcrun simctl boot 'iPhone 16' || true
+          xcrun simctl list devices booted
+
+      - name: Run UI tests (PIRATENUITests only)
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -scheme PIRATEN \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -only-testing:PIRATENUITests \
+            -derivedDataPath build \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO

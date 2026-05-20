@@ -1,0 +1,58 @@
+# SwiftLint configuration for PIRATEN iOS App.
+#
+# Phased strictness — currently warn-only via .github/workflows/ci.yml's
+# `continue-on-error: true`. Plan:
+#   1. CI surfaces violations as warnings, never blocks merge.
+#   2. One bulk auto-fix + manual cleanup pass after v1 ship.
+#   3. Flip CI to blocking by removing `continue-on-error` from the
+#      `lint` job once the warning count is at zero.
+#
+# This file deliberately stays close to SwiftLint's defaults — only
+# adds project-specific exclusions and a few opinionated rules. The
+# goal is "catch real bugs, not nitpick style." Style is what
+# SwiftFormat handles.
+
+# Paths SwiftLint walks. Default is all .swift files under cwd.
+included:
+  - PIRATEN
+  - PIRATENTests
+  - PIRATENUITests
+
+# Paths SwiftLint ignores.
+excluded:
+  - build
+  - .build
+  - DerivedData
+  - .claude
+  - scripts
+  - Pods # not used here today but a common gotcha
+  - "**/Generated" # codegen output if any future tools emit it
+
+# Default rules are enabled; this section adds a few opinionated ones
+# that catch real bugs and shouldn't be controversial.
+opt_in_rules:
+  - empty_count             # prefer isEmpty over count == 0
+  - first_where             # .first(where:) over .filter().first
+  - last_where              # .last(where:) over .filter().last
+  - contains_over_first_not_nil
+  - redundant_nil_coalescing
+  - sorted_first_last       # .min()/.max() over .sorted().first/last
+  - toggle_bool             # x.toggle() over x = !x
+  - unused_import           # remove unused imports
+  - unused_declaration      # warn about unused symbols
+  - closure_spacing
+  - operator_usage_whitespace
+
+# Disable a few defaults that fight too hard with the codebase as-is.
+disabled_rules:
+  - trailing_whitespace     # SwiftFormat handles this; double-reporting noise
+  - line_length             # would flood; revisit during the bulk pass
+  - function_body_length    # ditto
+  - type_body_length        # ditto
+  - file_length             # ditto
+  - cyclomatic_complexity   # ditto
+  - identifier_name         # too aggressive on short var names by default
+
+# Per-rule customization.
+nesting:
+  type_level: 3

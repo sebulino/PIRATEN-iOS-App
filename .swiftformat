@@ -1,0 +1,27 @@
+# SwiftFormat configuration for PIRATEN iOS App.
+#
+# Phased strictness — CI runs `swiftformat --lint .` with
+# `continue-on-error: true` in .github/workflows/ci.yml. The goal of
+# this config is to record the project's existing style choices so
+# future PRs can be measured against a fixed standard, not to force
+# a one-shot reformat of the whole codebase right now.
+#
+# After v1 ship: one bulk `swiftformat .` pass, then flip CI to
+# blocking by removing the continue-on-error.
+
+# Swift language version
+--swiftversion 5.10
+
+# Indent: 4 spaces (matches existing codebase)
+--indent 4
+
+# Soft line-length target. Not enforced as a hard wrap — long lines
+# are allowed where the alternative is unreadable splits.
+--maxwidth 140
+
+# Paths to exclude — build artifacts, vendored code, scripts.
+--exclude build
+--exclude .build
+--exclude DerivedData
+--exclude .claude
+--exclude scripts

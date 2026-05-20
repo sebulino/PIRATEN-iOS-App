@@ -1,0 +1,113 @@
+name: CI
+
+# Runs on every PR and every push to main.
+# Verifies the build compiles, the unit tests pass, and reports lint /
+# format violations as warnings (non-blocking; see OPEN-06 and the
+# phased strictness plan).
+#
+# UI tests run in a separate workflow (.github/workflows/ui-tests.yml)
+# triggered manually before TestFlight cuts — they're slow and need a
+# booted simulator, so keeping them out of the PR loop.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Cancel any in-flight CI run when a new commit lands on the same branch.
+# Avoids burning runner minutes on stale revisions.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build + unit tests
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode (latest stable available on runner)
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcrun --show-sdk-version --sdk iphonesimulator
+          swift --version
+
+      - name: Prepare Config/Secrets.xcconfig
+        # CI doesn't have access to the real secrets — the sample template
+        # contains valid placeholder URLs and IDs that let the build
+        # succeed. The build artifact is never shipped, just compiled.
+        run: cp Config/Secrets.sample.xcconfig Config/Secrets.xcconfig
+
+      - name: Resolve Swift Package Manager dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -scheme PIRATEN \
+            -derivedDataPath build
+
+      - name: Build (debug, generic iOS Simulator destination)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -scheme PIRATEN \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Run unit tests (PIRATENTests only — UI tests live in ui-tests.yml)
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -scheme PIRATEN \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -only-testing:PIRATENTests \
+            -derivedDataPath build \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+  lint:
+    name: SwiftLint (warn-only)
+    runs-on: macos-15
+    timeout-minutes: 10
+    # Don't block the build pipeline on lint findings. Phased strictness:
+    # surface violations now, flip to a blocking check after a one-time
+    # cleanup pass.
+    continue-on-error: true
+    needs: []
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: Run SwiftLint
+        run: swiftlint --reporter github-actions-logging
+
+  format:
+    name: SwiftFormat (warn-only)
+    runs-on: macos-15
+    timeout-minutes: 10
+    continue-on-error: true
+    needs: []
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install SwiftFormat
+        run: brew install swiftformat
+
+      - name: Check formatting
+        run: swiftformat --lint .
