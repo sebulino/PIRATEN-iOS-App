@@ -35,14 +35,28 @@ struct NewsDetailView: View {
                     .padding(.horizontal, 16)
 
                 // Full text body — uses displayText to skip the leading
-                // `<username> [datetime]` prefix the meine-piraten.de news
-                // API embeds (the datetime is shown separately via
-                // `postedAt`, and the username is intentionally hidden per
-                // FR-NEWS / GitHub issue #67).
-                Text(item.displayText)
-                    .font(.piratenBodyDefault)
-                    .lineSpacing(4)
-                    .padding(16)
+                // `<sender>` marker the meine-piraten.de news API embeds
+                // (the sender is intentionally hidden in the user-facing
+                // copy per FR-NEWS / GitHub issue #67).
+                //
+                // SelectableTextView wraps UITextView so the body supports
+                // range selection (long-press, tap to select word, drag
+                // handles) and copy-to-clipboard — NFR-013. Plain
+                // SwiftUI `Text` only supports full-block selection via
+                // `.textSelection(.enabled)`, which is too coarse for
+                // longer news bodies where users typically want to copy
+                // a specific phrase or URL.
+                //
+                // UITextView's `dataDetectorTypes = [.link]` (set in
+                // SelectableTextView) makes URLs inline-tappable too;
+                // the dedicated "Links" section below remains as a
+                // visible-from-the-top index for long bodies.
+                SelectableTextView(
+                    attributedString: nil,
+                    plainText: item.displayText
+                )
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(16)
 
                 // Links section
                 let urls = Self.detectURLs(in: item.displayText)
