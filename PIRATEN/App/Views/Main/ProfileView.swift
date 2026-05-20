@@ -269,10 +269,17 @@ struct ProfileView: View {
             }
         }
         .refreshable {
-            viewModel.refresh()
-            if let check = checkAdminStatus {
-                adminStatus = await check()
+            // The spinner accurately tracks the profile fetch. The admin
+            // check (which hits meine-piraten.de/admin_requests/status.json
+            // and can be slow or hang) runs in parallel and never blocks
+            // the spinner — its result lands whenever it lands.
+            async let profileDone: () = viewModel.refresh()
+            Task {
+                if let check = checkAdminStatus {
+                    adminStatus = await check()
+                }
             }
+            await profileDone
         }
         .sheet(isPresented: $showAdminRequest) {
             if let factory = adminRequestViewModelFactory {
