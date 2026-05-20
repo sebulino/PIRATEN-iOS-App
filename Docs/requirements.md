@@ -1111,6 +1111,146 @@ Messages are **Discourse PMs**, not a separate system.
 | FR-MSG-005 | Should | Reading a thread marks it as read on Discourse (symmetrical to forum read state). |
 | FR-MSG-006 | Should | On tab-switch, only the inbox is fetched. Sent messages are fetched on explicit pull-to-refresh (optimisation; sent messages change rarely). |
 
+#### Extended specs — Nachrichten (private messages)
+
+##### FR-MSG-001 — List message threads
+
+**User goal.** As a member, I want to see my private messages at a
+glance with enough context (who, what about, when) to decide which
+to open without tapping into each one.
+
+**Acceptance criteria.**
+
+- The Messages sheet lists threads sorted by last-activity descending.
+- Each row shows participant avatar(s), thread title, preview of
+  last message body, and an unread indicator.
+- Inbox + sent threads are merged and deduplicated by ID.
+- Initial render shows cached threads; fresh data loads in the
+  background.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                            |
+|----------|-------------|------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `MessagesViewModel` + `MessagesView`; cache via `DiscourseCacheStore`. |
+| Android  | Not started | Same Discourse private-messages API.                              |
+
+---
+
+##### FR-MSG-002 — Open a thread
+
+**User goal.** As a member, I want to tap a message thread and read
+the conversation chronologically, like a chat.
+
+**Acceptance criteria.**
+
+- Tapping a thread opens a detail view.
+- Messages render as chat bubbles (the user's own messages
+  right-aligned, others left-aligned) per [D-035](./decisions-log.md).
+- All messages in the thread load in `post_number` ascending order.
+- Body content supports markdown.
+- Scrolls to the most recent message on open.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                          |
+|----------|-------------|--------------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `MessageThreadDetailViewModel` + `MessageThreadDetailView`; uses chat-bubble layout. |
+| Android  | Not started | Same Discourse `/t/{id}.json` API.                                              |
+
+---
+
+##### FR-MSG-003 — Reply to a thread
+
+**User goal.** As a member in a conversation, I want to reply
+without leaving the thread view.
+
+**Acceptance criteria.**
+
+- A compose field is anchored to the bottom of the detail view.
+- Submit sends `POST /posts.json` with `topic_id` set to the thread.
+- On success, the new message appears in the thread.
+- On failure, the compose state is preserved.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                |
+|----------|-------------|----------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | Inline composer in `MessageThreadDetailView`.                       |
+| Android  | Not started | Same API.                                                            |
+
+---
+
+##### FR-MSG-004 — Start a new thread
+
+**User goal.** As a member, I want to reach out to a specific other
+member directly without finding them in a public forum thread first.
+
+**Acceptance criteria.**
+
+- A "Neue Nachricht" action is available from the Messages list.
+- The compose flow has three steps: recipient picker (user search),
+  subject, body.
+- User search hits `GET /u/search/users.json?term=...` with a
+  minimum 2-character query, debounced.
+- Multiple recipients are supported.
+- Submit sends `POST /posts.json` with `archetype=private_message`.
+- On success, navigates to the new thread.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                                  |
+|----------|-------------|----------------------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `RecipientPickerViewModel` + `ComposeMessageViewModel`; auto-saved draft via `MessageDraftStore`. |
+| Android  | Not started | Same Discourse API; user-search debouncing pattern same.                              |
+
+---
+
+##### FR-MSG-005 — Mark thread as read
+
+**User goal.** As a member who reads a message on this device, I
+want the "read" state to be visible on the Discourse web UI too, so
+I don't have to mentally track what I've already read.
+
+**Acceptance criteria.**
+
+- After scrolling to the last message of a thread (or closing the
+  detail view), the app sends `POST /topics/timings`.
+- Server-side read state is updated.
+- The inbox row's unread indicator clears on next refresh.
+- Failure to mark-as-read does not block the user — retries on next
+  thread visit.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                              |
+|----------|-------------|--------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `RealDiscourseRepository.markTopicAsRead` on detail-view `onDisappear`. |
+| Android  | Not started | Same Discourse `/topics/timings` API.                              |
+
+---
+
+##### FR-MSG-006 — Tab-switch fetches inbox only
+
+**User goal.** As a member who often quickly checks Messages and
+moves on, I want the tab to load fast — not block on fetching a
+sent-messages list I rarely look at.
+
+**Acceptance criteria.**
+
+- Tab-switch triggers `fetchMessageThreads(for: user, includeSent: false)`.
+- Pull-to-refresh on the inbox triggers
+  `fetchMessageThreads(for: user, includeSent: true)`.
+- Sent threads, once fetched, are merged into the cache and remain
+  visible across tab switches until invalidated.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                                |
+|----------|-------------|--------------------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `MessagesViewModel.loadMessages(includeSent: false)` on tab-switch; `true` on refresh. |
+| Android  | Not started | Same two-tier fetch pattern.                                                          |
+
 ### 3.8 News (NEWS)
 
 Source: `https://meine-piraten.de/api/news.json` (public endpoint).
