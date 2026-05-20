@@ -424,7 +424,13 @@ final class DiscourseAPIClient {
             }
         }
 
-        let request = HTTPRequest.post(url(for: "/post_actions.json"), body: bodyData, headers: headers)
+        // Path is bare `/post_actions` (no .json suffix) to match what the
+        // Discourse web UI sends. Hitting `/post_actions.json` activates
+        // Rails' wrap_parameters for JSON-format requests, which moves the
+        // form-encoded id and post_action_type_id under a :post_action
+        // wrapper key where the controller doesn't look for them, yielding
+        // a 400. See ADR-0014 for the empirical narrowing.
+        let request = HTTPRequest.post(url(for: "/post_actions"), body: bodyData, headers: headers)
 
         #if DEBUG
         print("[OPEN-02] postActionLike: postId=\(postId) formEncoded=\(formEncoded)")
