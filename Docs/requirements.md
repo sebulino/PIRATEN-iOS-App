@@ -271,6 +271,129 @@ The *Kajüte* is the landing screen after login.
 | FR-HOME-004 | Should | Show a "Weiterlesen" module with the last 3–5 Kanon entries the user has read, sorted by last-read date descending. Populated from `ReadingProgressStore`. |
 | FR-HOME-005 | Should | Show "Übernommene Aufgaben" — the ToDos the user has personally taken on. |
 
+#### Extended specs — Kajüte (home)
+
+##### FR-HOME-001 — Greeting + unread-DM indicator
+
+**User goal.** As a member opening the app, I want a quick, personal
+acknowledgment ("Ahoi Sebastian!") and an at-a-glance view of whether
+anyone is trying to reach me, so the app feels welcoming and I can
+triage in 5 seconds.
+
+**Acceptance criteria.**
+
+- The greeting uses the user's first name from PiratenSSO claims.
+- If first name is unavailable, falls back to handle.
+- An unread-DM count is shown if greater than zero (small badge or
+  inline text); zero is silent.
+- The unread count is read from the same source the Messages tab
+  badge uses, so the two are always consistent.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                          |
+|----------|-------------|------------------------------------------------|
+| iOS      | ✅ Shipped  | `HomeView` greeting + `MessagesViewModel.hasNewContent`. |
+| Android  | Not started | Same data sources; Compose `Text` for greeting. |
+
+---
+
+##### FR-HOME-002 — "Letzte Kontakte" derived from message cache
+
+**User goal.** As a member, when I'm looking to reach a specific
+person I've messaged recently I want to find them at the top of the
+home screen without scrolling through every thread.
+
+**Acceptance criteria.**
+
+- A "Letzte Kontakte" row shows the last 5–10 distinct conversation
+  partners.
+- The list is derived purely from the cached Discourse message
+  threads — there is **no separate** `RecentRecipientsStore` write
+  path for this (FR-HOME-002 was specifically scoped to avoid that
+  duplication).
+- Each contact is tappable to open the corresponding message thread.
+- Contacts are deduplicated (one row per person regardless of how
+  many threads).
+
+**Platforms.**
+
+| Platform | Status                  | Notes                                                                |
+|----------|-------------------------|----------------------------------------------------------------------|
+| iOS      | In progress             | `RecentRecipientsStore` exists but should be deleted per this spec; the home-row should derive from `MessagesViewModel`'s cached threads instead. Tracked in the post-v1 cleanup pass. |
+| Android  | Not started             | Derive same way from the Messages cache.                              |
+
+---
+
+##### FR-HOME-003 — "Deine Meinung, egal wozu" feedback widget
+
+**User goal.** As a member who's noticed something nice or annoying
+in the app, I want a one-tap way to let the maintainer know without
+filing a GitHub issue or sending a Discourse DM manually.
+
+**Acceptance criteria.**
+
+- A small module shows a prompt ("Deine Meinung, egal wozu") with
+  thumbs-up / thumbs-down + optional comment field.
+- Submitting sends a Discourse private message to the maintainer
+  (@sebulino) with the comment text and a sentiment tag.
+- Submission shows a brief confirmation.
+- The user can dismiss the module without sending.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                  |
+|----------|-------------|--------------------------------------------------------|
+| iOS      | ✅ Shipped  | `FeedbackViewModel` + `FeedbackComposeView`.          |
+| Android  | Not started | Same Discourse PM API.                                |
+
+---
+
+##### FR-HOME-004 — "Weiterlesen" Kanon resume
+
+**User goal.** As a member who started reading a Kanon entry but
+didn't finish, I want a "continue reading" shortcut so I can pick up
+where I left off without hunting through the knowledge browser.
+
+**Acceptance criteria.**
+
+- A module shows the 3–5 most recently opened Kanon entries.
+- Sorted by last-read timestamp descending.
+- Each row shows the entry title and a "last read X ago" timestamp.
+- Tapping a row opens the entry at the location the user left off.
+- Hidden when the user has no read history.
+
+**Platforms.**
+
+| Platform | Status                  | Notes                                                                                          |
+|----------|-------------------------|------------------------------------------------------------------------------------------------|
+| iOS      | Partial                 | `ReadingProgressStore` tracks per-topic read state but the home-screen "Weiterlesen" surface needs verification — module rendering exists in `HomeView` but resume-position fidelity is untested. |
+| Android  | Not started             | Same `ReadingProgress` shape; DataStore-backed.                                                |
+
+---
+
+##### FR-HOME-005 — "Übernommene Aufgaben"
+
+**User goal.** As a member who has claimed volunteer tasks, I want
+a reminder on the home screen of what I've signed up for so I don't
+forget — and a one-tap path to mark them done.
+
+**Acceptance criteria.**
+
+- A module lists the user's currently-claimed ToDos.
+- Each row shows the task title and any deadline.
+- Tapping a row opens the task detail.
+- The list updates when the user claims, completes, or releases a
+  task elsewhere in the app.
+- Hidden when the user has no claimed tasks.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                  |
+|----------|-------------|------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `HomeViewModel` fetches via `TodoRepository`, filters by `currentUser`. |
+| Android  | Not started | Same Todo data, same filter.                                          |
+
 ### 3.3 Forum (FORUM)
 
 The Forum section is the largest user-facing surface in the app and the
