@@ -1262,6 +1262,101 @@ Source: `https://meine-piraten.de/api/news.json` (public endpoint).
 | FR-NEWS-003 | Should | News items are de-duplicated by URL across refreshes. |
 | FR-NEWS-004 | Could | Mark-as-read: v1 uses a "last seen" model (the most recent item the user viewed mutes the tab badge), not per-item read state. |
 
+#### Extended specs — News
+
+##### FR-NEWS-001 — Fetch and render news cards
+
+**User goal.** As a member, I want a single place where I can see
+news from across the party's channels in a skimmable card format.
+
+**Acceptance criteria.**
+
+- News items are fetched from `meine-piraten.de/api/news`.
+- Each item renders as a card with title, source URL, and a snippet
+  of body text.
+- The leading `<username> [datetime]` prefix line that the news API
+  embeds in body text is stripped from display (#67 fix; see
+  `NewsItem.displayText`).
+- Cards are sorted by `posted_at` descending.
+- The card list refreshes on pull-to-refresh.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                            |
+|----------|-------------|------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `NewsViewModel` + `NewsCardView` + `NewsItem.displayText`.       |
+| Android  | Not started | Same API; Compose card UI.                                       |
+
+---
+
+##### FR-NEWS-002 — Tap a card → SFSafariViewController
+
+**User goal.** As a member reading a news snippet who wants the full
+story, I want to open the source URL in an in-app browser that still
+feels native (back button, share sheet) — not as a clunky embedded
+web view.
+
+**Acceptance criteria.**
+
+- Tapping a news card opens its source URL.
+- The browser presentation is `SFSafariViewController` (not
+  `WKWebView`).
+- The user can return to the app with a single tap.
+- No URL is opened in the external Safari app (would lose context).
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                          |
+|----------|-------------|--------------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `SFSafariViewController` integration from news card tap.                       |
+| Android  | Not started | Equivalent: Chrome Custom Tabs (`androidx.browser.customtabs`).               |
+
+---
+
+##### FR-NEWS-003 — De-duplicate by URL
+
+**User goal.** As a member who refreshes the news feed periodically,
+I don't want to see the same news item repeated as the underlying
+endpoint may return overlapping windows.
+
+**Acceptance criteria.**
+
+- News items with the same `messageId` are de-duplicated client-side.
+- The most recent occurrence is kept; older duplicates are dropped.
+- De-duplication is applied at the cache merge step, not at fetch
+  time (so a fresh fetch can correct stale records).
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                            |
+|----------|-------------|------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `NewsCacheStore.merge` deduplicates by `messageId`.              |
+| Android  | Not started | Same dedup pattern at the cache layer.                          |
+
+---
+
+##### FR-NEWS-004 — "Last seen" mute model
+
+**User goal.** As a member, when I open the News tab I want the
+"there's something new" indicator to clear — but I don't need
+per-item read state tracking; I just want to know if anything new
+has arrived since I last looked.
+
+**Acceptance criteria.**
+
+- The News tab tracks the highest `messageId` the user has seen.
+- When the user opens the tab, the highest seen ID is updated.
+- The tab badge is hidden when all current items have `messageId
+  <= lastSeenMessageId`.
+- The badge reappears when fresh content arrives with higher IDs.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                            |
+|----------|-------------|------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `NewsViewModel.lastSeenMessageId` in UserDefaults.               |
+| Android  | Not started | Same single-value DataStore entry.                                |
+
 ### 3.9 Profile (PROF)
 
 | ID | MoSCoW | Requirement |
