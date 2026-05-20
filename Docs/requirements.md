@@ -930,6 +930,174 @@ Tasks follow a status state machine: `open → claimed → completed → done`.
 | FR-TODO-006 | Must | ToDos are polled in the background every 30 minutes via BGAppRefreshTask, plus refreshed when the user opens the tab. New or updated tasks update the tab badge. |
 | FR-TODO-007 | Should | Users can comment on tasks. |
 
+#### Extended specs — ToDos (volunteer tasks)
+
+##### FR-TODO-001 — List open tasks
+
+**User goal.** As a member who wants to help out, I want to see what
+the party needs done — by category and region — so I can pick
+something that fits my skills, time, and location.
+
+**Acceptance criteria.**
+
+- The Aufgaben tab lists open ToDos (status `open`, not yet claimed).
+- Each row shows title, category badge ("Veranstaltungsorga",
+  "Wahlkampf", etc.), region (entity), estimated duration, and
+  deadline.
+- Tasks are fetched from `meine-piraten.de/tasks.json`.
+- Sorted by urgency / deadline ascending.
+- Pull-to-refresh fetches fresh data.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                          |
+|----------|-------------|--------------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `TodosViewModel` + `TodosView`; data via `RealTodoRepository`.                |
+| Android  | Not started | Same `meine-piraten.de/tasks.json` API.                                       |
+
+---
+
+##### FR-TODO-002 — Claim a task
+
+**User goal.** As a member who's decided to take on a specific task,
+I want to claim it so other members see it's covered and don't
+duplicate the work.
+
+**Acceptance criteria.**
+
+- A "Übernehmen" button on each open task.
+- Tapping transitions the task `open → claimed` server-side via
+  `PATCH /tasks/:id.json` with `state=claimed`.
+- The task moves out of the open list and appears under
+  "Übernommene Aufgaben" on the Kajüte (FR-HOME-005).
+- The Aufgaben tab updates its badge to reflect the change.
+- Failure (network, conflict if someone else claimed first) shows a
+  clear message.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                            |
+|----------|-------------|------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `TodoDetailViewModel.claim` + `RealTodoRepository.claimTodo`.   |
+| Android  | Not started | Same API endpoint.                                                |
+
+---
+
+##### FR-TODO-003 — Mark as completed
+
+**User goal.** As a member who's finished a claimed task, I want to
+mark it done so the coordinators know it's no longer in flight.
+
+**Acceptance criteria.**
+
+- A "Erledigt" button on claimed tasks.
+- Transitions `claimed → completed` server-side.
+- The task disappears from "Übernommene Aufgaben" on Kajüte.
+- Optional confirmation dialog ("Wirklich als erledigt markieren?").
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                          |
+|----------|-------------|----------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `TodoDetailViewModel.complete`.                                |
+| Android  | Not started | Same API endpoint.                                              |
+
+---
+
+##### FR-TODO-004 — Filter by region and category
+
+**User goal.** As a member with a specific area of interest or
+geographic focus, I want to filter the task list to only show
+relevant items.
+
+**Acceptance criteria.**
+
+- Filter chips at the top of the Aufgaben tab for region (entity)
+  and category.
+- Multiple chips can be active simultaneously (intersection).
+- "Alle" / "Reset" option to clear filters.
+- Filter state is session-scoped (resets on app restart) — not
+  persisted, by design.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                            |
+|----------|-------------|--------------------------------------------------|
+| iOS      | Partial     | Filter UI exists; verify region+category combo.  |
+| Android  | Not started | Same approach.                                   |
+
+---
+
+##### FR-TODO-005 — Release a claimed task
+
+**User goal.** As a member who claimed a task but can no longer do
+it (priority changed, ran out of time), I want to release it back to
+the pool so someone else can pick it up — without having to
+abandon it silently.
+
+**Acceptance criteria.**
+
+- A "Freigeben" button on claimed tasks.
+- Transitions `claimed → open` server-side.
+- The task disappears from "Übernommene Aufgaben" and reappears in
+  the open-task list.
+- Failure shows a clear message.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                          |
+|----------|-------------|----------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `RealTodoRepository.unclaimTodo`.                              |
+| Android  | Not started | Same API.                                                      |
+
+---
+
+##### FR-TODO-006 — Background polling + badge
+
+**User goal.** As a member who's already claimed tasks, I want the
+app to keep me aware of new tasks in my region without me having to
+remember to check the tab.
+
+**Acceptance criteria.**
+
+- ToDos are polled every ~30 min as part of the
+  `BGAppRefreshTask` cycle (FR-NOTIF-003).
+- New tasks since the last seen one update the Aufgaben tab badge.
+- Foreground refresh on tab visit also runs (subject to
+  `StalenessGuard` — see ADR-0010 for the cache+guard pattern).
+- If the user has enabled the Aufgaben notification toggle
+  (FR-PROF-002), a local notification fires for new tasks
+  (FR-NOTIF-004).
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                |
+|----------|-------------|----------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `BackgroundRefreshCoordinator` includes ToDos as one of six sources. |
+| Android  | Not started | `WorkManager`-based equivalent.                                       |
+
+---
+
+##### FR-TODO-007 — Comments on tasks
+
+**User goal.** As a member coordinating with others on a task, I
+want to leave or read notes about the task (logistics, questions,
+status updates) without spinning up a separate Discourse thread.
+
+**Acceptance criteria.**
+
+- Task detail shows a comments section.
+- The user can read existing comments (with author + timestamp).
+- The user can post a new comment.
+- Comments are sourced from `meine-piraten.de/tasks/:id/comments.json`.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                      |
+|----------|-------------|----------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `TodoComment` model + comments section in `TodoDetailView`.               |
+| Android  | Not started | Same comment API.                                                          |
+
 ### 3.7 Nachrichten — private messages (MSG)
 
 Messages are **Discourse PMs**, not a separate system.
