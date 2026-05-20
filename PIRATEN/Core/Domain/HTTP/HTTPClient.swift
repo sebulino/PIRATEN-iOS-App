@@ -40,10 +40,23 @@ struct HTTPRequest {
         HTTPRequest(url: url, method: .get, headers: headers)
     }
 
-    /// Creates a POST request with JSON body
+    /// Creates a POST request. Defaults Content-Type to application/json
+    /// IF the caller has not already set one in `headers`. A caller wanting
+    /// form-encoded (or any other body shape) just needs to set
+    /// `headers["Content-Type"]` before calling this — their value is
+    /// preserved.
+    ///
+    /// Historical bug (OPEN-02): this factory previously OVERRODE
+    /// Content-Type unconditionally, so `postActionLike` — which builds a
+    /// form-encoded body — silently shipped with `Content-Type:
+    /// application/json` on the wire. Rails then tried to JSON-parse the
+    /// form-encoded body, failed, and returned 400 with an empty body.
+    /// See ADR-0014 for the full debugging story.
     static func post(_ url: URL, body: Data, headers: [String: String] = [:]) -> HTTPRequest {
         var allHeaders = headers
-        allHeaders["Content-Type"] = "application/json"
+        if allHeaders["Content-Type"] == nil {
+            allHeaders["Content-Type"] = "application/json"
+        }
         return HTTPRequest(url: url, method: .post, headers: allHeaders, body: body)
     }
 }
