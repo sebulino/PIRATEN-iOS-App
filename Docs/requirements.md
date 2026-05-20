@@ -1521,7 +1521,122 @@ See [ADR-0006](./adr/0006-notifications-v1-polling.md).
 | FR-NOTIF-001 | Must | In the foreground, a polling worker fetches notification data on a sensible interval (default 60 s, backoff on error) and updates in-app badges. |
 | FR-NOTIF-002 | Must | The Kajüte, Forum, Nachrichten and ToDos tabs reflect unread counts as returned by Discourse / meine-piraten. |
 | FR-NOTIF-003 | Must | A BGAppRefreshTask (requested cadence 30 min) polls all six volatile sources (Forum, Messages, News, ToDos, Knowledge, Events). Each source is polled independently so a failure in one does not block the others. |
-| FR-NOTIF-004 | Must | When the background task finds new activity in a category for which the user has enabled notifications (see FR-PROF-002), a local iOS notification (banner + sound) is dispatched. See [OPEN-12](./open-issues.md) — the current code does not dispatch local notifications from the background task; this must be fixed before v1 ship. |
+| FR-NOTIF-004 | Must | When the background task finds new activity in a category for which the user has enabled notifications (see FR-PROF-002), a local iOS notification (banner + sound) is dispatched. |
+
+#### Extended specs — Notifications
+
+##### FR-NOTIF-001 — Foreground polling
+
+**User goal.** As a member with the app open, I want tab badges to
+reflect new content within a reasonable time (a minute or so) without
+me having to refresh manually.
+
+**Acceptance criteria.**
+
+- While the app is foregrounded, a polling worker runs on a 60 s
+  interval (default).
+- On polling failure (network, server error), interval backs off
+  exponentially (60s → 120s → 240s, capped at 5 min).
+- Badge updates reflect the latest poll's counts.
+- Polling pauses when the app enters background (`scenePhase ==
+  .background`).
+- Polling resumes immediately when the app returns to foreground.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                  |
+|----------|-------------|------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | Foreground `Timer` in `MainTabView` invoking `DiscourseNotificationPoller`. |
+| Android  | Not started | Equivalent: `LifecycleScope` coroutine loop, paused on `ON_STOP`.        |
+
+---
+
+##### FR-NOTIF-002 — Tab badges reflect unread counts
+
+**User goal.** As a member glancing at the tab bar, I want each tab's
+badge to accurately reflect what's new there, so I can prioritize.
+
+**Acceptance criteria.**
+
+- Kajüte tab badge: 1 if any other section has new content, 0
+  otherwise (functions as a "you have something new" indicator).
+- Forum tab badge: 1 if there are new topics since the user's last
+  seen `topic.id`, 0 otherwise.
+- Nachrichten badge: count of unread message threads.
+- ToDos badge: 1 if there are new tasks since the user's last seen
+  `todo.id`, 0 otherwise.
+- Each badge updates within 60 s of the underlying state changing
+  (subject to the poll cycle).
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                                          |
+|----------|-------------|------------------------------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | Each `ViewModel` exposes `hasNewContent: Bool`; `MainTabView` binds `.badge()` modifier.       |
+| Android  | Not started | Same per-VM "hasNewContent" pattern; Material 3 `NavigationBar` badge.                          |
+
+---
+
+##### FR-NOTIF-003 — Background polling, six sources, independent
+
+**User goal.** As a member with the app closed or backgrounded, I
+want the app to still find out about new content from every source
+that matters — forum posts, DMs, news, tasks, knowledge updates,
+events — without one source's failure preventing the others from
+being checked.
+
+**Acceptance criteria.**
+
+- A `BGAppRefreshTask` is requested with `earliestBeginDate = now +
+  30 min`. iOS controls actual cadence; the app does not retry on
+  its own when iOS withholds wakes.
+- On each wake-up, the app polls six sources in parallel via a
+  `TaskGroup`: Forum, Messages, ToDos, News, Knowledge, Events.
+- Each source's poll has its own `do/catch`; one source's failure
+  does NOT abort the siblings.
+- Each source has an independent "last seen" marker in UserDefaults
+  (prefixed `bg_*_last_seen_*`) so detection state survives app
+  restarts.
+- Polling happens regardless of which notification toggles are on
+  (FR-PROF-002 only gates display).
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                          |
+|----------|-------------|--------------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `BackgroundRefreshCoordinator` (see [ADR-0015](./adr/0015-background-notification-coordinator.md)). |
+| Android  | Not started | `WorkManager` `PeriodicWorkRequest` with `setRequiredNetworkType(CONNECTED)`. Same six-source coroutine fan-out via `coroutineScope { ... }`. |
+
+---
+
+##### FR-NOTIF-004 — Local notification dispatch from background
+
+**User goal.** As a member who's opted into notifications for a
+category, I want my phone to actually buzz / show a banner when
+something new arrives in that category — even when the app isn't
+foregrounded.
+
+**Acceptance criteria.**
+
+- For each source with new activity since the last background wake,
+  the coordinator checks
+  `NotificationSettingsManager.<category>Enabled`.
+- If enabled, a `UNMutableNotificationContent` is scheduled with a
+  fixed German title/body per category (see
+  `NotificationCategory` enum).
+- Notification bodies are generic — they never contain message
+  contents, topic titles, or other PII (see threat model T-007).
+- Tapping a notification opens the corresponding tab.
+- The Discourse-aggregate badge (home-screen unread count) is
+  updated by `DiscourseNotificationPoller` separately, with its own
+  persisted `lastKnownTotal`.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                                                              |
+|----------|-------------|--------------------------------------------------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `BackgroundRefreshCoordinator` + `LocalNotificationScheduler` (fix for OPEN-12 / #75). Real-device BG test pending organic `BGAppRefreshTask` fire. |
+| Android  | Not started | `NotificationManagerCompat.notify()` from inside the `WorkManager` worker. Same per-category gating, same generic-body privacy rule. |
 
 ---
 
