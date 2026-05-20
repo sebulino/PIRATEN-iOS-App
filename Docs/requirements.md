@@ -793,6 +793,128 @@ Source: Agitatorrr iCal feed.
 | FR-EVT-004 | Could | Filter by Landesverband / region. (Deferred to post-v1.) |
 | FR-EVT-005 | Could | Pull-to-refresh and automatic background refresh with sensible TTL. |
 
+#### Extended specs — Termine (events)
+
+##### FR-EVT-001 — List upcoming events chronologically
+
+**User goal.** As a member, I want to see what's happening in the
+party — meetings, actions, gatherings — in a single chronological
+feed without scrolling through Discourse threads or external
+calendar apps.
+
+**Acceptance criteria.**
+
+- The Termine tab lists events sorted by start date ascending.
+- Each row shows: date + time, title, location or URL preview, and a
+  type badge (Treffen, Aktion, …).
+- Past events are hidden by default.
+- Events come from the Agitatorrr iCal feed.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                                       |
+|----------|-------------|---------------------------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `CalendarViewModel` + `CalendarView`; custom `ICalParser` (no third-party library, per ADR-0013). |
+| Android  | Not started | Same iCal feed; ical4j or hand-rolled parser.                                                |
+
+---
+
+##### FR-EVT-002 — Event detail view
+
+**User goal.** As a member who's interested in an event, I want to
+see its full description and tap directly into the Jitsi / Mumble
+link without copy-pasting.
+
+**Acceptance criteria.**
+
+- Tapping an event opens a detail view.
+- Detail shows full description, start/end times, location.
+- Any URL in the description (Jitsi room, Mumble server, web link,
+  address) is rendered as a tappable action.
+- Tapping a video-conference URL opens the corresponding app if
+  installed (Jitsi Meet, Mumble) or falls back to Safari.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                               |
+|----------|-------------|-------------------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `CalendarEvent` detail rendering. URL detection via `NSDataDetector`.              |
+| Android  | Not started | Same data shape; Android Intent system for app handoff.                            |
+
+---
+
+##### FR-EVT-003 — Add to iOS Calendar
+
+**User goal.** As a member who wants to attend an event, I want
+one-tap "add to my calendar" so the event shows up alongside my
+other commitments without me re-entering it.
+
+**Acceptance criteria.**
+
+- Detail view has an "Add to Calendar" action.
+- Tapping triggers the EventKit permission prompt if not granted.
+- On grant, a new `EKEvent` is created in the user's default calendar
+  with title, start/end, location, and description.
+- Confirmation: "Termin wurde dem Kalender hinzugefügt."
+- Re-adding the same event creates a duplicate (no de-duplication —
+  iOS calendar surface decides).
+- Adding without permission shows an actionable "open Settings"
+  prompt.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                |
+|----------|-------------|----------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | EventKit integration via `CalendarExporter`. `NSCalendarsUsageDescription` in Info.plist. |
+| Android  | Not started | `Intent(ACTION_INSERT)` with `CalendarContract.Events` extras.        |
+
+---
+
+##### FR-EVT-004 — Region filter (deferred)
+
+**User goal.** As a member of a specific Landesverband, I want to
+see only events relevant to my region rather than the national feed.
+
+**Acceptance criteria (target post-v1).**
+
+- A filter chip set at the top of the Termine tab lists available
+  regions.
+- Selecting a region filters events whose location or tags match.
+- "Alle" option shows all events.
+- Filter selection persists across sessions.
+
+**Platforms.**
+
+| Platform | Status   | Notes                                                       |
+|----------|----------|-------------------------------------------------------------|
+| iOS      | Deferred | Post-v1. Depends on Agitatorrr feed surfacing region tags. |
+| Android  | Deferred | Post-v1. Same.                                              |
+
+---
+
+##### FR-EVT-005 — Pull-to-refresh + background TTL
+
+**User goal.** As a member who checks events regularly, I want the
+list to stay reasonably fresh without me having to manually refresh,
+but I also want a way to force-refresh when I know something just
+changed.
+
+**Acceptance criteria.**
+
+- Pull-to-refresh on the Termine tab triggers an immediate iCal
+  fetch.
+- Background refresh runs as part of the `BGAppRefreshTask` polling
+  cycle (FR-NOTIF-003 covers the cadence).
+- Stale-list TTL is documented and consistent with other content
+  surfaces (e.g., 5 min foreground, 30 min background).
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                          |
+|----------|-------------|----------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `BackgroundRefreshCoordinator` includes Events as one of six sources. |
+| Android  | Not started | `WorkManager`-based equivalent.                                  |
+
 ### 3.6 ToDos — volunteer tasks (TODO)
 
 Source: `meine-piraten.de` (see [API documentation](https://meine-piraten.de/api)).
