@@ -34,14 +34,18 @@ struct NewsDetailView: View {
                 Divider()
                     .padding(.horizontal, 16)
 
-                // Full text body
-                Text(item.text)
+                // Full text body — uses displayText to skip the leading
+                // `<username> [datetime]` prefix the meine-piraten.de news
+                // API embeds (the datetime is shown separately via
+                // `postedAt`, and the username is intentionally hidden per
+                // FR-NEWS / GitHub issue #67).
+                Text(item.displayText)
                     .font(.piratenBodyDefault)
                     .lineSpacing(4)
                     .padding(16)
 
                 // Links section
-                let urls = Self.detectURLs(in: item.text)
+                let urls = Self.detectURLs(in: item.displayText)
                 if !urls.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         Label("Links", systemImage: "link")

@@ -101,6 +101,34 @@ struct NewsAPIClientTests {
         let item = NewsItem(chatId: 1, messageId: 1, postedAt: Date(), text: "Wer: AG Test\nMeeting morgen")
         #expect(item.headline == "Wer: AG Test · Meeting morgen")
     }
+
+    @Test("displayText strips leading <username> [datetime] prefix line")
+    func displayTextStripsUserPrefix() {
+        let item = NewsItem(
+            chatId: 1,
+            messageId: 1,
+            postedAt: Date(),
+            text: "<sebulino> 2026-05-19 10:00\nActual news content\nSecond paragraph"
+        )
+        #expect(item.displayText == "Actual news content\nSecond paragraph")
+    }
+
+    @Test("displayText leaves text untouched when no <user> prefix")
+    func displayTextNoPrefix() {
+        let item = NewsItem(chatId: 1, messageId: 1, postedAt: Date(), text: "Just plain text\nMore text")
+        #expect(item.displayText == "Just plain text\nMore text")
+    }
+
+    @Test("displayText feeds through to headline (Wer:-prefix still works after stripping)")
+    func displayTextFeedsHeadline() {
+        let item = NewsItem(
+            chatId: 1,
+            messageId: 1,
+            postedAt: Date(),
+            text: "<sebulino> 2026-05-19 10:00\nWer: AG Test\nMeeting morgen"
+        )
+        #expect(item.headline == "Wer: AG Test · Meeting morgen")
+    }
 }
 
 // MARK: - Mock HTTP Client
