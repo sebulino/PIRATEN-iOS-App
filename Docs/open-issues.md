@@ -8,35 +8,76 @@ commit messages and issues can reference them. Resolved items are kept
 
 ## OPEN-02 — Likes do not sync to Discourse
 
-**Status:** RESOLVED 2026-04-22 — implementation in
-[ADR-0014](./adr/0014-like-strategy-chain.md). End-to-end verification on
-the live instance is pending TestFlight observation.
+**Status:** RESOLVED 2026-05-20 — verified end-to-end on real device.
+Like persists server-side, visible from web Discourse.
 
-**Context.** Posting `POST /post_actions.json` from the app did not
-propagate the like to the Discourse server. The like was displayed
-optimistically on the device only. Prior investigation paths failed:
+**Context.** Posting from the app did not propagate the like to the
+Discourse server. The like was displayed optimistically on the device
+only. Prior investigation paths failed:
 
 - Analysis of the official Discourse mobile app yielded no insights.
 - Following the API documentation did not produce a working request.
 
-**Resolution summary.** Built a strategy chain
-(`PIRATEN/Core/Data/Discourse/LikeStrategy.swift`) that probes three
-likely endpoints in order — discourse-reactions plugin, form-encoded
-`/post_actions.json`, JSON `/post_actions.json` — and caches the
-winning strategy in UserDefaults under `discourse_like_winning_strategy`.
-Confirmation is body-content based, so Discourse's silent-2xx no-op
-signature (the OPEN-02 fingerprint) is detected as a soft failure and
-the chain falls through to the next strategy. Hard 4xx/5xx errors abort
-the chain so genuine auth or network failures are still surfaced.
+**Root cause (after six iterations of wrong theories — see
+ADR-0014).** `HTTPRequest.post(_:body:headers:)` in
+`PIRATEN/Core/Domain/HTTP/HTTPClient.swift` was overriding the
+caller's `Content-Type` unconditionally to `application/json`. The
+`postActionLike` code path correctly set
+`Content-Type: application/x-www-form-urlencoded; charset=UTF-8`
+in its headers dict, but the moment that dict was passed into
+`.post()`, the value was clobbered. The wire request shipped with a
+form-encoded body and `Content-Type: application/json`, Rails' JSON
+body parser failed to parse the form-encoded bytes, and the request
+400ed with an empty body before reaching Discourse's
+`PostActionsController`.
 
-**Verification follow-up before App Store submission:**
+The five earlier theories chased and discarded:
 
-- Tap a like in TestFlight; reload the topic from a separate Discourse
-  client and confirm the like appears.
-- Read `UserDefaults.standard.string(forKey: "discourse_like_winning_strategy")`
-  on a debug build to identify which strategy won. Once known across
-  multiple test devices, narrow `LikeStrategyRegistry.all` to that
-  single strategy and remove the others.
+1. `.json` URL suffix activating `wrap_parameters` — bare path still
+   400ed.
+2. `Accept: application/json` triggering JSON format detection — `*/*`
+   still 400ed.
+3. Session cookies from the `/user-api-key/new` handshake leaking
+   into URLSession — cookies disabled, still 400ed.
+4. HTTP/2 transport differences — Discourse's nginx ALPN-negotiates
+   HTTP/1.1 regardless.
+5. URLSession auto-injecting unexpected headers — captured via
+   `URLSessionTaskMetrics`, which immediately revealed the
+   `Content-Type: application/json` we hadn't expected to find.
+
+The factory method's bug was visible the moment we could see the
+exact headers URLSession sent on the wire. Earlier iterations missed
+it because we were only logging the headers we set on the
+`URLRequest`, not what `URLSession`/`CFNetwork` actually transmitted.
+
+**Resolution.** Two-line change to
+`HTTPRequest.post(_:body:headers:)`: the factory now only defaults
+`Content-Type` to `application/json` if the caller has not set one
+explicitly. Every other caller of `.post(...)` keeps working because
+they never set Content-Type themselves; the `postActionLike`
+form-encoded path now works because its explicit value is preserved.
+
+The strategy chain machinery (`LikeStrategy.swift`) remains as
+documented in [ADR-0014](./adr/0014-like-strategy-chain.md) — it
+turned out not to be the fix, but the chain's "probe → cache →
+learn" framing was useful for hypothesis testing, and the
+single-strategy registry is now operating as a thin wrapper that
+can be removed in a future cleanup pass.
+
+The DELETE unlike URL was also cleaned of its `.json` suffix to
+match the like path and the web UI for consistency.
+
+**Lessons captured for future debugging:**
+
+- When two clients (curl and URLSession) disagree on whether the
+  same request is rejected, dig into the actual on-the-wire bytes
+  *first*, before speculating about request shape. `URLSessionTaskMetrics`
+  is the right tool.
+- Any factory method that mutates request shape (headers, body, URL)
+  needs to be transparent about it — naming and behavior. The
+  `.post()` factory's name didn't suggest it was *enforcing* JSON
+  over caller-provided headers. Consider renaming `.post()` to
+  `.postJSON()` and adding a separate `.postForm()` in a future pass.
 
 ---
 

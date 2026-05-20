@@ -88,12 +88,6 @@ final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
 /// By default, iOS strips Authorization headers on redirect for security.
 /// This is needed for API calls where the server may redirect (e.g. HTTP→HTTPS
 /// or domain canonicalization) but the auth header must survive.
-///
-/// Also captures the actual on-the-wire request via URLSessionTaskMetrics for
-/// OPEN-02 diagnosis (DEBUG-only). URLSession/CFNetwork auto-adds headers
-/// (User-Agent, Accept-Encoding, Connection, possibly Expect) below the
-/// URLRequest API surface, so they're invisible to higher-layer logging.
-/// Metrics reports the request as it was actually sent.
 private final class RedirectHandler: NSObject, URLSessionTaskDelegate {
     func urlSession(
         _ session: URLSession,
@@ -108,37 +102,4 @@ private final class RedirectHandler: NSObject, URLSessionTaskDelegate {
         }
         completionHandler(redirectRequest)
     }
-
-    #if DEBUG
-    func urlSession(
-        _ session: URLSession,
-        task: URLSessionTask,
-        didFinishCollecting metrics: URLSessionTaskMetrics
-    ) {
-        guard let urlPath = task.originalRequest?.url?.path,
-              urlPath.contains("/post_actions") else { return }
-
-        for (i, txn) in metrics.transactionMetrics.enumerated() {
-            print("[OPEN-02-NET] --- transaction \(i) ---")
-            let req = txn.request
-            print("[OPEN-02-NET] method: \(req.httpMethod ?? "?")")
-            print("[OPEN-02-NET] URL: \(req.url?.absoluteString ?? "?")")
-            print("[OPEN-02-NET] headers as sent:")
-            for (k, v) in req.allHTTPHeaderFields ?? [:] {
-                // Redact User-Api-Key value to avoid exposing it twice
-                let printedValue = (k.lowercased() == "user-api-key") ? "<redacted>" : v
-                print("[OPEN-02-NET]   \(k): \(printedValue)")
-            }
-            print("[OPEN-02-NET] body byte count: \(req.httpBody?.count ?? 0)")
-            print("[OPEN-02-NET] protocol: \(txn.networkProtocolName ?? "?")")
-            print("[OPEN-02-NET] used proxy: \(txn.isProxyConnection)")
-            print("[OPEN-02-NET] reused connection: \(txn.isReusedConnection)")
-            print("[OPEN-02-NET] request body bytes sent: \(txn.countOfRequestBodyBytesSent)")
-            print("[OPEN-02-NET] response body bytes received: \(txn.countOfResponseBodyBytesReceived)")
-            if let resp = txn.response as? HTTPURLResponse {
-                print("[OPEN-02-NET] response status: \(resp.statusCode)")
-            }
-        }
-    }
-    #endif
 }

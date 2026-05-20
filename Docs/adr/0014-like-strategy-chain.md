@@ -1,7 +1,10 @@
 # ADR-0014 — Like / unlike via a strategy chain with cached winner
 
-- **Status:** Accepted
-- **Date:** 2026-04
+- **Status:** Accepted — superseded in practice by the actual fix in
+  `HTTPRequest.post`. The strategy chain machinery remains but operates
+  as a thin wrapper with a single-strategy registry. See "Postscript
+  (2026-05-20)" at the bottom.
+- **Date:** 2026-04 (initial), amended 2026-05-20
 - **Deciders:** Sebastian Alscher
 - **Related:** FR-FORUM-004, ADR-0009, OPEN-02 (#70)
 
@@ -145,3 +148,47 @@ plugin endpoint, and the `PostActions` strategies share a single
   - `RealDiscourseRepository.runStrategyChain` is a candidate for
     extraction into a generic `OperationStrategyChain<T>` if a second
     operation ends up needing the same probe-and-cache pattern.
+
+## Postscript (2026-05-20) — what was actually broken
+
+On-device verification with a fresh User API Key and the strategy
+chain narrowed to `PostActionsFormStrategy` *still* returned 400 with
+an empty body. The strategy chain had not fixed OPEN-02.
+
+`URLSessionTaskMetrics`-based logging captured the actual headers the
+iPhone's URLSession sent on the wire — including the ones URLSession
+auto-injects below the URLRequest API surface — and revealed the real
+bug: `HTTPRequest.post(_:body:headers:)` in
+`PIRATEN/Core/Domain/HTTP/HTTPClient.swift` was unconditionally
+overriding the caller's `Content-Type` to `application/json`. Every
+piece of code in this ADR sent its form-encoded body with
+`Content-Type: application/json` on the wire. Rails' JSON body parser
+predictably rejected the form-encoded bytes as malformed JSON, 400'd
+with an empty body, and never reached the `PostActionsController`.
+
+The fix is a two-line change in the factory method: only default
+`Content-Type` to `application/json` when the caller has not set one.
+
+What the strategy chain DID accomplish:
+
+- It introduced the `bodyString.contains("actions_summary")` /
+  `"acted":true` confirmation check that surfaced the silent-failure
+  semantics — useful even now (a 2xx without those markers is still
+  a soft failure worth treating as such).
+- It forced an empirical "probe → cache → learn" loop that eventually
+  led to the metrics-based diagnostic.
+- It standardised the cache key (`discourse_like_winning_strategy`)
+  which can be observed in DEBUG builds.
+
+What can be cleaned up later:
+
+- The registry contains exactly one strategy. The chain machinery in
+  `RealDiscourseRepository.runStrategyChain` could be inlined to a
+  direct call.
+- The `LikeStrategy.swift` file's commentary describes alternatives
+  that turned out not to be necessary. Keep it as design-history
+  documentation for now; revisit if Discourse's behaviour changes.
+
+The real takeaway is captured under OPEN-02 in `open-issues.md`:
+when two clients disagree on whether the same request is rejected,
+inspect the on-the-wire bytes first.

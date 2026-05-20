@@ -437,14 +437,6 @@ final class DiscourseAPIClient {
         // wrapper key where the controller doesn't look for them, yielding
         // a 400. See ADR-0014 for the empirical narrowing.
         let request = HTTPRequest.post(url(for: "/post_actions"), body: bodyData, headers: headers)
-
-        #if DEBUG
-        print("[OPEN-02] postActionLike: postId=\(postId) formEncoded=\(formEncoded)")
-        print("[OPEN-02] → URL: \(request.url.absoluteString)")
-        print("[OPEN-02] → Headers: \(headers)")
-        print("[OPEN-02] → Body: \(String(data: bodyData, encoding: .utf8) ?? "<binary>")")
-        #endif
-
         return try await executeAndConfirm(request)
     }
 
@@ -452,8 +444,13 @@ final class DiscourseAPIClient {
     /// PostActions strategies. Discourse uses the same DELETE shape
     /// regardless of how the original like was created.
     func postActionUnlike(postId: Int) async throws -> Bool {
+        // Bare `/post_actions/{id}` to match what the like POST uses and
+        // what the Discourse web UI sends — see OPEN-02 debugging for why
+        // we avoid the .json suffix here too (consistency, plus the same
+        // wrap_parameters concern even though DELETE has no body for it
+        // to wrap).
         var components = URLComponents(
-            url: url(for: "/post_actions/\(postId).json"),
+            url: url(for: "/post_actions/\(postId)"),
             resolvingAgainstBaseURL: false
         )!
         components.queryItems = [URLQueryItem(name: "post_action_type_id", value: "2")]
@@ -525,50 +522,24 @@ final class DiscourseAPIClient {
         do {
             response = try await httpClient.execute(request)
         } catch let error as HTTPError {
-            #if DEBUG
-            print("[OPEN-02] ← HTTPError: \(error)")
-            #endif
             throw mapHTTPError(error)
         } catch let error as DiscourseAuthError {
-            #if DEBUG
-            print("[OPEN-02] ← DiscourseAuthError: \(error)")
-            #endif
             throw mapDiscourseAuthError(error)
         }
 
-        #if DEBUG
-        print("[OPEN-02] ← Status: \(response.statusCode)")
-        print("[OPEN-02] ← Response headers: \(response.headers)")
-        let bodyForLog = String(data: response.data, encoding: .utf8) ?? "<binary, \(response.data.count) bytes>"
-        // Truncate body in log if very large
-        let truncatedBody = bodyForLog.count > 2000 ? String(bodyForLog.prefix(2000)) + "…[truncated, total \(bodyForLog.count) chars]" : bodyForLog
-        print("[OPEN-02] ← Body: \(truncatedBody)")
-        #endif
-
         guard response.isSuccess else {
-            #if DEBUG
-            print("[OPEN-02] ← Non-2xx — throwing")
-            #endif
             throw mapToDiscourseError(statusCode: response.statusCode, data: response.data)
         }
 
-        // Discourse's success response for POST /post_actions.json includes
-        // an "actions_summary" array with the user's like recorded. An
-        // empty body, or a body lacking this marker, is the silent-failure
-        // signature OPEN-02 documents.
+        // Discourse's success response for POST /post_actions includes an
+        // "actions_summary" array with the user's like recorded. An empty
+        // body, or a body lacking this marker, is the silent-failure
+        // signature the OPEN-02 strategy chain was originally built to
+        // detect (see ADR-0014).
         guard let bodyString = String(data: response.data, encoding: .utf8) else {
-            #if DEBUG
-            print("[OPEN-02] ← Body not UTF-8 — treating as soft fail")
-            #endif
             return false
         }
-        let hasMarker = bodyString.contains("actions_summary") || bodyString.contains("\"acted\":true")
-        #if DEBUG
-        print("[OPEN-02] ← actions_summary present: \(bodyString.contains("actions_summary"))")
-        print("[OPEN-02] ← acted:true present: \(bodyString.contains("\"acted\":true"))")
-        print("[OPEN-02] ← Confirmed: \(hasMarker)")
-        #endif
-        return hasMarker
+        return bodyString.contains("actions_summary") || bodyString.contains("\"acted\":true")
     }
 
     /// Posts a reply to a forum topic post.
