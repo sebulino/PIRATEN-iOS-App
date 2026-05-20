@@ -1370,6 +1370,148 @@ has arrived since I last looked.
 
 *Note: FR-PROF-004 (data export link) was removed — see Q-048 in `decisions-log.md`.*
 
+#### Extended specs — Profile
+
+##### FR-PROF-001 — Show user profile
+
+**User goal.** As a member, I want to see my identity and activity
+in the Discourse forum at a glance — name, handle, avatar, when I
+joined, and my participation stats.
+
+**Acceptance criteria.**
+
+- Profile sheet shows: full name (from PiratenSSO), handle
+  (Discourse `username`), avatar (Discourse), e-mail (PiratenSSO),
+  join date (Discourse `created_at`), and activity stats (posts,
+  likes given, likes received).
+- If Discourse profile data is unavailable, a non-blocking note
+  appears; the SSO data still renders.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                  |
+|----------|-------------|------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `ProfileViewModel` merges PiratenSSO `User` with Discourse `UserProfile`. |
+| Android  | Not started | Same two-source merge.                                                  |
+
+---
+
+##### FR-PROF-002 — Six notification toggles
+
+**User goal.** As a member, I want fine-grained control over which
+kinds of new activity trigger a notification on my phone, so I can
+opt into the categories I care about without being spammed.
+
+**Acceptance criteria.**
+
+- Six toggles in Profile: Forum, Nachrichten, News, ToDos, Wissen,
+  Termine.
+- Each toggle's state is persisted to UserDefaults.
+- All toggles default off (opt-in for privacy — no surprise
+  notifications).
+- Enabling any toggle triggers the `UNUserNotificationCenter`
+  permission prompt if not yet granted.
+- Toggle state only gates **display** (whether a banner fires) —
+  polling still runs regardless so tab badges stay current (see
+  [ADR-0015](./adr/0015-background-notification-coordinator.md)).
+- A "system permission denied" indicator with a link to Settings
+  when the user has system-level permission revoked.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                  |
+|----------|-------------|------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `NotificationSettingsManager` with six properties.                     |
+| Android  | Not started | Same six-toggle pattern; runtime permission via `POST_NOTIFICATIONS`.   |
+
+---
+
+##### FR-PROF-003 — Logout
+
+Same shape as FR-AUTH-005. The Profile entry IS the logout entry.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                  |
+|----------|-------------|--------------------------------------------------------|
+| iOS      | ✅ Shipped  | Same `AuthStateManager.logout()`.                     |
+| Android  | Not started | Same.                                                  |
+
+---
+
+##### FR-PROF-005 — Member profile cards
+
+(FR-PROF-004 was retired per Q-048; numbering is stable, no
+renumber.)
+
+**User goal.** As a member reading a post or message from someone I
+don't know, I want to tap their name to see who they are —
+avatar, join date, and basic activity.
+
+**Acceptance criteria.**
+
+- Usernames and avatars in posts, messages, and Kajüte's "Letzte
+  Kontakte" are tappable.
+- Tapping opens a Discourse user-card sheet showing avatar,
+  username, full name (if present), join date, post count.
+- The sheet has a "Nachricht senden" action that pre-fills the
+  compose flow with that user as recipient.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                              |
+|----------|-------------|--------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `UserProfileView` + `UserProfileViewModel`.                       |
+| Android  | Not started | Same Discourse `/u/{username}.json` API.                          |
+
+---
+
+##### FR-PROF-006 — Feedback to the maintainer
+
+**User goal.** As a member who wants to suggest something or report
+a problem, I want a frictionless way to send feedback directly to
+the app maintainer without leaving the app.
+
+**Acceptance criteria.**
+
+- A "Feedback senden" entry in Profile.
+- Tapping opens a compose form with a single text field.
+- Submitting sends a Discourse private message to the maintainer
+  (@sebulino).
+- Confirmation message on success; clear error on failure.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                  |
+|----------|-------------|--------------------------------------------------------|
+| iOS      | ✅ Shipped  | `FeedbackViewModel` + `FeedbackComposeView`.          |
+| Android  | Not started | Same Discourse PM API.                                |
+
+---
+
+##### FR-PROF-007 — Request admin access
+
+**User goal.** As a member who needs admin privileges on
+meine-piraten.de (for example, to administer a region's task feed),
+I want to request access from inside the app rather than via email.
+
+**Acceptance criteria.**
+
+- Profile shows an "Admin-Zugang beantragen" entry — visible only
+  if the user is not already admin.
+- Tapping opens a form with a "Begründung" text field.
+- Submitting sends `POST /admin_requests.json` with the reason.
+- Confirmation message on success.
+- After successful request, the entry is hidden until status
+  changes.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                  |
+|----------|-------------|--------------------------------------------------------|
+| iOS      | ✅ Shipped  | `AdminRequestViewModel` + `AdminRequestView`.         |
+| Android  | Not started | Same `meine-piraten.de` API.                          |
+
 ### 3.10 Notifications (NOTIF)
 
 See [ADR-0006](./adr/0006-notifications-v1-polling.md).
