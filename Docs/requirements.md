@@ -97,16 +97,227 @@ The *Kajüte* is the landing screen after login.
 
 ### 3.3 Forum (FORUM)
 
+The Forum section is the largest user-facing surface in the app and the
+test bed for the user-story / acceptance-criteria / platform-status format
+that augments the FR table below. The MoSCoW summary table stays as a
+quick lookup; the **Extended specs** subsection below expands each FR
+with a user goal, testable acceptance criteria, and per-platform
+implementation status — the shape an Android port (or another
+contributor) builds against.
+
 | ID | MoSCoW | Requirement |
 |---|---|---|
 | FR-FORUM-001 | Must | List topics with unread activity first, showing title, author, last-activity timestamp, reply count and view count. |
 | FR-FORUM-002 | Must | Tapping a topic opens the post list with threaded replies. |
 | FR-FORUM-003 | Must | The user can post a reply (plain markdown, same flavour Discourse accepts). |
-| FR-FORUM-004 | Must | The user can like and unlike individual posts, and the state is synced to Discourse (not displayed optimistically only). See [OPEN-02](./open-issues.md) — current implementation does not sync likes upstream; this must be fixed before v1 ship. |
+| FR-FORUM-004 | Must | The user can like and unlike individual posts, and the state is synced to Discourse (not displayed optimistically only). |
 | FR-FORUM-005 | Must | The user can pin Discourse categories (e.g. their Landesverband). Pin state is stored in UserDefaults, device-local only. |
 | FR-FORUM-006 | Must | Inline image rendering for posts. Images must render at their natural aspect ratio — never stretched beyond their actual dimensions. |
 | FR-FORUM-007 | Must | Reading a topic marks it as read on Discourse so read state is consistent across devices. |
 | FR-FORUM-008 | Should | The user can create a new forum topic. |
+
+#### Extended specs — Forum
+
+##### FR-FORUM-001 — List topics, unread first
+
+**User goal.** As a member, I want to see the forum's most recent and
+unread topics first so I can quickly catch up on what the party is
+discussing.
+
+**Acceptance criteria.**
+
+- Topics with unread activity appear above fully-read topics in the
+  list.
+- Each row shows: title, author username, last-activity timestamp
+  (relative — "vor 2 Stunden"), reply count, view count.
+- Initial render shows cached topics within ~200 ms; fresh data
+  fetches asynchronously without blocking the UI.
+- Pull-to-refresh bypasses the staleness guard and forces a network
+  fetch.
+- Tapping a row navigates to the topic detail (FR-FORUM-002).
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                    |
+|----------|-------------|----------------------------------------------------------|
+| iOS      | ✅ Shipped  | `ForumViewModel` + `ForumView`, cache via `DiscourseCacheStore`. |
+| Android  | Not started | Same `GET /latest.json` Discourse API; same cache model. |
+
+---
+
+##### FR-FORUM-002 — Open a topic
+
+**User goal.** As a member, I want to tap a topic and read its full
+thread with reply context preserved so I can follow the conversation
+accurately.
+
+**Acceptance criteria.**
+
+- Tapping a topic in the list opens a dedicated detail screen.
+- All posts in the topic load in `post_number` ascending order.
+- Reply-to relationships are visible (e.g., post #5 visually indicates
+  it's a reply to #4).
+- Topics with more than 20 posts paginate via Discourse's
+  `post_ids[]=` batched fetch (the API's hard limit per request).
+- Pull-to-refresh on the detail re-fetches.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                       |
+|----------|-------------|-----------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `TopicDetailViewModel` + `TopicDetailView`; uses `ScrollView + LazyVStack` (D-030) instead of `List` to avoid the `UICollectionView` dequeue crash. |
+| Android  | Not started | Same `GET /t/{id}.json` Discourse API. Compose's `LazyColumn` is the equivalent of `LazyVStack`. |
+
+---
+
+##### FR-FORUM-003 — Reply to a post
+
+**User goal.** As a member, I want to reply to a forum post so I can
+participate in the discussion.
+
+**Acceptance criteria.**
+
+- A reply button on each post opens a compose sheet.
+- Compose accepts plain markdown (Discourse's own flavour).
+- Submit sends `POST /posts.json` with `topic_id` and optional
+  `reply_to_post_number`.
+- On success: the new post appears in the topic without a manual
+  refresh; the compose sheet closes.
+- On failure: the compose sheet stays open with typing preserved; an
+  error message surfaces.
+- The user cannot submit an empty reply.
+
+**Platforms.**
+
+| Platform | Status      | Notes |
+|----------|-------------|-------|
+| iOS      | ✅ Shipped  | Compose flow in `TopicDetailView`, with the `ReplyComposerView` sheet. |
+| Android  | Not started | Same `POST /posts.json` API. |
+
+---
+
+##### FR-FORUM-004 — Like / unlike a post
+
+**User goal.** As a member, I want to like a forum post to show
+appreciation without writing a reply, and unlike it within Discourse's
+permitted window if I tapped by accident.
+
+**Acceptance criteria.**
+
+- Tapping the heart icon records the like server-side via
+  `POST /post_actions`.
+- The like is visible from any other Discourse client (web, official
+  mobile app) within ~1 minute.
+- Unlike works within Discourse's `post_undo_action_window_mins`
+  (default 10 min); after the window, Discourse server-side locks the
+  like and the unlike action is no longer available.
+- Failures surface to the user — the heart state never lies (no silent
+  optimistic-only display).
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                            |
+|----------|-------------|------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | Verified end-to-end 2026-05-20. Root cause history in [ADR-0014](./adr/0014-like-strategy-chain.md) — the `HTTPRequest.post` factory was overriding the caller's `Content-Type` to `application/json` on a form-encoded body. |
+| Android  | Not started | Same `POST /post_actions` form-encoded API. **OkHttp has the same pitfall** — set Content-Type explicitly on the `RequestBody` and don't let any wrapper override it. |
+
+---
+
+##### FR-FORUM-005 — Pin Discourse categories
+
+**User goal.** As a member, I want to pin the Discourse categories I
+follow most often (e.g., my Landesverband) so they're easier to find
+at a glance in the forum tab.
+
+**Acceptance criteria.**
+
+- A pin gesture or button on a category persists the pin locally.
+- Pinned categories appear at the top of the forum tab listing.
+- Pin state is device-local (UserDefaults), never synced to the
+  server — matches the app's no-tracking baseline.
+- Unpinning is symmetric.
+- Pinned-category ordering reflects pin chronology (newest first) OR
+  alphabetical — decision deferred to UX implementation.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                     |
+|----------|-------------|-----------------------------------------------------------|
+| iOS      | Not started | No `ForumPinStore` exists yet; UI affordance also missing. |
+| Android  | Not started | Use Jetpack DataStore for the local pin set.              |
+
+---
+
+##### FR-FORUM-006 — Inline image rendering in posts
+
+**User goal.** As a member, I want to see images inline in forum posts
+so I can read the full content without leaving the app.
+
+**Acceptance criteria.**
+
+- Images embedded in a post's HTML body are extracted and rendered
+  inline at their natural aspect ratio.
+- Images never stretch beyond their natural dimensions (no upscaling).
+- Image load failures show a placeholder, not a broken state.
+- Tapping an image opens it full-screen (zoom-and-pan) — Should, not
+  Must for v1.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                              |
+|----------|-------------|------------------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `HTMLContentParser.extractImageURLs` + SwiftUI `AsyncImage` in `TopicDetailView`. |
+| Android  | Not started | Same image-URL extraction; Coil for async loading.                                  |
+
+---
+
+##### FR-FORUM-007 — Mark topics as read
+
+**User goal.** As a member, I want my "read" state to follow me across
+devices — if I read a topic on the iOS app, I shouldn't see it as
+unread when I open Discourse on the web.
+
+**Acceptance criteria.**
+
+- After the user finishes reading a topic (closes the detail view or
+  scrolls past the last post), the app sends `POST /topics/timings`
+  with the highest seen `post_number`.
+- The server confirms the timing record (no client-side staleness).
+- Failure to mark-as-read does not block any other functionality; it
+  retries silently on the next topic visit.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                            |
+|----------|-------------|------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `RealDiscourseRepository.markTopicAsRead` fires on `onDisappear` of `TopicDetailView`. |
+| Android  | Not started | Same `POST /topics/timings` API.                                 |
+
+---
+
+##### FR-FORUM-008 — Create a new forum topic
+
+**User goal.** As a member, I want to start a new forum topic from
+the app so I can raise discussions without switching to the web
+browser.
+
+**Acceptance criteria.**
+
+- A "New topic" button is visible from the forum list.
+- The compose sheet collects: category (required), title (required),
+  markdown body (required).
+- Submit sends `POST /posts.json` with `archetype=regular` and the
+  selected `category` ID.
+- On success: the new topic appears at the top of the forum list (by
+  virtue of `last_activity_at`); the user navigates to it.
+- The user cannot submit with an empty title or body.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                  |
+|----------|-------------|--------------------------------------------------------|
+| iOS      | Not started | No `NewTopicView` exists yet.                          |
+| Android  | Not started | Same `POST /posts.json` API; same compose-form shape. |
 
 ### 3.4 Wissen — knowledge (KNOW)
 
