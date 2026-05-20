@@ -120,7 +120,16 @@ struct ForumView: View {
                 if let factory = topicDetailViewModelFactory {
                     TopicDetailView(
                         viewModel: factory(topic),
-                        onLoginTapped: onLoginTapped,
+                        // Fall back to triggering the Discourse re-auth handshake
+                        // directly when no upstream closure is provided. Without
+                        // this, the "Anmelden" button in TopicDetailView's
+                        // .notAuthenticated state is a no-op because MainTabView
+                        // doesn't wire onLoginTapped through to ForumView.
+                        onLoginTapped: onLoginTapped ?? {
+                            Task {
+                                await discourseAuthCoordinator.authenticate(from: window)
+                            }
+                        },
                         userProfileViewModelFactory: userProfileViewModelFactory,
                         onSendMessageFromProfile: onSendMessageFromProfile
                     )
