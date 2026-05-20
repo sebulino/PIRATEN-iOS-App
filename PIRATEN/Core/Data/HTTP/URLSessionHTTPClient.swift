@@ -120,17 +120,16 @@ private final class RedirectHandler: NSObject, URLSessionTaskDelegate {
 
         for (i, txn) in metrics.transactionMetrics.enumerated() {
             print("[OPEN-02-NET] --- transaction \(i) ---")
-            if let req = txn.request {
-                print("[OPEN-02-NET] method: \(req.httpMethod ?? "?")")
-                print("[OPEN-02-NET] URL: \(req.url?.absoluteString ?? "?")")
-                print("[OPEN-02-NET] headers as sent:")
-                for (k, v) in req.allHTTPHeaderFields ?? [:] {
-                    // Redact User-Api-Key value to avoid exposing it twice
-                    let printedValue = (k.lowercased() == "user-api-key") ? "<redacted>" : v
-                    print("[OPEN-02-NET]   \(k): \(printedValue)")
-                }
-                print("[OPEN-02-NET] body byte count: \(req.httpBody?.count ?? 0)")
+            let req = txn.request
+            print("[OPEN-02-NET] method: \(req.httpMethod ?? "?")")
+            print("[OPEN-02-NET] URL: \(req.url?.absoluteString ?? "?")")
+            print("[OPEN-02-NET] headers as sent:")
+            for (k, v) in req.allHTTPHeaderFields ?? [:] {
+                // Redact User-Api-Key value to avoid exposing it twice
+                let printedValue = (k.lowercased() == "user-api-key") ? "<redacted>" : v
+                print("[OPEN-02-NET]   \(k): \(printedValue)")
             }
+            print("[OPEN-02-NET] body byte count: \(req.httpBody?.count ?? 0)")
             print("[OPEN-02-NET] protocol: \(txn.networkProtocolName ?? "?")")
             print("[OPEN-02-NET] used proxy: \(txn.isProxyConnection)")
             print("[OPEN-02-NET] reused connection: \(txn.isReusedConnection)")
