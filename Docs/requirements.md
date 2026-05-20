@@ -83,6 +83,182 @@ The app is a reach layer that:
 | FR-AUTH-005 | Should | A user can log out, which revokes the Discourse session if the API allows and clears all Keychain entries. |
 | FR-AUTH-006 | Could | Support biometric re-authentication (Face ID / Touch ID) to unlock the app after backgrounding. (Deferred to post-v1.) |
 
+#### Extended specs — Authentication
+
+##### FR-AUTH-001 — PiratenSSO login
+
+**User goal.** As a member, I want to sign in once with my PiratenSSO
+credentials and have the app trust the same identity I already use
+for Discourse and meine-piraten.de, so I don't have to manage
+app-specific passwords.
+
+**Acceptance criteria.**
+
+- The launch screen shows a single "Mit PiratenSSO anmelden" button.
+- Tapping it opens an `ASWebAuthenticationSession` against the
+  PiratenSSO realm (Keycloak).
+- The flow uses OAuth 2.0 Authorization Code with PKCE — no client
+  secret, no resource-owner password grant.
+- On success, access/refresh/ID tokens are persisted to the Keychain
+  (FR-AUTH-003).
+- Cancellation returns the user to the launch screen with no error.
+- Authentication failure shows an actionable error message and a
+  retry button.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                              |
+|----------|-------------|--------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `AppAuthOIDCAuthService` (wrapper around openid/AppAuth-iOS SPM). |
+| Android  | Not started | Same OAuth 2.0 + PKCE flow; AppAuth-Android library exists.       |
+
+---
+
+##### FR-AUTH-002 — Discourse User API Key handshake
+
+**User goal.** As a member, after I sign in with PiratenSSO I want
+the app to seamlessly become authenticated against the Discourse
+forum without me having to re-enter credentials in a second flow.
+
+**Acceptance criteria.**
+
+- After PiratenSSO success and on first Forum-tab visit, the app
+  automatically initiates Discourse's `/user-api-key/new` handshake
+  (see [ADR-0009](./adr/0009-discourse-user-api-key.md) and #68).
+- An RSA key pair is generated locally; the private key never leaves
+  the device.
+- The Discourse authorization page is presented in
+  `ASWebAuthenticationSession` (browser-isolated; URLSession sees
+  none of its cookies — see [ADR-0014](./adr/0014-like-strategy-chain.md)
+  postscript for the cookie-leak lesson).
+- The encrypted User API Key payload returned by Discourse is
+  decrypted with the local RSA private key.
+- The decrypted key is stored in the Keychain and used as
+  `User-Api-Key` on every Discourse request thereafter.
+- Cancellation puts the auth state machine in `.failed` (not
+  `.idle`) so it doesn't auto-retry into a loop.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                                |
+|----------|-------------|--------------------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `DiscourseAuthManager` + `RSAKeyManager`; auto-trigger via `ForumView.task` (#68). |
+| Android  | Not started | Same wire protocol. BouncyCastle or AndroidX `KeyPairGenerator` for RSA.            |
+
+---
+
+##### FR-AUTH-003 — Secure Keychain storage
+
+**User goal.** As a member, my session tokens must stay confined to
+this specific device and this unlocked state — they should not
+appear in encrypted backups that follow me to a new phone, nor be
+readable when my phone is locked.
+
+**Acceptance criteria.**
+
+- All tokens (PiratenSSO access/refresh/ID; Discourse User API Key;
+  Discourse client ID) are written via
+  `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`.
+- No tokens are persisted to `UserDefaults`, the file system, or any
+  iCloud-syncing storage.
+- Keychain entries are removed on explicit logout (FR-AUTH-005).
+- Keychain entries don't survive device migration (the
+  `ThisDeviceOnly` accessible class enforces this).
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                                                              |
+|----------|-------------|--------------------------------------------------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `KeychainCredentialStore`, `KeychainDiscourseAPIKeyProvider`.                                                       |
+| Android  | Not started | Equivalent: `EncryptedSharedPreferences` + AndroidX Security with `MasterKey`. Less strict per-device binding by default. |
+
+---
+
+##### FR-AUTH-004 — Transparent token refresh; hard failure routes to re-login
+
+**User goal.** As a member, I want to stay logged in for everyday
+use without re-authenticating every few minutes when the short-lived
+access token rolls over — but if my session has truly ended (refresh
+token revoked or expired) I want a clear path back to sign-in.
+
+**Acceptance criteria.**
+
+- PiratenSSO access tokens have a 5-minute TTL (per the API
+  contract at <https://meine-piraten.de/api>).
+- On expiry, the next outgoing request triggers an AppAuth-driven
+  refresh using the stored refresh token. The user sees nothing.
+- If the refresh succeeds, the request is retried transparently
+  with the fresh token.
+- If the refresh fails, the auth state transitions to
+  `.sessionExpired` (distinct from `.unauthenticated` so the UI
+  routes to `SessionExpiredView` with a "session expired" message
+  rather than the initial-launch login screen).
+- A single-attempt guard ensures a burst of parallel API calls
+  hitting the same failed refresh fires exactly one logout
+  transition.
+- meine-piraten.de 401 (Bearer token rejected) routes through the
+  same handler.
+- meine-piraten.de 403 (valid token, insufficient permissions) does
+  NOT trigger logout — it surfaces as a per-request error.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                                                                  |
+|----------|-------------|--------------------------------------------------------------------------------------------------------|
+| iOS      | ✅ Shipped  | `AuthStateManager.handleAuthenticationError` (#72 / OPEN-09 fix). DEBUG-only "Simulate session expiry" button in Profile for verification. |
+| Android  | Not started | AppAuth-Android handles refresh; same `.sessionExpired` state + single-attempt guard pattern needed. |
+
+---
+
+##### FR-AUTH-005 — Logout
+
+**User goal.** As a member, I want a clear way to log out that wipes
+my local credentials and returns the app to the launch state.
+
+**Acceptance criteria.**
+
+- A "Abmelden" button is visible in Profile.
+- A confirmation dialog is shown before the action proceeds.
+- On confirm: all Keychain entries (PiratenSSO + Discourse) are
+  removed.
+- In-memory user-specific state (recent recipients, cached profile
+  data) is cleared.
+- The app routes to the launch screen ready for a fresh PiratenSSO
+  login.
+
+**Platforms.**
+
+| Platform | Status      | Notes                                                  |
+|----------|-------------|--------------------------------------------------------|
+| iOS      | ✅ Shipped  | `AuthStateManager.logout()` + Profile "Abmelden" button. |
+| Android  | Not started | Same flow.                                             |
+
+---
+
+##### FR-AUTH-006 — Biometric re-authentication (deferred post-v1)
+
+**User goal.** As a member with sensitive party communications, I
+want the option to lock the app behind Face ID / Touch ID so a
+brief device hand-off doesn't expose my Discourse messages.
+
+**Acceptance criteria (target post-v1).**
+
+- A setting in Profile enables biometric lock.
+- When enabled, the app requires biometric authentication on cold
+  launch and after returning from background (configurable idle
+  threshold).
+- Fallback to PiratenSSO re-auth if biometric is unavailable or
+  fails repeatedly.
+- No persistent unlock token — each session requires a fresh
+  biometric prompt.
+
+**Platforms.**
+
+| Platform | Status   | Notes                                              |
+|----------|----------|----------------------------------------------------|
+| iOS      | Deferred | Post-v1. `LocalAuthentication.LAContext`.          |
+| Android  | Deferred | Post-v1. AndroidX `BiometricPrompt`.               |
+
 ### 3.2 Kajüte — the home screen (HOME)
 
 The *Kajüte* is the landing screen after login.
