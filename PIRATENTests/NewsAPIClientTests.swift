@@ -102,19 +102,54 @@ struct NewsAPIClientTests {
         #expect(item.headline == "Wer: AG Test · Meeting morgen")
     }
 
-    @Test("displayText strips leading <username> [datetime] prefix line")
-    func displayTextStripsUserPrefix() {
+    // MARK: - displayText strip
+
+    @Test("displayText strips <sender> marker on a single-line item (real example, messageId 610)")
+    func displayTextStripsInlineMarkerSingleLine() {
+        let item = NewsItem(
+            chatId: 1,
+            messageId: 610,
+            postedAt: Date(),
+            text: "<dkluever2025> 18 Uhr Wahlkampfteam MV in Rehna wg. Plakatmotiven"
+        )
+        #expect(item.displayText == "18 Uhr Wahlkampfteam MV in Rehna wg. Plakatmotiven")
+    }
+
+    @Test("displayText preserves content after <sender> on multi-line items (real example, messageId 608)")
+    func displayTextPreservesInlineContentAfterMarker() {
+        let item = NewsItem(
+            chatId: 1,
+            messageId: 608,
+            postedAt: Date(),
+            text: "<thebug> Heute ist wieder Sitzung der AG Energiepolitik, ab 21:00 im BBB:\nhttps://bbb.piratensommer.de/b/gui"
+        )
+        #expect(item.displayText == "Heute ist wieder Sitzung der AG Energiepolitik, ab 21:00 im BBB:\nhttps://bbb.piratensommer.de/b/gui")
+    }
+
+    @Test("displayText preserves datetime after <sender> (real example, messageId 609)")
+    func displayTextPreservesDatetimeAfterMarker() {
+        let item = NewsItem(
+            chatId: 1,
+            messageId: 609,
+            postedAt: Date(),
+            text: "<Agitatorrr> 2026-05-20 21:00 Uhr: Stammtisch\n2026-05-20 18:30 Uhr: Bergheim"
+        )
+        #expect(item.displayText == "2026-05-20 21:00 Uhr: Stammtisch\n2026-05-20 18:30 Uhr: Bergheim")
+    }
+
+    @Test("displayText handles <sender> alone on the first line")
+    func displayTextHandlesMarkerOnOwnLine() {
         let item = NewsItem(
             chatId: 1,
             messageId: 1,
             postedAt: Date(),
-            text: "<sebulino> 2026-05-19 10:00\nActual news content\nSecond paragraph"
+            text: "<sebulino>\nWer: AG Test\nMeeting morgen"
         )
-        #expect(item.displayText == "Actual news content\nSecond paragraph")
+        #expect(item.displayText == "Wer: AG Test\nMeeting morgen")
     }
 
-    @Test("displayText leaves text untouched when no <user> prefix")
-    func displayTextNoPrefix() {
+    @Test("displayText leaves text untouched when no <sender> marker")
+    func displayTextNoMarker() {
         let item = NewsItem(chatId: 1, messageId: 1, postedAt: Date(), text: "Just plain text\nMore text")
         #expect(item.displayText == "Just plain text\nMore text")
     }
@@ -125,7 +160,7 @@ struct NewsAPIClientTests {
             chatId: 1,
             messageId: 1,
             postedAt: Date(),
-            text: "<sebulino> 2026-05-19 10:00\nWer: AG Test\nMeeting morgen"
+            text: "<sebulino>\nWer: AG Test\nMeeting morgen"
         )
         #expect(item.headline == "Wer: AG Test · Meeting morgen")
     }

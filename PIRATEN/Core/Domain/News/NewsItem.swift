@@ -21,26 +21,46 @@ struct NewsItem: Identifiable, Codable, Equatable, Hashable {
         case text
     }
 
-    /// Text with the leading `<username> [datetime]` prefix line stripped.
-    /// meine-piraten.de's news API embeds the original sender + datetime as
-    /// the first line of each item's text body (`<sebulino> 2026-05-20 …`),
-    /// which is redundant with the `postedAt` field that views display
-    /// separately and exposes the original poster's username unnecessarily
-    /// in the user-facing copy.
+    /// Text with the leading `<sender>` marker stripped.
+    ///
+    /// meine-piraten.de's news API prepends the original sender's username
+    /// in angle brackets to each item's body text. The marker is redundant
+    /// with the news feed's own attribution UI and exposes the sender's
+    /// username in user-facing copy unnecessarily.
+    ///
+    /// Observed shapes (real examples captured 2026-05-20):
+    ///
+    /// - Single-line, marker + inline content:
+    ///   `"<dkluever2025> 18 Uhr Wahlkampfteam MV in Rehna…"`
+    ///   →  `"18 Uhr Wahlkampfteam MV in Rehna…"`
+    ///
+    /// - Multi-line, marker + inline content on first line:
+    ///   `"<thebug> Heute ist wieder Sitzung…\nhttps://bbb…"`
+    ///   →  `"Heute ist wieder Sitzung…\nhttps://bbb…"`
+    ///
+    /// - Multi-line, marker + datetime then body:
+    ///   `"<Agitatorrr> 2026-05-20 21:00 Uhr: Stammtisch\n…"`
+    ///   →  `"2026-05-20 21:00 Uhr: Stammtisch\n…"`
+    ///
+    /// - Marker alone on first line, body on subsequent lines:
+    ///   `"<sebulino>\nWer: AG Test\nMeeting morgen"`
+    ///   →  `"Wer: AG Test\nMeeting morgen"`
+    ///
+    /// Only the FIRST `<…>` marker is stripped, and only if the text
+    /// starts with `<`. Angle brackets later in the body (rare, but
+    /// possible in quoted text or URLs) are left intact.
     var displayText: String {
-        guard text.first == "<" else { return text }
-
-        if let newlineIndex = text.firstIndex(of: "\n") {
-            let firstLine = text[..<newlineIndex]
-            // Only strip if the first line looks like `<...> ...` — must
-            // contain a closing angle bracket too, to avoid eating
-            // legitimate content that happens to start with "<".
-            if firstLine.contains(">") {
-                let remainder = text[text.index(after: newlineIndex)...]
-                return String(remainder).trimmingCharacters(in: .whitespacesAndNewlines)
-            }
+        guard text.first == "<",
+              let closingBracket = text.firstIndex(of: ">") else {
+            return text
         }
-        return text
+        // Walk past the closing bracket and any whitespace that
+        // immediately follows it (space, tab, OR newline) so the
+        // returned text starts with real content, not residue from
+        // the stripped marker.
+        let afterBracket = text.index(after: closingBracket)
+        let remainder = text[afterBracket...].drop(while: \.isWhitespace)
+        return String(remainder)
     }
 
     /// First line of text, or first two lines joined by " · " if the first starts with "Wer:".

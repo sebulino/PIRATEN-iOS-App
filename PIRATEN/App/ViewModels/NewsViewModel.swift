@@ -68,20 +68,6 @@ final class NewsViewModel: ObservableObject {
         Task {
             do {
                 let fetched = try await newsRepository.fetchNews()
-                #if DEBUG
-                // TEMPORARY diagnostic for #67 follow-up — the `displayText`
-                // strip is not catching all `<username>` prefixes. Dump the
-                // raw text of the 3 most recent items so we can see the
-                // exact shape and fix the strip logic. To be reverted once
-                // the strip handles all known shapes.
-                for item in fetched.prefix(3) {
-                    print("[NEWS-RAW] messageId=\(item.messageId)")
-                    print("[NEWS-RAW] text=⟨\(item.text)⟩")
-                    print("[NEWS-RAW] displayText=⟨\(item.displayText)⟩")
-                    print("[NEWS-RAW] headline=⟨\(item.headline)⟩")
-                    print("[NEWS-RAW] ---")
-                }
-                #endif
                 self.items = fetched
                 self.loadState = .loaded
                 self.errorMessage = nil
