@@ -29,7 +29,13 @@ final class DiscourseCacheStore {
 
     // MARK: - Initialization
 
-    init(userDefaults: UserDefaults = .standard) {
+    /// Nonisolated so that `DiscourseCacheStore()` can be used as a default
+    /// value for parameters of `@MainActor`-isolated initializers
+    /// (e.g. `ForumViewModel.init(cache: DiscourseCacheStore = DiscourseCacheStore())`).
+    /// Swift 6's strict concurrency evaluates default values in the caller's
+    /// isolation context, which may be nonisolated even when the enclosing
+    /// initializer is `@MainActor`. UserDefaults itself is thread-safe.
+    nonisolated init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
     }
 

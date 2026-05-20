@@ -116,6 +116,8 @@ final class NotificationSettingsManager: ObservableObject {
         self.forumEnabled = defaults.bool(forKey: Keys.forumEnabled)
         self.todosEnabled = defaults.bool(forKey: Keys.todosEnabled)
         self.newsEnabled = defaults.bool(forKey: Keys.newsEnabled)
+        self.knowledgeEnabled = defaults.bool(forKey: Keys.knowledgeEnabled)
+        self.eventsEnabled = defaults.bool(forKey: Keys.eventsEnabled)
 
         // Check current authorization status
         Task {
