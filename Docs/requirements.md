@@ -522,28 +522,58 @@ permitted window if I tapped by accident.
 
 ---
 
-##### FR-FORUM-005 — Pin Discourse categories
+##### FR-FORUM-005 — Surface relevant Discourse categories
 
-**User goal.** As a member, I want to pin the Discourse categories I
-follow most often (e.g., my Landesverband) so they're easier to find
-at a glance in the forum tab.
+**Status (2026-05-20):** Deferred to post-v1. Two competing design
+sketches captured below; the choice between them is itself the open
+design question.
 
-**Acceptance criteria.**
+**User goal.** As a member, I want the forum tab to surface the
+categories most relevant to me — my Landesverband, the working
+groups I'm active in — so I don't have to scroll past unrelated
+discussion every time I open the tab.
+
+**Design option A — Manual pinning (original spec).**
+
+The user explicitly pins categories they care about; pinned
+categories appear at the top.
 
 - A pin gesture or button on a category persists the pin locally.
 - Pinned categories appear at the top of the forum tab listing.
-- Pin state is device-local (UserDefaults), never synced to the
-  server — matches the app's no-tracking baseline.
+- Pin state is device-local (UserDefaults), never synced.
 - Unpinning is symmetric.
-- Pinned-category ordering reflects pin chronology (newest first) OR
-  alphabetical — decision deferred to UX implementation.
+- Pro: explicit user intent.
+- Con: requires a UI affordance and a setup step before value
+  appears.
+
+**Design option B — Implicit "categories you read most" header.**
+
+The forum tab shows a horizontal row (or vertical strip above the
+thread list) of categories derived from the user's recently-read
+threads. No manual setup.
+
+- Track per-category thread-open counts in UserDefaults (or derive
+  from `read_state` Discourse already exposes).
+- The top N categories by recent open frequency render as
+  navigation chips at the top of the forum tab.
+- Tapping a chip filters the thread list to that category.
+- Pro: zero-setup; surfaces relevance automatically as usage
+  matures.
+- Con: needs a sensible bootstrap behaviour for new users (no
+  history → show all categories alphabetically, or show
+  Discourse's most-active categories).
+
+The two are not mutually exclusive — Option B could be the default
+with Option A available as an explicit override. The decision
+deserves a UX prototype before implementation; track in a follow-up
+ADR when picked up post-v1.
 
 **Platforms.**
 
-| Platform | Status      | Notes                                                     |
-|----------|-------------|-----------------------------------------------------------|
-| iOS      | Not started | No `ForumPinStore` exists yet; UI affordance also missing. |
-| Android  | Not started | Use Jetpack DataStore for the local pin set.              |
+| Platform | Status   | Notes                                                                    |
+|----------|----------|--------------------------------------------------------------------------|
+| iOS      | Deferred | Design decision pending. No code yet for either option.                 |
+| Android  | Deferred | Same decision; Jetpack DataStore for either option's persistence layer. |
 
 ---
 
@@ -596,6 +626,11 @@ unread when I open Discourse on the web.
 
 ##### FR-FORUM-008 — Create a new forum topic
 
+**Status (2026-05-20):** Deferred to post-v1. v1 is read + reply +
+react; topic creation rolls in a subsequent release once the v1 ship
+gate is cleared and TestFlight feedback informs the compose-form
+shape (category picker UX, draft persistence, etc.).
+
 **User goal.** As a member, I want to start a new forum topic from
 the app so I can raise discussions without switching to the web
 browser.
@@ -607,16 +642,18 @@ browser.
   markdown body (required).
 - Submit sends `POST /posts.json` with `archetype=regular` and the
   selected `category` ID.
-- On success: the new topic appears at the top of the forum list (by
-  virtue of `last_activity_at`); the user navigates to it.
+- On success: the new topic appears at the top of the forum list
+  (by virtue of `last_activity_at`); the user navigates to it.
 - The user cannot submit with an empty title or body.
+- Drafts auto-save (similar to `MessageDraftStore`) — implementation
+  detail for the post-v1 work.
 
 **Platforms.**
 
-| Platform | Status      | Notes                                                  |
-|----------|-------------|--------------------------------------------------------|
-| iOS      | Not started | No `NewTopicView` exists yet.                          |
-| Android  | Not started | Same `POST /posts.json` API; same compose-form shape. |
+| Platform | Status   | Notes                                                  |
+|----------|----------|--------------------------------------------------------|
+| iOS      | Deferred | Post-v1. No `NewTopicView` exists yet.                 |
+| Android  | Deferred | Post-v1. Same `POST /posts.json` API.                  |
 
 ### 3.4 Wissen — knowledge (KNOW)
 
