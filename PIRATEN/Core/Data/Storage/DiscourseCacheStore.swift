@@ -25,7 +25,10 @@ final class DiscourseCacheStore {
 
     // MARK: - Dependencies
 
-    private let userDefaults: UserDefaults
+    /// `nonisolated` so the nonisolated initializer can assign to it.
+    /// `UserDefaults` is documented as thread-safe, so sharing the
+    /// reference across actors is safe.
+    private nonisolated let userDefaults: UserDefaults
 
     // MARK: - Initialization
 

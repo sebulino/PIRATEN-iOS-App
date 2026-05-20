@@ -409,9 +409,15 @@ final class DiscourseAPIClient {
         let bodyData: Data
 
         if formEncoded {
-            // Matches what the Discourse web UI sends from the browser.
+            // Matches what the Discourse web UI sends from the browser
+            // byte-for-byte, including the Accept header. The bare /post_actions
+            // path (no .json suffix) with `Accept: */*` keeps Rails out of
+            // JSON-format parameter wrapping and lets the form-encoded body
+            // arrive at the controller with `id`, `post_action_type_id`, and
+            // `flag_topic` at top level.
             headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
             headers["X-Requested-With"] = "XMLHttpRequest"
+            headers["Accept"] = "*/*"  // override commonHeaders() default of application/json
             let payload = "id=\(postId)&post_action_type_id=2&flag_topic=false"
             bodyData = Data(payload.utf8)
         } else {

@@ -67,7 +67,12 @@ protocol LocalNotificationScheduling: Sendable {
 /// Works both in-view (foreground) and headless (background).
 struct LocalNotificationScheduler: LocalNotificationScheduling {
 
-    init() {}
+    /// `nonisolated` so the default-value expression
+    /// `scheduler: LocalNotificationScheduling = LocalNotificationScheduler()`
+    /// on `BackgroundRefreshCoordinator.init` is valid under
+    /// `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`. The struct holds
+    /// no mutable state.
+    nonisolated init() {}
 
     func schedule(_ category: NotificationCategory) async {
         let content = UNMutableNotificationContent()
