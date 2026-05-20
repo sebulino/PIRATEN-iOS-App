@@ -254,6 +254,23 @@ struct ForumView: View {
                 viewModel.loadTopics()
             }
         }
+        .task {
+            // Auto-trigger Discourse auth on first appearance of the
+            // .notAuthenticated state when no attempt has been made yet
+            // (#68). The user just authenticated via PiratenSSO and
+            // tapped Forum — they obviously want to use the forum, so
+            // skip the explicit "Mit Forum verbinden" tap and open
+            // ASWebAuthenticationSession directly.
+            //
+            // Only fires when authState is .idle. After a user cancel or
+            // a failure, authState becomes .failed and the button
+            // reappears for explicit retry — auto-retry on .failed would
+            // be a frustrating loop.
+            if case .idle = discourseAuthCoordinator.authState,
+               discourseAuthCoordinator.isAuthAvailable {
+                await discourseAuthCoordinator.authenticate(from: window)
+            }
+        }
     }
 
     @ViewBuilder
