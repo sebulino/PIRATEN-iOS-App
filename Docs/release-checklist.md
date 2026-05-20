@@ -41,18 +41,49 @@ item applies to every release; cross out what does not.
 
 ---
 
-## Pre-v1 release blockers
+## Pre-v1 release blockers (historical — all resolved 2026-05-20)
 
-Items that must be resolved before the first v1 TestFlight build:
+All four are closed for the v1 TestFlight build:
 
-- [ ] **OPEN-02** — Likes sync to Discourse end-to-end (FR-FORUM-004).
-- [ ] **OPEN-09** — `handleAuthenticationError()` has a defined behaviour
-      and is no longer inert.
-- [ ] **OPEN-12** — `BGAppRefreshTask` dispatches local iOS notifications
-      for enabled categories (FR-NOTIF-004).
-- [ ] **OPEN-06** — CI pipeline exists and passes on the release branch.
+- [x] **OPEN-02** — Likes sync to Discourse end-to-end (FR-FORUM-004).
+      Resolved via [ADR-0014](./adr/0014-like-strategy-chain.md).
+- [x] **OPEN-09** — `handleAuthenticationError()` re-enabled with
+      single-attempt guard and `.sessionExpired` transition.
+- [x] **OPEN-12** — `BGAppRefreshTask` dispatches local notifications via
+      [ADR-0015](./adr/0015-background-notification-coordinator.md)
+      `BackgroundRefreshCoordinator` (FR-NOTIF-004).
+- [x] **OPEN-06** — CI pipeline at `.github/workflows/ci.yml` runs on
+      every PR and push to main.
 
 ---
+
+## Visual polish sanity check
+
+Before the functional smoke test: open each tab and spend ~30 seconds
+*looking* at the content. This catches the class of bugs where the
+code "works" but the UI shows something that shouldn't be there.
+Specifically look for:
+
+- [ ] **Raw markup leaking through** — angle-bracket usernames like
+      `<dkluever2025>`, BBCode-style tags, HTML entities (`&amp;`,
+      `&lt;`), unescaped emoji shortcodes (`:heart:`), raw markdown
+      symbols where rendered text should be.
+- [ ] **Redundant metadata** — usernames or timestamps inside body
+      text that are ALSO shown separately as their own UI element.
+- [ ] **Visible English** where German should be (and vice-versa for
+      identifiers).
+- [ ] **Placeholder text** still visible (`TODO`, `Lorem`, `<placeholder>`,
+      empty grey labels).
+- [ ] **Missing avatars / images** showing the default broken-image
+      icon.
+- [ ] **Unexpected whitespace** — leading blank lines, multiple
+      consecutive blanks, trailing space-then-period patterns.
+- [ ] **Broken character encoding** — German umlauts rendering as
+      `Ã¤`, `Ã¶`, etc. (indicates a UTF-8 / Latin-1 mismatch).
+
+Note: this is "look with your eyes" work. If you find yourself
+mechanically ticking boxes without actually scrolling, you've
+missed the point of this section.
 
 ## Acceptance smoke test
 
