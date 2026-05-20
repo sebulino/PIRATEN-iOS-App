@@ -20,6 +20,18 @@ final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
     /// Creates a URLSessionHTTPClient with a caching-enabled session.
     /// Uses a 10 MB memory / 50 MB disk cache (see D-025).
     /// Respects standard HTTP cache headers (Cache-Control, ETag, Last-Modified).
+    ///
+    /// Cookies are intentionally disabled. The app authenticates exclusively
+    /// via header-based credentials — PiratenSSO Bearer token for
+    /// meine-piraten.de and Discourse User-Api-Key for the forum — neither of
+    /// which need cookies. URLSession's default behavior auto-stores cookies
+    /// from Set-Cookie responses and re-sends them on subsequent requests to
+    /// the same host. For Discourse this leaks the browser-handshake's session
+    /// cookies (from /user-api-key/new) into normal API requests, where they
+    /// arrive alongside the User-Api-Key and confuse Discourse's middleware
+    /// into treating the request as a browser navigation (expecting a CSRF
+    /// token, not finding one, emitting an empty-body 400). Disabling cookies
+    /// entirely is both the fix and the privacy-first default.
     static func withCaching() -> URLSessionHTTPClient {
         let config = URLSessionConfiguration.default
         config.urlCache = URLCache(
@@ -29,6 +41,9 @@ final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
         config.requestCachePolicy = .useProtocolCachePolicy
         config.waitsForConnectivity = true
         config.timeoutIntervalForResource = 30
+        config.httpCookieAcceptPolicy = .never
+        config.httpShouldSetCookies = false
+        config.httpCookieStorage = nil
         let session = URLSession(configuration: config)
         return URLSessionHTTPClient(session: session)
     }
