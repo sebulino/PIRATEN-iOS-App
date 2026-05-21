@@ -65,6 +65,16 @@ The RSA implementation is hand-rolled (`RSAKeyManager.swift`) in line with
   reactions-plugin endpoint and a form-encoded variant before falling
   back to the original JSON request, with the winning strategy cached
   per install.
+- **Lazy vs eager session validation.** The Android sibling app validates
+  the User-Api-Key at startup with an explicit ping to Discourse and
+  prompts for re-auth immediately if it fails. iOS does not. iOS instead
+  relies on implicit validation: the notification poller's first call at
+  `MainTabView` appearance hits an authenticated endpoint;
+  `DiscourseHTTPClient` clears the credential on 401/403; `ForumView.task`
+  re-triggers the handshake the next time the user lands on Forum. The
+  trade-off — eager re-auth surfaces the problem sooner; lazy re-auth
+  avoids interrupting users who don't visit Discourse-dependent tabs.
+  Decided lazy for v1, see [Q-065](../decisions-log.md#q-065).
 - **Failure modes.** If the key is revoked on Discourse (e.g. by an admin),
   subsequent requests return 401 and the app routes to a re-login flow.
   `handleAuthenticationError` currently does not implement this

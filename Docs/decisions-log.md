@@ -577,3 +577,30 @@ Status key: `OPEN` · `DECIDED` · `APPLIED` (i.e. the docs have been updated).
 - **Context:** GitHub issue and PR templates — now or later?
 - **Decision:** Now. Bug report, feature request, and PR template.
 - **Follow-up:** Claude Code prompt prepared in `prompt-q064-github-templates.md`.
+
+### Q-065 — Eager vs lazy validation of the Discourse User-Api-Key at app launch
+- **Status:** DECIDED 2026-05-21
+- **Context:** The Android sibling app pings Discourse (`/categories.json`)
+  at startup to validate the User-Api-Key. If invalid, it triggers re-auth
+  immediately, before the user encounters the dead key inside a Discourse-
+  dependent flow. iOS currently relies on implicit validation: the
+  `DiscourseNotificationPoller.poll()` call at first appearance of
+  `MainTabView` hits an authenticated endpoint; `DiscourseHTTPClient`
+  clears the credential on 401/403; and `ForumView.task` re-triggers the
+  handshake when the user lands on the Forum tab. The remaining gap: a
+  user with a dead key who never visits Forum/Messages doesn't see the
+  re-auth prompt until they do.
+- **Decision:** Do nothing for v1. The implicit path covers the common
+  case. Eager validation would add either an explicit `/session/current.json`
+  call at launch (Option C in the analysis) or a published "credential
+  cleared" event observed by `RootView` (Option B). Neither is worth the
+  complexity until there is user feedback that the current behaviour is
+  noticeable / annoying.
+- **Reversal trigger:** Tester or user feedback that the re-auth prompt
+  appears too late (e.g., "tapped Forum, had to wait for auth before
+  reading anything"). On that signal, revisit and most likely implement
+  Option B (publish-and-observe on credential clear, no extra network
+  call) — that's the lowest-cost variant that closes the gap.
+- **Follow-up:** None now. Note added to `Docs/adr/0009-discourse-user-api-key.md`
+  context section so the design choice is visible alongside the auth
+  flow itself.
