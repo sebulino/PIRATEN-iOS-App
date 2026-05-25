@@ -84,11 +84,72 @@ final class URLSessionHTTPClient: HTTPClient, @unchecked Sendable {
     }
 }
 
-/// Preserves Authorization headers when URLSession follows HTTP redirects.
-/// By default, iOS strips Authorization headers on redirect for security.
-/// This is needed for API calls where the server may redirect (e.g. HTTP→HTTPS
-/// or domain canonicalization) but the auth header must survive.
-private final class RedirectHandler: NSObject, URLSessionTaskDelegate {
+/// Preserves Authorization (and Discourse User-Api-* ) headers when URLSession
+/// follows HTTP redirects — **but only when the redirect target is on the same
+/// host as the original request**.
+///
+/// By default, iOS strips Authorization headers on redirect for security. This
+/// delegate is needed for legitimate same-host redirects (HTTP→HTTPS, path
+/// canonicalization) where the auth header must survive. Re-attaching on a
+/// *cross-host* redirect would leak our PiratenSSO Bearer token or Discourse
+/// User-Api-Key to a third-party origin — see security audit finding H-3.
+///
+/// Sensitive headers re-attached on same-host redirects:
+///   * `Authorization`              — PiratenSSO Bearer token (meine-piraten.de)
+///   * `User-Api-Key`               — Discourse User API Key
+///   * `User-Api-Client-Id`         — Discourse client identifier paired with the key
+///
+/// On a host change, URLSession's default behaviour (drop the headers) is what
+/// we want; we simply forward `request` unmodified.
+/// Internal so unit tests can exercise the pure host-comparison logic without
+/// having to spin up URLSession + a mock URLProtocol stack.
+final class RedirectHandler: NSObject, URLSessionTaskDelegate {
+
+    /// Headers that must never travel to a host other than the original.
+    /// Kept here as a single source of truth — add any future credential
+    /// header to this list rather than re-implementing the check.
+    static let sensitiveHeaders = [
+        "Authorization",
+        "User-Api-Key",
+        "User-Api-Client-Id",
+    ]
+
+    /// Pure decision function: does the redirect target share a host with
+    /// the original request? Case-insensitive (RFC 3986 §3.2.2). Returns
+    /// `false` if either host is missing — defensive default treats
+    /// "unknown origin" as cross-origin.
+    static func isSameHost(original: URL?, redirected: URL?) -> Bool {
+        guard let originalHost = original?.host,
+              let newHost = redirected?.host
+        else { return false }
+        return originalHost.caseInsensitiveCompare(newHost) == .orderedSame
+    }
+
+    /// Builds the redirect request, re-attaching sensitive headers only on
+    /// same-host redirects. Extracted from the delegate method so it's
+    /// unit-testable without URLSessionTask.
+    static func sanitizedRedirect(
+        originalRequest: URLRequest?,
+        newRequest: URLRequest
+    ) -> URLRequest {
+        guard isSameHost(
+            original: originalRequest?.url,
+            redirected: newRequest.url
+        ) else {
+            // Cross-host: URLSession has already stripped sensitive headers
+            // from `newRequest`; return it unmodified.
+            return newRequest
+        }
+
+        var redirectRequest = newRequest
+        for header in sensitiveHeaders {
+            if let value = originalRequest?.value(forHTTPHeaderField: header) {
+                redirectRequest.setValue(value, forHTTPHeaderField: header)
+            }
+        }
+        return redirectRequest
+    }
+
     func urlSession(
         _ session: URLSession,
         task: URLSessionTask,
@@ -96,10 +157,9 @@ private final class RedirectHandler: NSObject, URLSessionTaskDelegate {
         newRequest request: URLRequest,
         completionHandler: @escaping (URLRequest?) -> Void
     ) {
-        var redirectRequest = request
-        if let originalAuth = task.originalRequest?.value(forHTTPHeaderField: "Authorization") {
-            redirectRequest.setValue(originalAuth, forHTTPHeaderField: "Authorization")
-        }
-        completionHandler(redirectRequest)
+        completionHandler(Self.sanitizedRedirect(
+            originalRequest: task.originalRequest,
+            newRequest: request
+        ))
     }
 }

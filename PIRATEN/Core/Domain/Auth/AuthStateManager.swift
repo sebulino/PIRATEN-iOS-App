@@ -27,6 +27,12 @@ final class AuthStateManager: ObservableObject {
     private let authRepository: AuthRepository
     private let recentRecipientsStorage: RecentRecipientsStorage?
 
+    /// Optional logout fan-out hook. When set, both explicit logout and
+    /// the session-expired path go through it (security audit H-2).
+    /// Optional so existing tests that construct AuthStateManager without
+    /// a full container keep working.
+    var logoutHook: (() async -> Void)?
+
     /// Guards against concurrent auth error handling.
     /// When true, subsequent auth error callbacks are ignored.
     /// Reset when user successfully re-authenticates or logs out explicitly.
@@ -57,12 +63,18 @@ final class AuthStateManager: ObservableObject {
 
     /// Performs logout.
     /// Resets the auth error guard to allow fresh authentication.
-    /// Clears user-specific local data (recent recipients).
+    /// When `logoutHook` is wired (production / integration tests), it runs
+    /// the full `LogoutOrchestrator` fan-out. Otherwise falls back to the
+    /// minimal pre-audit behaviour (auth repo + recent recipients only),
+    /// which keeps lightweight unit tests trivial to set up.
     func logout() {
         Task {
-            await authRepository.logout()
-            // Clear user-specific local data
-            recentRecipientsStorage?.clearAll()
+            if let logoutHook {
+                await logoutHook()
+            } else {
+                await authRepository.logout()
+                recentRecipientsStorage?.clearAll()
+            }
             // Reset the auth error guard on explicit logout
             isHandlingAuthError = false
             currentState = .unauthenticated
@@ -144,8 +156,15 @@ final class AuthStateManager: ObservableObject {
         isHandlingAuthError = true
 
         Task {
-            await authRepository.logout()
-            recentRecipientsStorage?.clearAll()
+            // Prefer the full orchestrator fan-out when wired up
+            // (security audit H-2). Falls back to the minimal pre-audit
+            // behaviour when the hook isn't set (unit-test contexts).
+            if let logoutHook {
+                await logoutHook()
+            } else {
+                await authRepository.logout()
+                recentRecipientsStorage?.clearAll()
+            }
             currentState = .sessionExpired
         }
     }

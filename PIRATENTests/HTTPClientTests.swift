@@ -553,6 +553,109 @@ struct HTTPClientJSONDecodingTests {
     }
 }
 
+// MARK: - RedirectHandler Tests (Security Audit H-3)
+
+/// Verifies the same-host scoping introduced after the security audit
+/// flagged H-3 (cross-origin credential leak via redirect re-attachment).
+/// Tests target the pure `sanitizedRedirect` / `isSameHost` helpers so we
+/// don't need URLSession + URLProtocol scaffolding to prove the guarantee.
+struct RedirectHandlerTests {
+
+    private static let original = URL(string: "https://forum.piratenpartei.de/posts.json")!
+    private static let bearer = "Bearer eyJhbGciOiJIUzI1NiJ9.test"
+    private static let apiKey = "deadbeef-fake-discourse-key"
+    private static let clientId = "F0291949-CCB9-4C91-B947-292F98247041"
+
+    private static func originalRequest() -> URLRequest {
+        var req = URLRequest(url: original)
+        req.setValue(bearer, forHTTPHeaderField: "Authorization")
+        req.setValue(apiKey, forHTTPHeaderField: "User-Api-Key")
+        req.setValue(clientId, forHTTPHeaderField: "User-Api-Client-Id")
+        req.setValue("PIRATEN/1.0", forHTTPHeaderField: "User-Agent")
+        return req
+    }
+
+    @Test func sameHostRedirectKeepsAuthHeaders() {
+        let original = Self.originalRequest()
+        let redirected = URLRequest(url: URL(string: "https://forum.piratenpartei.de/posts/42.json")!)
+
+        let result = RedirectHandler.sanitizedRedirect(
+            originalRequest: original,
+            newRequest: redirected
+        )
+
+        #expect(result.value(forHTTPHeaderField: "Authorization") == Self.bearer)
+        #expect(result.value(forHTTPHeaderField: "User-Api-Key") == Self.apiKey)
+        #expect(result.value(forHTTPHeaderField: "User-Api-Client-Id") == Self.clientId)
+    }
+
+    @Test func crossHostRedirectStripsAllSensitiveHeaders() {
+        let original = Self.originalRequest()
+        // Attacker-controlled target — even with an https scheme this MUST NOT receive credentials.
+        let redirected = URLRequest(url: URL(string: "https://evil.example.com/collect")!)
+
+        let result = RedirectHandler.sanitizedRedirect(
+            originalRequest: original,
+            newRequest: redirected
+        )
+
+        #expect(result.value(forHTTPHeaderField: "Authorization") == nil)
+        #expect(result.value(forHTTPHeaderField: "User-Api-Key") == nil)
+        #expect(result.value(forHTTPHeaderField: "User-Api-Client-Id") == nil)
+    }
+
+    @Test func subdomainChangeCountsAsCrossHost() {
+        // forum.piratenpartei.de -> www.piratenpartei.de is still a host change.
+        // We deliberately do NOT do "registrable-domain" comparison: subdomains
+        // can be operated by different teams with different trust levels.
+        let original = Self.originalRequest()
+        let redirected = URLRequest(url: URL(string: "https://www.piratenpartei.de/login")!)
+
+        let result = RedirectHandler.sanitizedRedirect(
+            originalRequest: original,
+            newRequest: redirected
+        )
+
+        #expect(result.value(forHTTPHeaderField: "Authorization") == nil)
+        #expect(result.value(forHTTPHeaderField: "User-Api-Key") == nil)
+    }
+
+    @Test func hostComparisonIsCaseInsensitive() {
+        // RFC 3986 §3.2.2 — host comparison is case-insensitive.
+        let original = URL(string: "https://Forum.PiratenPartei.de/x")
+        let redirected = URL(string: "https://forum.piratenpartei.de/y")
+
+        #expect(RedirectHandler.isSameHost(original: original, redirected: redirected))
+    }
+
+    @Test func missingHostsTreatedAsCrossOrigin() {
+        // Defensive default: if we can't determine either host, drop credentials.
+        let original = URL(string: "https://forum.piratenpartei.de/x")
+        let opaque = URL(string: "data:text/plain;base64,SGVsbG8=")
+
+        #expect(!RedirectHandler.isSameHost(original: original, redirected: opaque))
+        #expect(!RedirectHandler.isSameHost(original: nil, redirected: original))
+        #expect(!RedirectHandler.isSameHost(original: original, redirected: nil))
+    }
+
+    @Test func sameHostPreservesNonSensitiveHeadersOnRedirectRequest() {
+        // The framework's `newRequest` may carry its own headers (e.g. cookies,
+        // user-agent). We should leave those untouched and only ADD the
+        // sensitive ones from the original request.
+        let original = Self.originalRequest()
+        var redirected = URLRequest(url: URL(string: "https://forum.piratenpartei.de/posts/42")!)
+        redirected.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        let result = RedirectHandler.sanitizedRedirect(
+            originalRequest: original,
+            newRequest: redirected
+        )
+
+        #expect(result.value(forHTTPHeaderField: "Accept") == "application/json")
+        #expect(result.value(forHTTPHeaderField: "Authorization") == Self.bearer)
+    }
+}
+
 // MARK: - Test Helpers
 
 /// A stub HTTP client that captures the last request for inspection

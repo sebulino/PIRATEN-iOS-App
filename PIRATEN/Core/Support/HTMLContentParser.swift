@@ -31,7 +31,24 @@ enum HTMLContentParser {
     /// This preserves links and converts them to tappable links in SwiftUI.
     /// Strips hardcoded foreground colors so SwiftUI's `.foregroundColor(.primary)`
     /// can take effect, ensuring legibility in both light and dark mode.
+    ///
+    /// ## Security note (audit H-4)
+    /// `NSAttributedString(data:options:documentAttributes:)` with the
+    /// `.html` document type is **WebKit-backed**: it fetches any remote
+    /// resources referenced by `<img>`, `<link>`, `<iframe>`, `<video>`,
+    /// CSS `url()`, etc., during parsing. Because the HTML here is the
+    /// body of attacker-controllable Discourse posts, an authenticated
+    /// member could embed a tracking pixel to leak app users' IP and
+    /// reading-time data.
+    ///
+    /// Mitigation: we pre-sanitize the HTML to strip every tag that can
+    /// trigger network fetches, then hand the result to the WebKit
+    /// parser. Inline tappable links (`<a href>`) are preserved because
+    /// links don't fetch on parse — only on user tap, which routes
+    /// through SwiftUI's `Link` / SFSafariViewController.
     private static func parseHTML(_ html: String) -> AttributedString? {
+        let safeHTML = sanitizeForOfflineParsing(html)
+
         // Wrap in basic HTML structure for proper parsing
         let wrappedHTML = """
         <!DOCTYPE html>
@@ -43,7 +60,7 @@ enum HTMLContentParser {
         a { color: #007AFF; }
         </style>
         </head>
-        <body>\(html)</body>
+        <body>\(safeHTML)</body>
         </html>
         """
 
@@ -51,7 +68,9 @@ enum HTMLContentParser {
             return nil
         }
 
-        // Parse HTML on main thread (required for NSAttributedString HTML parsing)
+        // Parse HTML on main thread (required for NSAttributedString HTML parsing).
+        // No network fetches can be triggered because all resource-loading
+        // tags were removed by sanitizeForOfflineParsing above.
         let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
             .documentType: NSAttributedString.DocumentType.html,
             .characterEncoding: String.Encoding.utf8.rawValue
@@ -73,6 +92,85 @@ enum HTMLContentParser {
             }
         }
         return attributed
+    }
+
+    /// Removes every HTML construct that can trigger a network fetch
+    /// during NSAttributedString HTML parsing.
+    ///
+    /// Discourse post bodies are user-generated content — any authenticated
+    /// member could otherwise embed a tracking pixel and observe app users'
+    /// IP + reading times via their server logs. WebKit-backed parsing
+    /// fetches these resources eagerly, before SwiftUI ever sees the
+    /// content, so the leak happens even for posts the user never opens.
+    ///
+    /// Tags removed (case-insensitive, with or without attributes):
+    /// - `<img>`         — primary pixel-tracking vector
+    /// - `<link>`        — `<link rel="stylesheet" href="…">`
+    /// - `<iframe>`      — embedded documents
+    /// - `<object>` / `<embed>` — plug-in content
+    /// - `<video>` / `<audio>` / `<source>` / `<track>` — media
+    /// - `<picture>`     — picture+source combos
+    /// - `<script>` / `<style>`   — defensive; not parsed for behaviour
+    ///   here but stripping prevents external CSS `url()` / `@import`
+    ///   from sneaking in via inline styles.
+    /// - `<base>` / `<meta>`      — could alter resolution of relative URLs
+    ///
+    /// Inline `<a href>` and text formatting tags are deliberately preserved
+    /// so links remain tappable — clicking a link is a user-initiated
+    /// action that goes through SwiftUI / SFSafariViewController, not
+    /// through the HTML parser.
+    static func sanitizeForOfflineParsing(_ html: String) -> String {
+        let dangerousTags = [
+            "img", "link", "iframe", "object", "embed",
+            "video", "audio", "source", "track",
+            "picture", "script", "style", "base", "meta",
+        ]
+
+        var result = html
+
+        // Strip whole elements (opening, content, closing) for tags that
+        // wrap content — e.g. <script>fetch(...)</script>.
+        let pairedTags = ["script", "style", "iframe", "object", "video", "audio", "picture"]
+        for tag in pairedTags {
+            let pattern = "<\(tag)\\b[^>]*>[\\s\\S]*?</\(tag)\\s*>"
+            result = result.replacingOccurrences(
+                of: pattern,
+                with: "",
+                options: [.regularExpression, .caseInsensitive]
+            )
+        }
+
+        // Strip standalone / void-element tags. Catches both <img …> and
+        // <img …/> forms and any unclosed instance — Discourse occasionally
+        // emits malformed HTML from third-party plugins.
+        for tag in dangerousTags {
+            let pattern = "<\(tag)\\b[^>]*/?>"
+            result = result.replacingOccurrences(
+                of: pattern,
+                with: "",
+                options: [.regularExpression, .caseInsensitive]
+            )
+        }
+
+        // Strip inline `style="… url(…) …"` and `background=…` attributes
+        // that could reference remote URLs even on otherwise-safe tags.
+        result = result.replacingOccurrences(
+            of: #"\s+style\s*=\s*"[^"]*""#,
+            with: "",
+            options: [.regularExpression, .caseInsensitive]
+        )
+        result = result.replacingOccurrences(
+            of: #"\s+style\s*=\s*'[^']*'"#,
+            with: "",
+            options: [.regularExpression, .caseInsensitive]
+        )
+        result = result.replacingOccurrences(
+            of: #"\s+background\s*=\s*"[^"]*""#,
+            with: "",
+            options: [.regularExpression, .caseInsensitive]
+        )
+
+        return result
     }
 
     /// Strips HTML tags from content, preserving only plain text.

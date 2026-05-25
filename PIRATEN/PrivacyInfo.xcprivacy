@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+        PIRATEN — Apple Privacy Manifest
+        Required since Q1 2024 for App Store submission. See:
+        https://developer.apple.com/documentation/bundleresources/privacy_manifest_files
+
+        This app:
+          * collects NO user data of any kind
+          * performs NO tracking (no analytics, no crash reporting, no ad networks)
+          * accesses Required Reason APIs only for first-party, app-internal purposes
+
+        Related: ADR-0009 (Discourse User API Key), Docs/THREAT_MODEL.md
+    -->
+
+    <key>NSPrivacyTracking</key>
+    <false/>
+
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
+
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array/>
+
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <!--
+            UserDefaults — used pervasively for first-party preferences:
+            notification toggles, staleness markers, last-seen IDs, login state.
+            Never written to a shared App Group; the app has no extensions.
+        -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>CA92.1</string>
+            </array>
+        </dict>
+
+        <!--
+            File timestamps — used by NewsCacheStore / DiscourseCacheStore /
+            KnowledgeCache to drive cache-staleness checks (see D-025).
+            Timestamps are read on the user's own device only and never
+            transmitted off-device.
+        -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>C617.1</string>
+            </array>
+        </dict>
+
+        <!--
+            Disk space — Foundation's URLResourceKey volumeAvailableCapacity
+            path is reached indirectly by URLCache when computing eviction.
+            Declared defensively; required-reason "E174.1" covers "writing or
+            modifying files in app's container".
+        -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>E174.1</string>
+            </array>
+        </dict>
+
+        <!--
+            System boot time — read indirectly by URLSession / os_log infra
+            for log correlation. Declared because Apple's static analyzer
+            flags any framework that links Foundation networking.
+        -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>35F9.1</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

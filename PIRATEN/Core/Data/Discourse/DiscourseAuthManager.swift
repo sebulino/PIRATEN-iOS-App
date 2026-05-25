@@ -430,6 +430,48 @@ final class DiscourseAuthManager {
     /// The Keychain key used to store the Discourse credential
     static let discourseCredentialKey = "discourse_credential"
 
+    /// Performs **only** the server-side revoke HTTP call.
+    /// Returns `true` on HTTP 2xx, `false` on any non-2xx / transport error.
+    ///
+    /// Unlike `revokeAPIKey(...)`, this method does NOT touch local state
+    /// (Keychain, RSA key) — that's the LogoutOrchestrator's job. Separating
+    /// the call lets us distinguish "successfully revoked" from "network
+    /// down, retry later" so logout can enqueue a pending-revoke retry
+    /// (security audit H-2 follow-up: pending revoke marker).
+    ///
+    /// Sends the `User-Api-Key` and `User-Api-Client-Id` headers explicitly
+    /// so this works even when the active credential has already been
+    /// cleared from Keychain (the drain-on-launch path reads from a
+    /// separate "pending revoke" slot).
+    ///
+    /// - Parameters:
+    ///   - apiKey: The Discourse User API Key to revoke.
+    ///   - clientId: The client identifier that requested the key.
+    ///   - httpClient: A raw HTTP client (NOT a DiscourseHTTPClient wrapper),
+    ///     because the wrapper would try to inject headers from the active
+    ///     credential slot — which may be empty during a drain retry.
+    /// - Returns: `true` iff the server confirmed revocation (HTTP 2xx).
+    func performServerSideRevoke(
+        apiKey: String,
+        clientId: String,
+        httpClient: HTTPClient
+    ) async -> Bool {
+        guard let revokeURL = URL(string: "\(baseURL)/user-api-key/revoke") else {
+            return false
+        }
+        let headers: [String: String] = [
+            "User-Api-Key": apiKey,
+            "User-Api-Client-Id": clientId,
+        ]
+        let request = HTTPRequest(url: revokeURL, method: .post, headers: headers)
+        do {
+            let response = try await httpClient.execute(request)
+            return (200...299).contains(response.statusCode)
+        } catch {
+            return false
+        }
+    }
+
     /// Revokes the current Discourse API key and clears it from storage.
     /// This should be called during logout to ensure the key is invalidated server-side.
     ///
