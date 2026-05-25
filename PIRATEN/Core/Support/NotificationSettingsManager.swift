@@ -161,15 +161,24 @@ final class NotificationSettingsManager: ObservableObject {
 
     /// Disables all notifications and clears preferences.
     /// Called on logout to respect privacy.
+    ///
+    /// Must be kept in sync with the `@Published var *Enabled` properties
+    /// above. If you add a new category, add it here too — otherwise the
+    /// next user of the device sees the previous user's notification
+    /// preference. Security audit M-2 / LogoutOrchestrator depends on this.
     func clearAllSettings() {
         messagesEnabled = false
         forumEnabled = false
         todosEnabled = false
         newsEnabled = false
+        knowledgeEnabled = false
+        eventsEnabled = false
         let defaults = UserDefaults.standard
         defaults.removeObject(forKey: Keys.messagesEnabled)
         defaults.removeObject(forKey: Keys.forumEnabled)
         defaults.removeObject(forKey: Keys.todosEnabled)
         defaults.removeObject(forKey: Keys.newsEnabled)
+        defaults.removeObject(forKey: Keys.knowledgeEnabled)
+        defaults.removeObject(forKey: Keys.eventsEnabled)
     }
 }

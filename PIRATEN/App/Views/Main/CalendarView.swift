@@ -10,6 +10,9 @@ import SwiftUI
 struct CalendarView: View {
     @ObservedObject var viewModel: CalendarViewModel
 
+    /// Service used by detail view to add events to iOS Calendar (FR-EVT-003).
+    let eventKitService: EventKitServicing
+
     /// Callback when user taps the profile toolbar button
     var onProfileTapped: (() -> Void)?
 
@@ -110,7 +113,15 @@ struct CalendarView: View {
                 if !viewModel.upcomingEvents.isEmpty {
                     Section {
                         ForEach(viewModel.upcomingEvents) { event in
-                            CalendarEventRow(event: event)
+                            NavigationLink {
+                                CalendarEventDetailView(
+                                    event: event,
+                                    eventKitService: eventKitService
+                                )
+                            } label: {
+                                CalendarEventRow(event: event)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -118,8 +129,16 @@ struct CalendarView: View {
                 if !viewModel.pastWeekEvents.isEmpty {
                     Section {
                         ForEach(viewModel.pastWeekEvents) { event in
-                            CalendarEventRow(event: event)
-                                .opacity(0.7)
+                            NavigationLink {
+                                CalendarEventDetailView(
+                                    event: event,
+                                    eventKitService: eventKitService
+                                )
+                            } label: {
+                                CalendarEventRow(event: event)
+                                    .opacity(0.7)
+                            }
+                            .buttonStyle(.plain)
                         }
                     } header: {
                         Text("Vergangene Woche")
@@ -246,6 +265,14 @@ private struct CalendarEventRow: View {
 
 #Preview {
     CalendarView(
-        viewModel: CalendarViewModel(calendarRepository: FakeCalendarRepository())
+        viewModel: CalendarViewModel(calendarRepository: FakeCalendarRepository()),
+        eventKitService: PreviewCalendarEventKitService()
     )
+}
+
+@MainActor
+private struct PreviewCalendarEventKitService: EventKitServicing {
+    func addToCalendar(_ event: CalendarEvent) async throws {
+        // No-op for preview.
+    }
 }

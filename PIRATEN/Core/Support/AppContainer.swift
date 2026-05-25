@@ -156,6 +156,27 @@ final class AppContainer {
     /// Deep link router for handling notification-based navigation.
     let deepLinkRouter: DeepLinkRouter
 
+    /// iOS Calendar integration for FR-EVT-003. Used by
+    /// `CalendarEventDetailView` to add events to the system calendar.
+    let eventKitService: EventKitServicing
+
+    /// Centralised logout fan-out. Single point that clears every per-user
+    /// credential, cache, marker, and preference (security audit H-2).
+    /// Any new per-user store added to the app MUST also be added to
+    /// `LogoutOrchestrator.performLogout()`.
+    let logoutOrchestrator: LogoutOrchestrator
+
+    /// In-memory reference to the **raw** (un-wrapped) HTTP client.
+    /// Held here so `LogoutOrchestrator` can call the Discourse
+    /// `/user-api-key/revoke` endpoint with explicit `User-Api-Key`
+    /// headers — important for the pending-revoke drain path where the
+    /// active credential is already gone from the apiKeyProvider.
+    /// Not exposed as `let`/public on purpose — only logout needs it.
+    private let rawHTTPClient: HTTPClient
+
+    /// Shared knowledge cache manager — held so logout can clear it.
+    private let knowledgeCacheManager: KnowledgeCacheManager
+
     // MARK: - ViewModel Cache
 
     /// Cache for TopicDetailViewModels, keyed by topic ID.
@@ -290,6 +311,11 @@ final class AppContainer {
         // Notification layer (deep link router has no external dependencies)
         self.deepLinkRouter = DeepLinkRouter()
 
+        // EventKit (FR-EVT-003): wraps EKEventStore. Constructor is
+        // synchronous and free; no permission prompt happens here —
+        // that only fires when the user taps "Zu Kalender hinzufügen".
+        self.eventKitService = EventKitService()
+
         // Presentation layer - auth state manager first (needed for HTTP client)
         self.authStateManager = AuthStateManager(
             authRepository: authRepository,
@@ -323,7 +349,14 @@ final class AppContainer {
         let rawHTTPClient = URLSessionHTTPClient.withCaching()
         let baseHTTPClient = RetryingHTTPClient(wrapped: rawHTTPClient)
 
-        // Discourse HTTP client adds User-Api-Key headers for Discourse auth
+        // Capture the raw (un-Discourse-wrapped) client for the
+        // LogoutOrchestrator — it sets the User-Api-Key header explicitly
+        // and needs the un-wrapped path so it can call /user-api-key/revoke
+        // even after the active credential has been cleared (pending-revoke
+        // drain on next launch, audit H-2).
+        self.rawHTTPClient = baseHTTPClient
+
+        // Discourse HTTP client adds User-Api-Key headers for Discourse auth.
         let discourseHTTPClient = DiscourseHTTPClient(
             baseClient: baseHTTPClient,
             apiKeyProvider: discourseAPIKeyProvider
@@ -371,6 +404,7 @@ final class AppContainer {
             branch: knowledgeRepoBranch
         )
         let knowledgeCacheManager = KnowledgeCacheManager()
+        self.knowledgeCacheManager = knowledgeCacheManager
         let realKnowledgeRepository = RealKnowledgeRepository(
             apiClient: gitHubAPIClient,
             cacheManager: knowledgeCacheManager
@@ -446,6 +480,39 @@ final class AppContainer {
             discourseCache: discourseCacheStore
         )
         self.profileViewModel = ProfileViewModel(authRepository: authRepository, discourseRepository: discourseRepository)
+
+        // Single fan-out point for all logout-clearing logic (audit H-2).
+        let orchestrator = LogoutOrchestrator(
+            authRepository: authRepository,
+            discourseAuthManager: authManager,
+            discourseAPIKeyProvider: discourseAPIKeyProvider,
+            credentialStore: credentialStore,
+            rawHTTPClient: baseHTTPClient,
+            rsaKeyManager: rsaKeyManager,
+            recentRecipientsStore: recentRecipientsStore,
+            messageDraftStore: messageDraftStore,
+            newsCacheStore: newsCacheStore,
+            discourseCacheStore: discourseCacheStore,
+            readingProgressStore: readingProgressStore,
+            knowledgeCacheManager: knowledgeCacheManager,
+            notificationSettings: notificationSettingsManager,
+            notificationPoller: notificationPoller,
+            backgroundRefreshCoordinator: backgroundRefreshCoordinator
+        )
+        self.logoutOrchestrator = orchestrator
+        // Wire the session-expired path through the orchestrator too.
+        // Without this, 401-driven logouts (handleAuthenticationError)
+        // would leave caches/markers behind that explicit logout clears.
+        self.authStateManager.logoutHook = { [weak orchestrator] in
+            await orchestrator?.performLogout()
+        }
+
+        // Kick off a retry of any pending server-side Discourse revoke
+        // that previously failed (e.g. logout while offline). Fire-and-forget.
+        // Never blocks UI; never throws.
+        Task { [orchestrator] in
+            await orchestrator.drainPendingRevoke()
+        }
     }
 
     /// Creates the container with custom dependencies for testing.
@@ -499,6 +566,12 @@ final class AppContainer {
         self.newsCacheStore = NewsCacheStore()
         self.discourseCacheStore = DiscourseCacheStore()
         self.readingProgressStore = ReadingProgressStore()
+        self.knowledgeCacheManager = KnowledgeCacheManager()
+
+        // HTTP layer (testing): minimal client wired up so LogoutOrchestrator
+        // can be constructed. Tests using the test init don't actually hit
+        // the network here.
+        self.rawHTTPClient = URLSessionHTTPClient.withCaching()
 
         // Notification layer (testing)
         self.notificationSettingsManager = NotificationSettingsManager()
@@ -519,6 +592,7 @@ final class AppContainer {
             scheduler: localNotificationScheduler
         )
         self.deepLinkRouter = DeepLinkRouter()
+        self.eventKitService = EventKitService()
 
         self.authStateManager = AuthStateManager(
             authRepository: authRepository,
@@ -547,5 +621,31 @@ final class AppContainer {
             discourseCache: discourseCacheStore
         )
         self.profileViewModel = ProfileViewModel(authRepository: self.authRepository, discourseRepository: self.discourseRepository)
+
+        // Single fan-out point for all logout-clearing logic (audit H-2).
+        // Same wiring as the production init — kept in sync deliberately.
+        let orchestrator = LogoutOrchestrator(
+            authRepository: authRepository,
+            discourseAuthManager: nil,
+            discourseAPIKeyProvider: discourseAPIKeyProvider,
+            credentialStore: credentialStore,
+            rawHTTPClient: rawHTTPClient,
+            rsaKeyManager: rsaKeyManager,
+            recentRecipientsStore: recentRecipientsStore,
+            messageDraftStore: messageDraftStore,
+            newsCacheStore: newsCacheStore,
+            discourseCacheStore: discourseCacheStore,
+            readingProgressStore: readingProgressStore,
+            knowledgeCacheManager: knowledgeCacheManager,
+            notificationSettings: notificationSettingsManager,
+            notificationPoller: notificationPoller,
+            backgroundRefreshCoordinator: backgroundRefreshCoordinator
+        )
+        self.logoutOrchestrator = orchestrator
+        self.authStateManager.logoutHook = { [weak orchestrator] in
+            await orchestrator?.performLogout()
+        }
+        // Test container does NOT kick off the drain task — tests
+        // assert against in-memory state, not the live network.
     }
 }

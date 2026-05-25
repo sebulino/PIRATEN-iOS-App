@@ -254,6 +254,15 @@ final class RealDiscourseRepository: DiscourseRepository {
     /// cached winner first to avoid re-discovering it on every like.
     private static let winningLikeStrategyKey = "discourse_like_winning_strategy"
 
+    /// Clears the cached "winning strategy" identifier. Called on logout
+    /// so the next user on this device does not inherit the previous
+    /// user's strategy preference (security audit H-2 — strategy cache
+    /// is not itself sensitive, but the logout fan-out should be exhaustive
+    /// to avoid future drift between "what we clear" and "what we store").
+    static func clearLikeStrategyCache() {
+        UserDefaults.standard.removeObject(forKey: winningLikeStrategyKey)
+    }
+
     func likePost(id: Int) async throws {
         try await runStrategyChain(
             postId: id,

@@ -63,6 +63,7 @@ struct PIRATENApp: App {
                 notificationSettings: container.notificationSettingsManager,
                 notificationPoller: container.notificationPoller,
                 deepLinkRouter: container.deepLinkRouter,
+                eventKitService: container.eventKitService,
                 topicDetailViewModelFactory: { [container] topic in
                     container.makeTopicDetailViewModel(for: topic)
                 },
@@ -97,9 +98,9 @@ struct PIRATENApp: App {
                     await container.todoRepository.checkAdminStatus()
                 },
                 onLogout: { [container] in
-                    // Clear Discourse API key from Keychain
-                    container.discourseAPIKeyProvider.clearCredential()
-                    // Logout from PiratenSSO (clears OIDC tokens + local data)
+                    // Logout is wired through AuthStateManager.logoutHook
+                    // → LogoutOrchestrator (security audit H-2).
+                    // See AppContainer init for the wiring.
                     container.authStateManager.logout()
                 }
             )

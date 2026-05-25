@@ -31,7 +31,14 @@ final class NewsViewModel: ObservableObject {
     /// The last-seen message ID, used to determine which items are unread
     @Published private(set) var lastSeenMessageId: Int64 = 0
 
-    private static let lastSeenNewsKey = "news_last_seen_message_id"
+    static let lastSeenNewsKey = "news_last_seen_message_id"
+
+    /// Clears the "last seen news" marker. Called on logout (security
+    /// audit H-2). On the next login this means the user sees a clean
+    /// "no new items" state until they actually open the News tab once.
+    static func clearLastSeenMarker() {
+        UserDefaults.standard.removeObject(forKey: lastSeenNewsKey)
+    }
 
     // MARK: - Dependencies
 

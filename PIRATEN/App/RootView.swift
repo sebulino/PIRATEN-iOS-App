@@ -22,6 +22,10 @@ struct RootView: View {
     @ObservedObject var notificationPoller: DiscourseNotificationPoller
     @ObservedObject var deepLinkRouter: DeepLinkRouter
 
+    /// EventKit-backed service used by CalendarEventDetailView to add
+    /// events to the user's iOS Calendar (FR-EVT-003).
+    let eventKitService: EventKitServicing
+
     /// Factory for creating TopicDetailViewModels
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
 
@@ -94,6 +98,7 @@ struct RootView: View {
                     notificationSettings: notificationSettings,
                     notificationPoller: notificationPoller,
                     deepLinkRouter: deepLinkRouter,
+                    eventKitService: eventKitService,
                     topicDetailViewModelFactory: topicDetailViewModelFactory,
                     messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
                     recipientPickerViewModelFactory: recipientPickerViewModelFactory,
@@ -233,6 +238,7 @@ struct SessionExpiredView: View {
             notificationSettingsManager: notificationSettingsManager
         ),
         deepLinkRouter: DeepLinkRouter(),
+        eventKitService: PreviewRootEventKitService(),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
         },
@@ -258,4 +264,11 @@ struct SessionExpiredView: View {
             TodoDetailViewModel(todo: todo, todoRepository: FakeTodoRepository())
         }
     )
+}
+
+@MainActor
+private struct PreviewRootEventKitService: EventKitServicing {
+    func addToCalendar(_ event: CalendarEvent) async throws {
+        // No-op for preview.
+    }
 }
