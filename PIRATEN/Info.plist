@@ -4,6 +4,15 @@
 <dict>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!--
+		EventKit usage description for FR-EVT-003 ("Zu Kalender hinzufügen").
+		Shown by iOS the first time the user taps the button. We request
+		write-only access (EventKitService uses requestWriteOnlyAccessToEvents),
+		so this is the appropriate NSCalendarsWriteOnlyAccessUsageDescription
+		key — not the broader NSCalendarsFullAccessUsageDescription.
+	-->
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>PIRATEN benötigt diese Berechtigung, um Termine aus dem Kalender-Tab in deinen iOS-Kalender zu übernehmen. Bestehende Termine werden weder gelesen noch verändert.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>

@@ -24,6 +24,10 @@ struct MainTabView: View {
     @ObservedObject var notificationPoller: DiscourseNotificationPoller
     @ObservedObject var deepLinkRouter: DeepLinkRouter
 
+    /// EventKit-backed service used by CalendarEventDetailView to add
+    /// events to the user's iOS Calendar (FR-EVT-003).
+    let eventKitService: EventKitServicing
+
     /// Factory for creating TopicDetailViewModels
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
 
@@ -202,6 +206,7 @@ struct MainTabView: View {
 
             CalendarView(
                 viewModel: calendarViewModel,
+                eventKitService: eventKitService,
                 onProfileTapped: { showingProfile = true },
                 onNotificationsTapped: { showingNotifications = true },
                 notificationsBadge: notificationsBadge,
@@ -656,6 +661,7 @@ struct MainTabView: View {
             notificationSettingsManager: notificationSettingsManager
         ),
         deepLinkRouter: DeepLinkRouter(),
+        eventKitService: PreviewMainTabEventKitService(),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
         },
@@ -687,4 +693,11 @@ struct MainTabView: View {
             AdminRequestViewModel(todoRepository: FakeTodoRepository())
         }
     )
+}
+
+@MainActor
+private struct PreviewMainTabEventKitService: EventKitServicing {
+    func addToCalendar(_ event: CalendarEvent) async throws {
+        // No-op for preview.
+    }
 }

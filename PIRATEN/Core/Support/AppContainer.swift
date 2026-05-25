@@ -156,6 +156,10 @@ final class AppContainer {
     /// Deep link router for handling notification-based navigation.
     let deepLinkRouter: DeepLinkRouter
 
+    /// iOS Calendar integration for FR-EVT-003. Used by
+    /// `CalendarEventDetailView` to add events to the system calendar.
+    let eventKitService: EventKitServicing
+
     /// Centralised logout fan-out. Single point that clears every per-user
     /// credential, cache, marker, and preference (security audit H-2).
     /// Any new per-user store added to the app MUST also be added to
@@ -306,6 +310,11 @@ final class AppContainer {
 
         // Notification layer (deep link router has no external dependencies)
         self.deepLinkRouter = DeepLinkRouter()
+
+        // EventKit (FR-EVT-003): wraps EKEventStore. Constructor is
+        // synchronous and free; no permission prompt happens here —
+        // that only fires when the user taps "Zu Kalender hinzufügen".
+        self.eventKitService = EventKitService()
 
         // Presentation layer - auth state manager first (needed for HTTP client)
         self.authStateManager = AuthStateManager(
@@ -583,6 +592,7 @@ final class AppContainer {
             scheduler: localNotificationScheduler
         )
         self.deepLinkRouter = DeepLinkRouter()
+        self.eventKitService = EventKitService()
 
         self.authStateManager = AuthStateManager(
             authRepository: authRepository,
