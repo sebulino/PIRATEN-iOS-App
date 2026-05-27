@@ -25,12 +25,60 @@ struct PIRATENApp: App {
             Self.resetAuthStateForUITesting()
         }
 
+        #if DEBUG
+        // ScreenshotMode: use the test AppContainer init (fake repos with
+        // rich placeholder data) and auto-authenticate, so App Store
+        // screenshot tooling can capture every tab without needing a real
+        // SSO account. Strictly DEBUG-only — the symbol does not exist
+        // in Release builds.
+        if CommandLine.arguments.contains("-ScreenshotMode") {
+            let store = InMemoryCredentialStore()
+            // Pre-populate a fake Discourse credential so HomeViewModel
+            // takes the "Discourse connected" branch instead of showing
+            // the "verbinde dich mit dem Forum" empty state. The credential
+            // is never used to talk to a server — FakeDiscourseRepository
+            // ignores it — but the gate `discourseAPIKeyProvider.hasValidCredential()`
+            // needs to see *something* in the store.
+            Self.seedFakeDiscourseCredential(into: store)
+            let container = AppContainer(credentialStore: store)
+            self.container = container
+            AppContainer.shared = container
+            appDelegate.deepLinkRouter = container.deepLinkRouter
+            Task { @MainActor [container] in
+                container.authStateManager.authenticate()
+            }
+            return
+        }
+        #endif
+
         self.container = AppContainer()
         AppContainer.shared = container
 
         // Wire AppDelegate to DeepLinkRouter for notification routing
         appDelegate.deepLinkRouter = container.deepLinkRouter
     }
+
+    #if DEBUG
+    /// Writes a fake Discourse credential to the in-memory store used in
+    /// ScreenshotMode. Same JSON format the production
+    /// `KeychainDiscourseAPIKeyProvider.getAPIKey()` decodes, so the gate
+    /// `hasValidCredential()` returns true and HomeViewModel exercises
+    /// the populated branch.
+    private static func seedFakeDiscourseCredential(into store: CredentialStore) {
+        let credential = DiscourseCredential(
+            apiKey: "screenshot-mode-fake-key",
+            clientId: "screenshot-mode-fake-client",
+            createdAt: Date()
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        guard let data = try? encoder.encode(credential),
+              let json = String(data: data, encoding: .utf8) else {
+            return
+        }
+        try? store.set(json, forKey: DiscourseAuthManager.discourseCredentialKey)
+    }
+    #endif
 
     /// Resets authentication state for UI testing.
     /// Clears keychain credentials to ensure a clean logged-out state.

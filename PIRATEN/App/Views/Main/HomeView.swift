@@ -175,18 +175,35 @@ struct HomeView: View {
                                 .fontWeight(.bold)
                                 .foregroundColor(.orange)
 
+                            // "Du hast keine neuen Nachrichten" stays grey/secondary
+                            // because there's nothing to act on. As soon as count > 0,
+                            // promote the line to primary text + envelope icon so it
+                            // visibly stands apart from the empty state.
+                            // Foreground is `.primary` (adaptive black/white) rather
+                            // than orange to avoid competing with the "Ahoi" heading.
                             if viewModel.unreadMessageCount == 0 {
                                 Text("Du hast keine neuen Nachrichten.")
                                     .font(.piratenSubheadline)
                                     .foregroundColor(.secondary)
-                            } else if viewModel.unreadMessageCount == 1 {
-                                Text("Du hast eine neue Nachricht.")
-                                    .font(.piratenSubheadline)
-                                    .foregroundColor(.secondary)
                             } else {
-                                Text("Du hast \(viewModel.unreadMessageCount) neue Nachrichten.")
-                                    .font(.piratenSubheadline)
-                                    .foregroundColor(.secondary)
+                                Label {
+                                    if viewModel.unreadMessageCount == 1 {
+                                        Text("Du hast eine neue Nachricht.")
+                                    } else {
+                                        Text("Du hast \(viewModel.unreadMessageCount) neue Nachrichten.")
+                                    }
+                                } icon: {
+                                    Image(systemName: "envelope.badge.fill")
+                                        .foregroundColor(.piratenPrimary)
+                                }
+                                .font(.piratenSubheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                                .accessibilityLabel(
+                                    viewModel.unreadMessageCount == 1
+                                    ? "Eine neue Nachricht"
+                                    : "\(viewModel.unreadMessageCount) neue Nachrichten"
+                                )
                             }
                         }
                     }

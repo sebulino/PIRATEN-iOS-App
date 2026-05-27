@@ -604,3 +604,33 @@ Status key: `OPEN` · `DECIDED` · `APPLIED` (i.e. the docs have been updated).
 - **Follow-up:** None now. Note added to `Docs/adr/0009-discourse-user-api-key.md`
   context section so the design choice is visible alongside the auth
   flow itself.
+
+### Q-066 — Bell badge vs Kajüte counter: should likes be counted alike?
+- **Status:** DECIDED 2026-05-27
+- **Context:** The toolbar bell badge polls Discourse's
+  `/notifications/totals.json` endpoint, which returns `unread_notifications` —
+  the count of **all** unread Discourse notifications regardless of type
+  (likes, replies, mentions, watched-topic updates, new messages, …).
+  The Kajüte "Du hast X neue Nachrichten" line counts only inbox threads
+  where `isRead == false` — i.e., threads where there is actually a new
+  *message* to read. The two counters can diverge, e.g. a like on one of
+  your own posts increments the bell badge but not the Kajüte counter.
+  Question raised during the screenshot review of PR #81: should a like
+  also mark its parent thread as unread, so the two counters stay in
+  sync?
+- **Decision:** No. Keep the current behaviour. A like is a reaction to
+  existing content, not new content — flipping `isRead` would put the
+  thread back into the "needs your attention" pile even though there is
+  literally nothing new to read in it. The bell badge and the Kajüte
+  line measure different things on purpose: the bell says "something
+  on Discourse changed for you" (broad), the Kajüte line says "someone
+  is waiting for your reply" (narrow). This is the same separation
+  Twitter, Slack, and Discourse-web themselves use.
+- **Reversal trigger:** Pilot-user feedback that the divergence is
+  confusing. Plausible v1.1 mitigation would NOT be to merge the two
+  counters but to add a dedicated "👍 3 Likes diese Woche" block in the
+  Kajüte — that turns the otherwise-invisible like notifications into
+  a positive signal rather than counter inflation.
+- **Follow-up:** None. The `DiscoursePrivateMessageTopicDTO.computeIsRead()`
+  helper (added in PR #81) intentionally does not check for like events;
+  comment in the DTO file makes that explicit.
