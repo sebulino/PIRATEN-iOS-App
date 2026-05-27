@@ -191,7 +191,27 @@ final class HomeViewModel: ObservableObject {
             return ([], 0)
         }
 
-        let threads = discourseCache.cachedMessageThreads()
+        // Pre-Bug-#1: Home used to read whatever was in the cache, which on
+        // a cold start was empty or stale until the user opened the Messages
+        // tab. Now we fetch fresh threads ourselves and ALSO write them to
+        // the cache so the Messages tab gets the result for free. Failure
+        // falls back to whatever's cached — the dashboard never blocks on
+        // a slow Discourse response.
+        var threads = discourseCache.cachedMessageThreads()
+        do {
+            // includeSent: true so the cache write is complete and the
+            // Messages tab (which loads inbox + outbox) doesn't have to
+            // re-fetch on first open.
+            let fetched = try await discourseRepository.fetchMessageThreads(
+                for: currentUser.username,
+                includeSent: true
+            )
+            threads = fetched
+            discourseCache.saveMessageThreads(fetched)
+        } catch {
+            // Keep the cached threads; Messages tab will retry on its own.
+        }
+
         var seen = Set<Int>()
         var contacts: [UserSummary] = []
 

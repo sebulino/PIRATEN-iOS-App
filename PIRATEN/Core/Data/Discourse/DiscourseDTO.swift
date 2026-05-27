@@ -440,9 +440,22 @@ struct DiscoursePrivateMessageTopicDTO: Decodable {
     let createdAt: String
     let lastPostedAt: String?
 
-    /// Whether the topic has been read
-    /// Note: Discourse may use highest_post_number vs last_read_post_number to determine this
+    /// "User has never opened this thread."
+    /// Becomes `false` once the user opens the thread the first time and
+    /// **stays** false forever — does NOT flip back to true on a new reply.
+    /// Therefore alone insufficient as a read-state signal (see Bug #3).
     let unseen: Bool?
+
+    /// Number of posts the user has not yet read in this thread. Discourse
+    /// updates this when a new reply arrives in a previously-opened thread.
+    let unreadPosts: Int?
+
+    /// Highest post number that currently exists in the thread.
+    let highestPostNumber: Int?
+
+    /// Highest post number the user has read.
+    /// `highestPostNumber > lastReadPostNumber` ⇒ unread reply.
+    let lastReadPostNumber: Int?
 
     /// Posters/participants in this private message thread
     let posters: [DiscoursePosterDTO]
@@ -454,7 +467,28 @@ struct DiscoursePrivateMessageTopicDTO: Decodable {
         case createdAt = "created_at"
         case lastPostedAt = "last_posted_at"
         case unseen
+        case unreadPosts = "unread_posts"
+        case highestPostNumber = "highest_post_number"
+        case lastReadPostNumber = "last_read_post_number"
         case posters
+    }
+
+    /// Determines read status using all available Discourse signals.
+    /// A thread is unread if **any** of the following is true:
+    /// - `unseen` is true (user never opened it)
+    /// - `unread_posts` > 0 (new replies since last read)
+    /// - `highest_post_number` > `last_read_post_number` (posts added since last read)
+    ///
+    /// If none of these fields are present in the response, defaults to
+    /// read (conservative — never falsely badge an old thread as new).
+    /// Mirrors the identical logic in DiscourseTopicDTO.computeIsRead.
+    private func computeIsRead() -> Bool {
+        if unseen == true { return false }
+        if let unread = unreadPosts, unread > 0 { return false }
+        if let highest = highestPostNumber,
+           let lastRead = lastReadPostNumber,
+           highest > lastRead { return false }
+        return true
     }
 
     /// Converts this DTO to a Domain MessageThread model.
@@ -514,7 +548,7 @@ struct DiscoursePrivateMessageTopicDTO: Decodable {
             createdAt: createdDate,
             lastActivityAt: lastActivityDate,
             postsCount: postsCount,
-            isRead: unseen != true,
+            isRead: computeIsRead(),
             lastPoster: lastPoster
         )
     }
