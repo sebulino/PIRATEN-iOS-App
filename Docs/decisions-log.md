@@ -634,3 +634,44 @@ Status key: `OPEN` · `DECIDED` · `APPLIED` (i.e. the docs have been updated).
 - **Follow-up:** None. The `DiscoursePrivateMessageTopicDTO.computeIsRead()`
   helper (added in PR #81) intentionally does not check for like events;
   comment in the DTO file makes that explicit.
+
+### Q-067 — Background notification latency: optimise pre-submit or wait for feedback?
+- **Status:** DECIDED 2026-05-27
+- **Context:** Real-world observation during pre-submit testing: a
+  Discourse private message arrived, but no iOS local notification fired
+  until the app was opened ~10 min later (it appeared immediately on
+  open). The app is **polling-based** (no APNs/FCM push by design — see
+  `Docs/datenschutz.md` Abschnitt 4.7). Background polling runs through
+  `BGAppRefreshTask` registered in `BackgroundTaskScheduler` with
+  `earliestBeginDate = +30 min`. iOS treats `earliestBeginDate` as a
+  *minimum*, not a schedule — actual fire frequency depends on user
+  patterns, battery, Low Power Mode, system load, and ~6 other
+  heuristics. For a freshly-installed app iOS may not fire the task at
+  all for the first 1–3 days while it learns usage patterns. **No code
+  change can shorten this** below what iOS decides; lowering
+  `earliestBeginDate` to e.g. 5 min would not change behaviour.
+- **Decision:** Ship v1.0 with the current polling-only approach.
+  Collect real-world feedback from members during/after the App Store
+  rollout before investing in latency improvements. The privacy
+  trade-off (no third-party server sees message metadata) is a
+  deliberate v1 stance and matches the Android sibling's behaviour.
+- **Reversal trigger:** ≥3 independent member reports that "I missed a
+  message because it appeared too late" within the first month of v1.0
+  in the App Store, OR any single report of a time-critical message
+  (e.g. internal vote with deadline) being missed because of polling
+  latency.
+- **Follow-up options if triggered, in escalating invasiveness:**
+  1. **Foreground-aggressive polling** — when the app is open in the
+     Forum/Nachrichten tab, poll every 60s instead of relying on the
+     coarse staleness guard. Privacy: 100% preserved. Helps the
+     "app-open-in-pocket" case but not the truly-backgrounded case.
+  2. **Background URL Session silent ping** — server fires an
+     APNs silent-push (`content-available: 1`, no body) when something
+     changes. App wakes up, polls itself, emits its own local
+     notification. Apple sees only "wake the app", not content. Needs
+     a small server-side component (Discourse webhook → APNs).
+  3. **Full APNs push with content** — instant, requires server-side
+     push + sees message metadata at Apple. Largest privacy delta;
+     would need an ADR amendment + datenschutz.md update.
+- **Tracking issue:** filed in the iOS repo so member reports have a
+  single thread to land in.
