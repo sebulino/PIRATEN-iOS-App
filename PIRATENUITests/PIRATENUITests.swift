@@ -41,7 +41,13 @@ final class PIRATENUITests: XCTestCase {
 
     @MainActor
     func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
+        // Measures app launch time. NOTE: this test is deliberately
+        // EXCLUDED from the nightly CI gate (see .github/workflows/ui-tests.yml)
+        // because XCTApplicationLaunchMetric without a committed .xcbaseline
+        // fails non-deterministically on shared cloud runners due to high
+        // inter-iteration variance. Keep it for local launch-time profiling,
+        // but it is not a correctness gate. Run with:
+        //   xcodebuild test -only-testing:PIRATENUITests/PIRATENUITests/testLaunchPerformance
         measure(metrics: [XCTApplicationLaunchMetric()]) {
             XCUIApplication().launch()
         }

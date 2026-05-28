@@ -64,10 +64,20 @@ jobs:
       - name: Run UI tests (PIRATENUITests only)
         run: |
           set -o pipefail
+          # testLaunchPerformance is excluded from the CI gate on purpose.
+          # It's an XCTApplicationLaunchMetric measure() test (Xcode template
+          # boilerplate) with no committed .xcbaseline. On shared cloud
+          # runners it fails non-deterministically on high inter-iteration
+          # variance — especially right after the ~160s AppStoreScreenshotTests
+          # run leaves the runner under load. Performance measurement needs a
+          # stable baseline + dedicated hardware; it does not belong in a
+          # pass/fail nightly correctness gate. Run it locally if you need
+          # launch-time numbers. (See CI failure run 26554643867.)
           xcodebuild test \
             -scheme PIRATEN \
             -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
             -only-testing:PIRATENUITests \
+            -skip-testing:PIRATENUITests/PIRATENUITests/testLaunchPerformance \
             -derivedDataPath build \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
