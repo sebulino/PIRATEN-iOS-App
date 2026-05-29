@@ -138,13 +138,24 @@ final class DeepLinkRouterTests: XCTestCase {
     /// stamps `NotificationCategory.rawValue`. If anyone renames a case (or
     /// adds a seventh category) without teaching the router about it, this
     /// fails — every real category must land on *some* destination.
+    ///
+    /// NB: reuse the single `sut` instance and reset its state between
+    /// categories rather than allocating a fresh `DeepLinkRouter()` per
+    /// iteration. Allocating many `ObservableObject`s in a tight loop tripped
+    /// a heap-corruption crash ("pointer being freed was not allocated" →
+    /// SIGABRT) in the CI toolchain's simulator runtime (Xcode 26.3) — the
+    /// app code is fine and it never reproduced locally (Xcode 26.5). The
+    /// single-instance pattern the other routing tests use is unaffected.
     func testEveryNotificationCategoryRoutesSomewhere() {
         for category in NotificationCategory.allCases {
-            let router = DeepLinkRouter()
-            router.routeNotificationCategory(category.rawValue)
+            sut.selectedTab = 0
+            sut.pendingMessagesSheet = false
+            sut.pendingNewsSheet = false
 
-            let landedOnTab = router.selectedTab != 0
-            let landedOnSheet = router.pendingMessagesSheet || router.pendingNewsSheet
+            sut.routeNotificationCategory(category.rawValue)
+
+            let landedOnTab = sut.selectedTab != 0
+            let landedOnSheet = sut.pendingMessagesSheet || sut.pendingNewsSheet
             XCTAssertTrue(
                 landedOnTab || landedOnSheet,
                 "Category '\(category.rawValue)' did not route to any tab or sheet"
