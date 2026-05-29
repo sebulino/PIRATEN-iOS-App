@@ -35,7 +35,9 @@ enum NotificationContentBuilder {
         return NotificationContent(
             title: NotificationCategory.forum.title,
             body: "Neuer Beitrag im Thema »\(title)«",
-            isLockscreenSensitive: false
+            isLockscreenSensitive: false,
+            // Same `newest` topic named in the body → a tap opens that topic.
+            deepLink: .forumTopic(topicId: newest.id)
         )
     }
 
@@ -53,7 +55,11 @@ enum NotificationContentBuilder {
         return NotificationContent(
             title: NotificationCategory.messages.title,
             body: "Neue Nachricht von \(sender): »\(subject)«",
-            isLockscreenSensitive: true
+            isLockscreenSensitive: true,
+            // Same `newest` thread named in the body → a tap opens that thread.
+            // The thread id is the Discourse topic id (PMs are topics). Only the
+            // id travels in userInfo — sender/subject are never encoded there.
+            deepLink: .messageThread(topicId: newest.id)
         )
     }
 
@@ -66,7 +72,9 @@ enum NotificationContentBuilder {
         return NotificationContent(
             title: NotificationCategory.todos.title,
             body: "Neue Aufgabe: »\(title)«",
-            isLockscreenSensitive: false
+            isLockscreenSensitive: false,
+            // ToDos deliberately route to the tab only (no item deep link).
+            deepLink: nil
         )
     }
 
@@ -79,7 +87,9 @@ enum NotificationContentBuilder {
         return NotificationContent(
             title: NotificationCategory.news.title,
             body: "Neue Neuigkeit: »\(headline)«",
-            isLockscreenSensitive: false
+            isLockscreenSensitive: false,
+            // News routes to the sheet only (no per-item deep link).
+            deepLink: nil
         )
     }
 

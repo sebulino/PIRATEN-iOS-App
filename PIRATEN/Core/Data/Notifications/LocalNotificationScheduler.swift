@@ -106,12 +106,19 @@ struct LocalNotificationScheduler: LocalNotificationScheduling {
         notification.body = content?.body ?? category.body
         notification.sound = .default
 
-        // Routing payload (tap → tab/sheet): every locally-scheduled
-        // notification carries its source category so a tap can open the
-        // matching destination. Read by AppDelegate, applied via
-        // DeepLinkRouter.routeNotificationCategory. Only the category is
-        // encoded — no item id, no PII (see THREAT_MODEL.md T-007).
-        notification.userInfo = ["category": category.rawValue]
+        // Routing payload (tap → destination). Every locally-scheduled
+        // notification carries its source `category` for tab/sheet-level
+        // routing (AppDelegate → DeepLinkRouter.routeNotificationCategory).
+        // When the poller identified a concrete item (Forum/Nachrichten), the
+        // builder also supplies a `deepLink` — stamp it too so a tap opens that
+        // exact item (the SAME item named in the body). AppDelegate prefers the
+        // item deep link and falls back to the category. Only the category and
+        // an item id are encoded — no titles, bodies, or PII (THREAT_MODEL T-007).
+        var userInfo: [AnyHashable: Any] = ["category": category.rawValue]
+        if let deepLink = content?.deepLink {
+            userInfo.merge(deepLink.userInfo) { _, new in new }
+        }
+        notification.userInfo = userInfo
 
         // Trigger is nil → fire immediately. A unique UUID suffix keeps
         // multiple notifications of the same category separate in the

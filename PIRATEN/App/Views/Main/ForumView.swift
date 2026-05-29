@@ -11,6 +11,12 @@ struct ForumView: View {
     @ObservedObject var viewModel: ForumViewModel
     @ObservedObject var discourseAuthCoordinator: DiscourseAuthCoordinator
 
+    /// Navigation path for the Forum tab's stack. Bound externally so a
+    /// notification deep link (`.forumTopic`) can push a topic detail from
+    /// outside; normal in-list `NavigationLink(value:)` taps append to it too,
+    /// so "Zurück" always lands back in the topic list.
+    @Binding var navigationPath: [Topic]
+
     /// Optional callback for when user taps login button in unauthenticated state
     var onLoginTapped: (() -> Void)?
 
@@ -48,7 +54,7 @@ struct ForumView: View {
     @Environment(\.window) private var window: UIWindow?
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             Group {
                 switch viewModel.loadState {
                 case .idle, .loading:
@@ -450,6 +456,7 @@ private struct TopicRow: View {
             discourseAPIKeyProvider: discourseAPIKeyProvider,
             credentialStore: credentialStore
         ),
+        navigationPath: .constant([]),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeRepo)
         }

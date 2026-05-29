@@ -797,3 +797,37 @@ Status key: `OPEN` · `DECIDED` · `APPLIED` (i.e. the docs have been updated).
 - **Possible follow-ups:** show the unread *count* per topic (needs
   `unread_posts` on the `Topic` domain model + DTO mapping); a richer
   community-activity surface; remove the dormant `recentContacts` plumbing.
+
+### Q-072 — Item-level deep-linking for notification taps (Forum + Nachrichten)
+- **Status:** DECIDED 2026-05-29
+- **Category:** Notifications / parity.
+- **Context:** Android opens the *exact item* on a notification tap. iOS
+  (Deviation B) only routed taps to the tab/sheet. This brings item-level
+  parity for the two sources where the newest item is identifiable.
+- **Decision / scope:**
+  - **Forum + Nachrichten → item.** The builder already names the newest item
+    (`max(id)`) in the rich body; it now also sets a `DeepLink` on
+    `NotificationContent` for the **same** item. The scheduler stamps
+    `DeepLink.userInfo` into the notification's `userInfo` alongside the
+    `category`. On tap, `AppDelegate` prefers the item deep link
+    (`DeepLink.from(userInfo:)`) and falls back to category routing. Forum
+    pushes the topic onto the Forum tab's `NavigationStack` (back → list);
+    Nachrichten opens the thread sheet (already wired). Cold launch is handled
+    in `MainTabView.onAppear` (the `.onChange` observer can't fire for a value
+    set before the view existed).
+  - **Termine → DESCOPED to tab routing.** Event detection is **count-based**
+    (`NotificationContentBuilder` has no events builder), so iOS cannot name
+    *which* event is new — there is no per-event id to deep-link to, and the
+    task explicitly forbids changing the detection logic. Termine taps stay at
+    the Termine tab, like News and Wissen.
+  - **News / Wissen / ToDos → tab/sheet by design** (News/Wissen aren't
+    per-item addressable; ToDos is deliberately not wired).
+- **Same-item guarantee:** the deep-link id and the body both use the source's
+  `max(id)`, so a tap can never open a different item than the banner named
+  (covered by builder parity tests).
+- **Privacy (T-007):** only the `category` and an item **id** travel in
+  `userInfo` — no titles, bodies, sender, or subject. Message bodies stay
+  redacted on the lock screen via the iOS "Vorschau: Wenn entsperrt" default;
+  the thread id is non-sensitive.
+- **Reversal / follow-up:** if Termine detection becomes id-based later, add an
+  events builder + a `DeepLink.eventDetail` case to extend deep-linking there.

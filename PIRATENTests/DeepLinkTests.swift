@@ -120,4 +120,34 @@ final class DeepLinkTests: XCTestCase {
         // Then
         XCTAssertNil(deepLink)
     }
+
+    // MARK: - userInfo encoding (round-trip with from(userInfo:))
+
+    func testUserInfoRoundTripForumTopic() {
+        let link = DeepLink.forumTopic(topicId: 123)
+        XCTAssertEqual(DeepLink.from(userInfo: link.userInfo), link)
+    }
+
+    func testUserInfoRoundTripMessageThread() {
+        let link = DeepLink.messageThread(topicId: 456)
+        XCTAssertEqual(DeepLink.from(userInfo: link.userInfo), link)
+    }
+
+    func testUserInfoRoundTripTodoDetail() {
+        let link = DeepLink.todoDetail(todoId: "abc-123")
+        XCTAssertEqual(DeepLink.from(userInfo: link.userInfo), link)
+    }
+
+    func testForumTopicUserInfoKeys() {
+        // The scheduler stamps exactly these keys; AppDelegate reads them back.
+        let userInfo = DeepLink.forumTopic(topicId: 7).userInfo
+        XCTAssertEqual(userInfo["deepLink"] as? String, "forum")
+        XCTAssertEqual(userInfo["topicId"] as? Int, 7)
+    }
+
+    func testMessageThreadUserInfoKeys() {
+        let userInfo = DeepLink.messageThread(topicId: 9).userInfo
+        XCTAssertEqual(userInfo["deepLink"] as? String, "message")
+        XCTAssertEqual(userInfo["topicId"] as? Int, 9)
+    }
 }
