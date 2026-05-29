@@ -767,3 +767,33 @@ Status key: `OPEN` · `DECIDED` · `APPLIED` (i.e. the docs have been updated).
     view keeps the absolute date intentionally — the precise date is useful
     when reading the full article, and it is not a feed-recency surface.
 - **Scope:** UI-only; no model, request, or persistence change.
+
+### Q-071 — Kajüte redesign: nudge toward public participation
+- **Status:** DECIDED 2026-05-29
+- **Category:** Home / engagement.
+- **Context:** Goal is to get Piraten to communicate *with each other* and to
+  experience what others are doing — participation should be public, not
+  bilateral. The Kajüte (Home) is the landing surface that sets that tone.
+- **Decision:**
+  1. **Hide "Letzte Kontakte".** Recent contacts is inherently 1:1/private —
+     the opposite of "see what the community is doing". Private messaging stays
+     fully available in the Nachrichten tab; it is just no longer the Kajüte's
+     lead element.
+  2. **Reorder** to put community activity first:
+     `Ahoi → Aktuelle Themen → Übernommene Aufgaben → Deine Meinung →
+     Weiterlesen` (was: Letzte Kontakte → Deine Meinung → Weiterlesen →
+     Übernommene Aufgaben → Aktuelle Themen). Discussion leads; solitary
+     reading (Weiterlesen) moves to the end.
+  3. **"Aktuelle Themen" surfaces activity, not just recency.** Topics with
+     unread replies ("neue Antworten") are lifted to the top via
+     `HomeViewModel.loadRecentTopics`, and unread rows carry a "Neu" cue. The
+     underlying cache is Discourse `/latest` (bumped = most-recently-active
+     order), so the list reads "new replies first, then most active". Uses the
+     existing `Topic.isRead` (real per-user tracking) — no detection change.
+- **Scope / reversibility:** Presentation-layer (HomeView + a sort in
+  HomeViewModel). "Letzte Kontakte" is only hidden, not deleted: the
+  `recentContacts` load logic and view code stay in place (minimal, easily
+  reversible) — flagged for later cleanup if the decision sticks.
+- **Possible follow-ups:** show the unread *count* per topic (needs
+  `unread_posts` on the `Topic` domain model + DTO mapping); a richer
+  community-activity surface; remove the dormant `recentContacts` plumbing.

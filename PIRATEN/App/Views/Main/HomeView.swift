@@ -64,7 +64,7 @@ struct HomeView: View {
             Group {
                 switch viewModel.loadState {
                 case .idle, .loading:
-                    if viewModel.recentTopics.isEmpty && viewModel.recentContacts.isEmpty {
+                    if viewModel.recentTopics.isEmpty {
                         ProgressView("Lade Kajüte...")
                     } else {
                         dashboardContent
@@ -213,20 +213,24 @@ struct HomeView: View {
                         discourseAuthBanner
                     }
 
-                    // Section 1: Recent Contacts
-                    recentContactsSection
+                    // Lead with community activity: the forum is where Piraten
+                    // see what others are doing and join in. "Letzte Kontakte"
+                    // (bilateral DMs) was intentionally removed from the Kajüte
+                    // — private messaging lives in the Nachrichten tab. Order:
+                    // Aktuelle Themen → Übernommene Aufgaben → Deine Meinung →
+                    // Weiterlesen.
 
-                    // Section 2: Feedback
-                    feedbackSection
+                    // Section 1: Recent Forum Topics
+                    recentTopicsSection
 
-                    // Section 3: Knowledge Articles
-                    knowledgeSection
-
-                    // Section 4: Claimed Todos
+                    // Section 2: Claimed Todos
                     claimedTodosSection
 
-                    // Section 5: Recent Forum Topics
-                    recentTopicsSection
+                    // Section 3: Feedback
+                    feedbackSection
+
+                    // Section 4: Knowledge Articles
+                    knowledgeSection
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
@@ -554,6 +558,22 @@ struct HomeView: View {
                 .lineLimit(2)
 
             HStack(spacing: 12) {
+                // "Neu" cue for topics with unread replies — the engagement
+                // nudge: signals "hier ist gerade was los, klink dich ein".
+                // Unread topics are also sorted to the top (see
+                // HomeViewModel.loadRecentTopics).
+                if !topic.isRead {
+                    Text("Neu")
+                        .font(.piratenCaption2)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.orange.opacity(0.15))
+                        .foregroundColor(.orange)
+                        .clipShape(Capsule())
+                        .accessibilityLabel("Neue Beiträge")
+                }
+
                 Label("\(max(0, topic.postsCount - 1))", systemImage: "bubble.right")
                     .font(.piratenCaption)
                     .foregroundColor(.secondary)

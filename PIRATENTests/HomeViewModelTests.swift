@@ -20,10 +20,16 @@ struct HomeViewModelTests {
         discourseRepository: DiscourseRepository? = nil,
         knowledgeRepository: KnowledgeRepository? = nil,
         authRepository: AuthRepository? = nil,
-        credentialStore: CredentialStore? = nil
+        credentialStore: CredentialStore? = nil,
+        discourseCache: DiscourseCacheStore? = nil
     ) -> HomeViewModel {
         let store = credentialStore ?? InMemoryCredentialStore()
         let auth = authRepository ?? FakeAuthRepository(credentialStore: store)
+        // Default to a per-test UserDefaults suite so the topic/thread cache is
+        // isolated (the production default is shared .standard).
+        let cache = discourseCache ?? DiscourseCacheStore(
+            userDefaults: UserDefaults(suiteName: "test-cache-\(UUID().uuidString)")!
+        )
         return HomeViewModel(
             discourseRepository: discourseRepository ?? FakeDiscourseRepository(),
             knowledgeRepository: knowledgeRepository ?? FakeKnowledgeRepository(),
@@ -32,7 +38,8 @@ struct HomeViewModelTests {
             ),
             authRepository: auth,
             todoRepository: FakeTodoRepository(),
-            discourseAPIKeyProvider: KeychainDiscourseAPIKeyProvider(credentialStore: store)
+            discourseAPIKeyProvider: KeychainDiscourseAPIKeyProvider(credentialStore: store),
+            discourseCache: cache
         )
     }
 
@@ -80,6 +87,46 @@ struct HomeViewModelTests {
         // FakeDiscourseRepository returns some topics
         // recentTopics should have at most 5
         #expect(vm.recentTopics.count <= 5)
+    }
+
+    @Test("Aktuelle Themen surfaces unread topics first")
+    func recentTopicsPrioritisesUnread() async throws {
+        // Cache order mimics Discourse /latest (bumped activity order) with an
+        // interleaved read/unread mix. loadRecentTopics must lift the unread
+        // topics ("neue Antworten") to the top while preserving the relative
+        // activity order within each group.
+        let cache = DiscourseCacheStore(
+            userDefaults: UserDefaults(suiteName: "test-topics-\(UUID().uuidString)")!
+        )
+        func topic(_ id: Int, read: Bool) -> Topic {
+            Topic(
+                id: id,
+                title: "Thema \(id)",
+                createdBy: UserSummary(id: 1, username: "pirat", displayName: nil, avatarUrl: nil),
+                createdAt: Date(),
+                postsCount: 3,
+                viewCount: 0,
+                likeCount: 0,
+                categoryId: 1,
+                isVisible: true,
+                isClosed: false,
+                isArchived: false,
+                isRead: read
+            )
+        }
+        cache.saveTopics([
+            topic(1, read: true),
+            topic(2, read: false),
+            topic(3, read: true),
+            topic(4, read: false)
+        ])
+
+        let vm = makeViewModel(discourseCache: cache)
+        vm.loadDashboard()
+        try await waitForLoaded(vm)
+
+        // Unread (2, 4) first — relative order preserved — then read (1, 3).
+        #expect(vm.recentTopics.map { $0.id } == [2, 4, 1, 3])
     }
 
     @Test("Knowledge articles are populated from fake repository")

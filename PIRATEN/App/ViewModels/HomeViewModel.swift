@@ -287,10 +287,19 @@ final class HomeViewModel: ObservableObject {
         }
     }
 
-    /// Loads the most recent forum topics from the shared cache.
-    /// ForumViewModel is responsible for fetching and caching topics;
-    /// HomeViewModel reads the cache to avoid duplicate Discourse API calls.
+    /// Loads up to 5 forum topics for the Kajüte's "Aktuelle Themen".
+    ///
+    /// Ordering surfaces community activity so a Pirat sees where to jump in:
+    /// topics with unread replies come first ("neue Antworten"), then the rest.
+    /// `filter` is stable, so within each group the cache order is preserved —
+    /// and since ForumViewModel fetches Discourse `/latest` (returned in bumped,
+    /// most-recently-active order), the list reads as "new replies first, then
+    /// most active". ForumViewModel owns fetching/caching; HomeViewModel only
+    /// reads the cache to avoid duplicate Discourse API calls.
     private func loadRecentTopics() -> [Topic] {
-        return Array(discourseCache.cachedTopics().prefix(5))
+        let cached = discourseCache.cachedTopics()
+        let unread = cached.filter { !$0.isRead }
+        let read = cached.filter { $0.isRead }
+        return Array((unread + read).prefix(5))
     }
 }
