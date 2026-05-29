@@ -17,6 +17,13 @@ struct NewsCardView: View {
                 .fontWeight(.bold)
                 .lineLimit(2)
 
+            // Relative timestamp (»vor 2 Tagen«), matching how the forum feed
+            // shows recency and the Android app's news list. `.relative` auto-
+            // updates and localises to the app's German locale.
+            Text(item.postedAt, style: .relative)
+                .font(.piratenCaption)
+                .foregroundStyle(.secondary)
+
             Text(item.previewText)
                 .font(.piratenBodyDefault)
                 .lineLimit(4)
