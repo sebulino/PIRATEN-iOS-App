@@ -362,7 +362,13 @@ struct AuthenticatedHTTPClientTests {
         #expect(authErrorCalled == true)
     }
 
-    @Test func callsAuthErrorHandlerOn403() async throws {
+    @Test func doesNotCallAuthErrorHandlerOn403() async throws {
+        // A 403 means "valid token, insufficient permissions for THIS
+        // request" — the session is still fine. Per AuthenticatedHTTPClient,
+        // only a 401 triggers the central session-expiry handler; a 403
+        // throws .forbidden WITHOUT calling onAuthError, so the caller can
+        // surface a "you don't have permission" error without wiping the
+        // user's session (see OPEN-09).
         let url = URL(string: "https://api.example.com/protected")!
         let stubClient = RequestCapturingStubClient(
             response: .success(Data(), statusCode: 403)
@@ -385,7 +391,7 @@ struct AuthenticatedHTTPClientTests {
             #expect(error == .forbidden)
         }
 
-        #expect(authErrorCalled == true)
+        #expect(authErrorCalled == false)
     }
 
     @Test func doesNotCallAuthErrorHandlerOnSuccess() async throws {
