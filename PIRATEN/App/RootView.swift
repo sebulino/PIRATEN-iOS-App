@@ -62,19 +62,6 @@ struct RootView: View {
     /// Callback when user taps the logout button
     var onLogout: (() -> Void)?
 
-    /// DEBUG-only handler that fires `AuthStateManager.handleAuthenticationError()`.
-    /// Used by ProfileView's "Simulate session expiry" button to verify the
-    /// OPEN-09 fix end-to-end on a real device without revoking the SSO token
-    /// server-side. Returns `nil` in Release builds so the button is never
-    /// rendered and no symbol references the handler from Release code paths.
-    private var debugSimulateSessionExpiry: (() -> Void)? {
-        #if DEBUG
-        return { authStateManager.handleAuthenticationError() }
-        #else
-        return nil
-        #endif
-    }
-
     var body: some View {
         Group {
             switch authStateManager.currentState {
@@ -110,8 +97,7 @@ struct RootView: View {
                     feedbackViewModelFactory: feedbackViewModelFactory,
                     adminRequestViewModelFactory: adminRequestViewModelFactory,
                     checkAdminStatus: checkAdminStatus,
-                    onLogout: onLogout,
-                    onSimulateSessionExpiry: debugSimulateSessionExpiry
+                    onLogout: onLogout
                 )
                 .provideWindow()
             case .failed(let error):

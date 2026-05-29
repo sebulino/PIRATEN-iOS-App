@@ -16,14 +16,6 @@ struct ProfileView: View {
     var checkAdminStatus: (() async -> Bool?)?
     var onLogout: (() -> Void)?
 
-    /// Closure wired to `AuthStateManager.handleAuthenticationError()`.
-    /// Only invoked from a DEBUG-only button in the Profile screen used to
-    /// verify the session-expiry flow without revoking the SSO token
-    /// server-side. The button itself is wrapped in `#if DEBUG`, so this
-    /// closure is never called in Release builds. Wiring sits in
-    /// MainTabView / RootView, also `#if DEBUG`-gated.
-    var onSimulateSessionExpiry: (() -> Void)?
-
     @State private var showAdminRequest = false
     @State private var adminStatus: Bool?
     @State private var showLogoutConfirmation = false
@@ -227,28 +219,6 @@ struct ProfileView: View {
                     Text("Meldet dich von PiratenSSO und dem Forum ab.")
                 }
             }
-
-            #if DEBUG
-            // Debug-only: trigger the central auth-error handler directly,
-            // bypassing any need to actually invalidate the SSO session
-            // server-side. Used for OPEN-09 verification — confirms the
-            // app transitions to .sessionExpired and SessionExpiredView
-            // renders. Stripped from Release builds at compile time.
-            if let simulateExpiry = onSimulateSessionExpiry {
-                Section {
-                    Button {
-                        simulateExpiry()
-                    } label: {
-                        Label("Simulate session expiry", systemImage: "ladybug")
-                            .foregroundStyle(.orange)
-                    }
-                } header: {
-                    Text("Debug")
-                } footer: {
-                    Text("DEBUG builds only. Fires AuthStateManager.handleAuthenticationError() to verify the .sessionExpired transition without revoking the SSO token server-side.")
-                }
-            }
-            #endif
 
             // Discourse load failure note (non-blocking)
             if viewModel.discourseLoadFailed {
