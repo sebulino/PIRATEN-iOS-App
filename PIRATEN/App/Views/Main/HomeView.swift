@@ -212,6 +212,12 @@ struct HomeView: View {
                                 )
                             }
                         }
+                        // Halve the gap between the "Kajüte" navigation title and
+                        // the greeting: the VStack's 24pt section spacing applies
+                        // above this first element too. Pull the greeting up by
+                        // half (−12) so the title sits closer, without changing
+                        // the 24pt spacing between the sections below.
+                        .padding(.top, -12)
                     }
 
                     // Discourse re-auth banner
