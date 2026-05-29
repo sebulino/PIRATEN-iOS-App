@@ -40,9 +40,11 @@ enum NotificationCategory: String, CaseIterable, Sendable {
         }
     }
 
-    /// Fixed German body string shown in the notification banner.
-    /// Privacy note: bodies are generic — we never include the actual
-    /// topic/message content (see THREAT_MODEL.md T-007).
+    /// Fixed German body string — the generic fallback shown when no
+    /// item-specific `NotificationContent` is supplied (empty source list,
+    /// missing title, or a deliberately-generic source like Wissen/Termine).
+    /// Item-specific bodies are produced by `NotificationContentBuilder`
+    /// (see THREAT_MODEL.md T-007).
     var body: String {
         switch self {
         case .forum:     return "Es gibt neue Beiträge im Forum."
@@ -58,9 +60,25 @@ enum NotificationCategory: String, CaseIterable, Sendable {
 /// Protocol so tests can substitute an in-memory fake scheduler.
 protocol LocalNotificationScheduling: Sendable {
     /// Dispatch a local notification for the given category.
-    /// No-op if the caller has not verified the per-category setting is enabled —
-    /// the scheduler itself does not gate on settings.
-    func schedule(_ category: NotificationCategory) async
+    ///
+    /// - Parameters:
+    ///   - category: The source category. Its `title`/`body` are the generic
+    ///     fallback text.
+    ///   - content: Optional item-specific text (title + body) that overrides
+    ///     the generic strings. Pass `nil` to fire the fixed generic
+    ///     notification — the original behaviour.
+    ///
+    /// No-op gating on settings is the caller's job; the scheduler itself does
+    /// not consult `NotificationSettingsManager`.
+    func schedule(_ category: NotificationCategory, content: NotificationContent?) async
+}
+
+extension LocalNotificationScheduling {
+    /// Convenience overload preserving the original call site
+    /// `schedule(.forum)` — dispatches the generic notification.
+    func schedule(_ category: NotificationCategory) async {
+        await schedule(category, content: nil)
+    }
 }
 
 /// Production scheduler that submits to `UNUserNotificationCenter`.
@@ -74,18 +92,22 @@ struct LocalNotificationScheduler: LocalNotificationScheduling {
     /// no mutable state.
     nonisolated init() {}
 
-    func schedule(_ category: NotificationCategory) async {
-        let content = UNMutableNotificationContent()
-        content.title = category.title
-        content.body = category.body
-        content.sound = .default
+    func schedule(_ category: NotificationCategory, content: NotificationContent?) async {
+        let notification = UNMutableNotificationContent()
+        // Item-specific text when the poller could identify the triggering
+        // item; otherwise the fixed generic strings. The body for messages
+        // names the sender + subject — kept off the lock screen by the
+        // system "Vorschau: Wenn entsperrt" default (see T-007), not by code.
+        notification.title = content?.title ?? category.title
+        notification.body = content?.body ?? category.body
+        notification.sound = .default
 
         // Trigger is nil → fire immediately. A unique UUID suffix keeps
         // multiple notifications of the same category separate in the
         // delivered list rather than being coalesced.
         let request = UNNotificationRequest(
             identifier: "\(category.rawValue)-\(UUID().uuidString)",
-            content: content,
+            content: notification,
             trigger: nil
         )
 
