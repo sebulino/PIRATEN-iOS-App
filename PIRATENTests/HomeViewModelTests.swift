@@ -109,22 +109,25 @@ struct HomeViewModelTests {
 
     @Test("System accounts are excluded from recent contacts")
     func systemAccountsFilteredFromRecentContacts() async throws {
-        // A thread whose participants include two automated accounts
-        // (system, robotpirat) plus one real Pirat. Only the real Pirat
-        // should surface in "Letzte Kontakte".
+        // A thread whose participants include three automated accounts
+        // (system, discobot, robotpirat) plus one real Pirat. Only the real
+        // Pirat should surface in "Letzte Kontakte". `discobot` in particular
+        // PMs every new user a welcome message, so it would otherwise be the
+        // first phantom "contact" right after login.
         let realPirat = UserSummary(id: 10, username: "ehrlicher_pirat", displayName: "Ehrliche Piratin", avatarUrl: nil)
         let systemBot = UserSummary(id: 11, username: "system", displayName: "System", avatarUrl: nil)
         let robotBot = UserSummary(id: 12, username: "RobotPirat", displayName: "Robot Pirat", avatarUrl: nil)
+        let discobot = UserSummary(id: 13, username: "discobot", displayName: "discobot", avatarUrl: nil)
 
         let thread = MessageThread(
             id: 9001,
             title: "Willkommen an Bord",
-            participants: [realPirat, systemBot, robotBot],
+            participants: [realPirat, systemBot, robotBot, discobot],
             createdAt: Date(),
             lastActivityAt: Date(),
             postsCount: 1,
             isRead: true,
-            lastPoster: systemBot
+            lastPoster: discobot
         )
 
         let store = InMemoryCredentialStore()
@@ -144,6 +147,7 @@ struct HomeViewModelTests {
         #expect(usernames.contains("ehrlicher_pirat"))
         #expect(!usernames.contains("system"))
         #expect(!usernames.contains("robotpirat"))
+        #expect(!usernames.contains("discobot"))
     }
 
     @Test("Recent contacts empty when only system accounts present")

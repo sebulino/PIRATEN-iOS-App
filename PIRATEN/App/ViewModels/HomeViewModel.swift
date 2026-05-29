@@ -219,12 +219,12 @@ final class HomeViewModel: ObservableObject {
             for participant in thread.participants {
                 let username = participant.username
                 // Skip self, duplicates, and automated/system accounts.
-                // System accounts (e.g. "system", "robotpirat") send
-                // automated PMs but are not real Piraten the user would
-                // want to message back, so they don't belong in "Letzte
-                // Kontakte".
+                // System accounts (e.g. "system", "discobot") send automated
+                // PMs but are not real Piraten the user would want to message
+                // back, so they don't belong in "Letzte Kontakte". The
+                // exclusion list is canonical (see `SystemAccounts`).
                 guard username != currentUser.username,
-                      !Self.systemAccountUsernames.contains(username.lowercased()),
+                      !SystemAccounts.isSystem(username),
                       !seen.contains(participant.id)
                 else { continue }
                 seen.insert(participant.id)
@@ -236,15 +236,6 @@ final class HomeViewModel: ObservableObject {
         let unreadCount = threads.filter { !$0.isRead }.count
         return (contacts, unreadCount)
     }
-
-    /// Usernames of automated/system accounts that must never appear as a
-    /// human "recent contact". Compared case-insensitively. If other
-    /// contact surfaces (recipient picker, thread participants) need the
-    /// same exclusion later, promote this to a shared constant.
-    private static let systemAccountUsernames: Set<String> = [
-        "system",
-        "robotpirat",
-    ]
 
     /// Loads knowledge articles: in-progress topics first, then fill with unread.
     /// Returns up to 3 articles.
