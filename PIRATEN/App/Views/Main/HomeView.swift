@@ -310,9 +310,10 @@ struct HomeView: View {
                 .foregroundColor(.orange)
 
             if viewModel.recentContacts.isEmpty {
-                Text("Noch keine Nachrichten")
+                Text("Noch keine Unterhaltungen. Sobald du mit anderen Piraten Nachrichten austauschst, erscheinen sie hier.")
                     .font(.piratenSubheadline)
                     .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical, 8)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {

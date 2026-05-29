@@ -104,4 +104,97 @@ struct HomeViewModelTests {
         // Should still reach loaded state even if contacts fail
         #expect(vm.loadState == .loaded)
     }
+
+    // MARK: - Recent Contacts Filtering
+
+    @Test("System accounts are excluded from recent contacts")
+    func systemAccountsFilteredFromRecentContacts() async throws {
+        // A thread whose participants include two automated accounts
+        // (system, robotpirat) plus one real Pirat. Only the real Pirat
+        // should surface in "Letzte Kontakte".
+        let realPirat = UserSummary(id: 10, username: "ehrlicher_pirat", displayName: "Ehrliche Piratin", avatarUrl: nil)
+        let systemBot = UserSummary(id: 11, username: "system", displayName: "System", avatarUrl: nil)
+        let robotBot = UserSummary(id: 12, username: "RobotPirat", displayName: "Robot Pirat", avatarUrl: nil)
+
+        let thread = MessageThread(
+            id: 9001,
+            title: "Willkommen an Bord",
+            participants: [realPirat, systemBot, robotBot],
+            createdAt: Date(),
+            lastActivityAt: Date(),
+            postsCount: 1,
+            isRead: true,
+            lastPoster: systemBot
+        )
+
+        let store = InMemoryCredentialStore()
+        Self.seedDiscourseCredential(into: store)
+        let auth = FakeAuthRepository(credentialStore: store)
+        _ = await auth.authenticate() // so getCurrentUser returns the stub user
+
+        let vm = makeViewModel(
+            discourseRepository: FakeDiscourseRepository(messageThreadsOverride: [thread]),
+            authRepository: auth,
+            credentialStore: store
+        )
+        vm.loadDashboard()
+        try await waitForLoaded(vm)
+
+        let usernames = Set(vm.recentContacts.map { $0.username.lowercased() })
+        #expect(usernames.contains("ehrlicher_pirat"))
+        #expect(!usernames.contains("system"))
+        #expect(!usernames.contains("robotpirat"))
+    }
+
+    @Test("Recent contacts empty when only system accounts present")
+    func onlySystemAccountsYieldsEmptyContacts() async throws {
+        // A thread with ONLY automated participants → no human contacts,
+        // so the section shows its empty-state hint.
+        let systemBot = UserSummary(id: 11, username: "system", displayName: "System", avatarUrl: nil)
+        let robotBot = UserSummary(id: 12, username: "robotpirat", displayName: "Robot Pirat", avatarUrl: nil)
+
+        let thread = MessageThread(
+            id: 9002,
+            title: "Automatische Benachrichtigung",
+            participants: [systemBot, robotBot],
+            createdAt: Date(),
+            lastActivityAt: Date(),
+            postsCount: 1,
+            isRead: true,
+            lastPoster: systemBot
+        )
+
+        let store = InMemoryCredentialStore()
+        Self.seedDiscourseCredential(into: store)
+        let auth = FakeAuthRepository(credentialStore: store)
+        _ = await auth.authenticate()
+
+        let vm = makeViewModel(
+            discourseRepository: FakeDiscourseRepository(messageThreadsOverride: [thread]),
+            authRepository: auth,
+            credentialStore: store
+        )
+        vm.loadDashboard()
+        try await waitForLoaded(vm)
+
+        #expect(vm.recentContacts.isEmpty)
+    }
+
+    // MARK: - Test Helpers
+
+    /// Writes a fake Discourse credential so HomeViewModel takes the
+    /// "Discourse connected" branch (otherwise it skips contact loading).
+    private static func seedDiscourseCredential(into store: CredentialStore) {
+        let credential = DiscourseCredential(
+            apiKey: "test-key",
+            clientId: "test-client",
+            createdAt: Date()
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        if let data = try? encoder.encode(credential),
+           let json = String(data: data, encoding: .utf8) {
+            try? store.set(json, forKey: DiscourseAuthManager.discourseCredentialKey)
+        }
+    }
 }

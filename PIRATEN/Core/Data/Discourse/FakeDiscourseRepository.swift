@@ -14,6 +14,16 @@ import Foundation
 @MainActor
 final class FakeDiscourseRepository: DiscourseRepository {
 
+    /// Optional override for `fetchMessageThreads`. When set, the fake
+    /// returns these threads instead of its built-in stub set. Lets tests
+    /// inject specific participant shapes (e.g. system accounts) without
+    /// subclassing. Defaults to nil → built-in stub data.
+    private let messageThreadsOverride: [MessageThread]?
+
+    init(messageThreadsOverride: [MessageThread]? = nil) {
+        self.messageThreadsOverride = messageThreadsOverride
+    }
+
     // MARK: - Stub Data
 
     /// Static fake users for stub content (placeholder data for development)
@@ -337,7 +347,7 @@ final class FakeDiscourseRepository: DiscourseRepository {
     func fetchMessageThreads(for username: String, includeSent: Bool) async throws -> [MessageThread] {
         // Simulate network delay (placeholder behavior)
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-        return fakeMessageThreads
+        return messageThreadsOverride ?? fakeMessageThreads
     }
 
     func replyToThread(topicId: Int, content: String) async throws {
