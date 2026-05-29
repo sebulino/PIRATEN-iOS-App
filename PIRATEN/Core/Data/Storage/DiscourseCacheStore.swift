@@ -55,6 +55,18 @@ final class DiscourseCacheStore {
         encode(trimmed, forKey: Self.topicsCacheKey)
     }
 
+    /// Marks a single cached topic as read and persists the change, so any
+    /// surface that re-reads the cache (e.g. the Kajüte's "Aktuelle Themen")
+    /// reflects the read state and drops its "Neu" cue. No-op if the topic is
+    /// not cached or already read.
+    func markTopicRead(id: Int) {
+        var topics = cachedTopics()
+        guard let index = topics.firstIndex(where: { $0.id == id }),
+              !topics[index].isRead else { return }
+        topics[index] = topics[index].markedRead()
+        saveTopics(topics)
+    }
+
     // MARK: - Message Threads
 
     /// Returns cached message threads, sorted by last activity.

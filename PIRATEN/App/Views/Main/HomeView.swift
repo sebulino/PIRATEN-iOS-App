@@ -120,6 +120,12 @@ struct HomeView: View {
             .navigationDestination(for: Topic.self) { topic in
                 if let factory = topicDetailViewModelFactory {
                     TopicDetailView(viewModel: factory(topic))
+                        .onDisappear {
+                            // Returning from the topic: it has been read, so drop
+                            // its "Neu" cue in "Aktuelle Themen" and persist the
+                            // read state. Mirrors ForumView's update-on-back.
+                            viewModel.markTopicRead(id: topic.id)
+                        }
                 }
             }
             .onAppear {
@@ -206,6 +212,12 @@ struct HomeView: View {
                                 )
                             }
                         }
+                        // Halve the gap between the "Kajüte" navigation title and
+                        // the greeting: the VStack's 24pt section spacing applies
+                        // above this first element too. Pull the greeting up by
+                        // half (−12) so the title sits closer, without changing
+                        // the 24pt spacing between the sections below.
+                        .padding(.top, -12)
                     }
 
                     // Discourse re-auth banner

@@ -111,6 +111,17 @@ final class HomeViewModel: ObservableObject {
         loadDashboard()
     }
 
+    /// Marks a topic read after the user opened it from "Aktuelle Themen".
+    /// Drops the "Neu" cue immediately for the current view (in-memory) and
+    /// persists the read state to the shared cache, so it stays read across a
+    /// full dashboard reload and for any other surface reading the cache.
+    func markTopicRead(id: Int) {
+        discourseCache.markTopicRead(id: id)
+        guard let index = recentTopics.firstIndex(where: { $0.id == id }),
+              !recentTopics[index].isRead else { return }
+        recentTopics[index] = recentTopics[index].markedRead()
+    }
+
     private func performLoad() async {
         loadState = .loading
 

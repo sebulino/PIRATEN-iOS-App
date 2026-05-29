@@ -127,23 +127,12 @@ final class ForumViewModel: ObservableObject {
     /// Updates the local topic list to mark a topic as read (no network call).
     /// Called when the user views a topic detail, so the list background updates immediately.
     func markTopicAsRead(id: Int) {
-        guard let index = topics.firstIndex(where: { $0.id == id }) else { return }
-        let t = topics[index]
-        guard !t.isRead else { return }
-        topics[index] = Topic(
-            id: t.id,
-            title: t.title,
-            createdBy: t.createdBy,
-            createdAt: t.createdAt,
-            postsCount: t.postsCount,
-            viewCount: t.viewCount,
-            likeCount: t.likeCount,
-            categoryId: t.categoryId,
-            isVisible: t.isVisible,
-            isClosed: t.isClosed,
-            isArchived: t.isArchived,
-            isRead: true
-        )
+        guard let index = topics.firstIndex(where: { $0.id == id }),
+              !topics[index].isRead else { return }
+        topics[index] = topics[index].markedRead()
+        // Persist so the Kajüte's "Aktuelle Themen" (and any other cache reader)
+        // reflects the read state too, not just this in-memory list.
+        cache.saveTopics(topics)
     }
 
     // MARK: - Private Helpers
