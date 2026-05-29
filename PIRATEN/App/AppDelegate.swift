@@ -55,17 +55,24 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let userInfo = response.notification.request.content.userInfo
+        let itemDeepLink = DeepLink.from(userInfo: userInfo)
+        let category = userInfo["category"] as? String
 
-        // Parse deep link from notification payload
-        if let deepLink = DeepLink.from(userInfo: userInfo) {
-            // Route via deep link router (will be consumed by UI)
-            Task { @MainActor in
-                deepLinkRouter?.handle(deepLink)
+        Task { @MainActor in
+            if let itemDeepLink {
+                // Item-level: open a specific message thread / todo / forum
+                // topic when the payload carries one.
+                deepLinkRouter?.handle(itemDeepLink)
+            } else if let category {
+                // Category-level: open the source's tab or sheet. This is the
+                // path every locally-scheduled notification takes today — the
+                // scheduler stamps the category into userInfo, with no item id.
+                deepLinkRouter?.routeNotificationCategory(category)
             }
         }
 
         #if DEBUG
-        print("[AppDelegate] Notification tapped, deep link parsed: \(DeepLink.from(userInfo: userInfo) != nil)")
+        print("[AppDelegate] Notification tapped — itemDeepLink: \(itemDeepLink != nil), category: \(category ?? "nil")")
         #endif
 
         completionHandler()

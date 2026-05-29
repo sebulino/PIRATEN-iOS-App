@@ -18,8 +18,12 @@ import UserNotifications
 
 /// The six notification categories tracked by the app.
 /// Maps 1:1 to the six toggles in `NotificationSettingsManager`.
-/// Category raw values are used as notification identifier prefixes so
-/// delivered notifications can be introspected per-source.
+/// Category raw values serve two routing purposes:
+///   • notification identifier prefixes, so delivered notifications can be
+///     introspected per-source, and
+///   • the `"category"` key stamped into each notification's `userInfo`, so a
+///     tap can open the matching tab/sheet (see `LocalNotificationScheduler`
+///     and `DeepLinkRouter.routeNotificationCategory`).
 enum NotificationCategory: String, CaseIterable, Sendable {
     case forum
     case messages
@@ -101,6 +105,13 @@ struct LocalNotificationScheduler: LocalNotificationScheduling {
         notification.title = content?.title ?? category.title
         notification.body = content?.body ?? category.body
         notification.sound = .default
+
+        // Routing payload (tap → tab/sheet): every locally-scheduled
+        // notification carries its source category so a tap can open the
+        // matching destination. Read by AppDelegate, applied via
+        // DeepLinkRouter.routeNotificationCategory. Only the category is
+        // encoded — no item id, no PII (see THREAT_MODEL.md T-007).
+        notification.userInfo = ["category": category.rawValue]
 
         // Trigger is nil → fire immediately. A unique UUID suffix keeps
         // multiple notifications of the same category separate in the
