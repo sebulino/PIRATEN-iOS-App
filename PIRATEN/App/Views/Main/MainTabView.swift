@@ -429,6 +429,20 @@ struct MainTabView: View {
                notificationSettings.authorizationStatus == .notDetermined {
                 notificationSettings.requestPermissionIfNeeded()
             }
+
+            // Cold launch via a notification tap: AppDelegate may have set a
+            // pending sheet flag on DeepLinkRouter before this view existed, so
+            // the `.onChange` observers below never fired. Consume it here. (Tab
+            // routing needs no equivalent — the TabView reads `selectedTab`'s
+            // current value on appear.)
+            if deepLinkRouter.pendingMessagesSheet {
+                showingMessages = true
+                deepLinkRouter.pendingMessagesSheet = false
+            }
+            if deepLinkRouter.pendingNewsSheet {
+                showingNews = true
+                deepLinkRouter.pendingNewsSheet = false
+            }
         }
         .onDisappear {
             stopPolling()
@@ -530,6 +544,21 @@ struct MainTabView: View {
                 // The Forum tab will show the topic list; navigation to a specific
                 // topic within the tab is not yet implemented (see OPEN_QUESTIONS.md Q-014).
                 deepLinkRouter.clearPendingDeepLink()
+            }
+        }
+        // Notification-tap routing for the two sheet-backed sources. Tab-backed
+        // sources (Forum/Wissen/Termine/ToDos) route by driving the TabView's
+        // `selectedTab` binding directly and need no observer here.
+        .onChange(of: deepLinkRouter.pendingMessagesSheet) { _, shouldShow in
+            if shouldShow {
+                showingMessages = true
+                deepLinkRouter.pendingMessagesSheet = false
+            }
+        }
+        .onChange(of: deepLinkRouter.pendingNewsSheet) { _, shouldShow in
+            if shouldShow {
+                showingNews = true
+                deepLinkRouter.pendingNewsSheet = false
             }
         }
     }
