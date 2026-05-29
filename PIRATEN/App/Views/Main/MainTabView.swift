@@ -418,6 +418,17 @@ struct MainTabView: View {
 
             // Start foreground polling if notifications are enabled
             startPollingIfNeeded()
+
+            // Opt-out (Q-068): categories default ON, but iOS still requires an
+            // explicit system-permission grant before anything is delivered.
+            // Request it once, in-context — now that the user is authenticated
+            // and the main screen is visible — rather than cold on first launch.
+            // iOS only surfaces the prompt while status is .notDetermined; once
+            // the user has decided, this is a no-op.
+            if notificationSettings.anyNotificationsEnabled,
+               notificationSettings.authorizationStatus == .notDetermined {
+                notificationSettings.requestPermissionIfNeeded()
+            }
         }
         .onDisappear {
             stopPolling()
