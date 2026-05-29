@@ -137,20 +137,7 @@ final class TopicDetailViewModel: ObservableObject {
     /// Marks the topic as read locally and notifies Discourse.
     private func markAsRead(highestPostNumber: Int) {
         // Update local model immediately so the list view reflects the change
-        topic = Topic(
-            id: topic.id,
-            title: topic.title,
-            createdBy: topic.createdBy,
-            createdAt: topic.createdAt,
-            postsCount: topic.postsCount,
-            viewCount: topic.viewCount,
-            likeCount: topic.likeCount,
-            categoryId: topic.categoryId,
-            isVisible: topic.isVisible,
-            isClosed: topic.isClosed,
-            isArchived: topic.isArchived,
-            isRead: true
-        )
+        topic = topic.markedRead()
 
         // Notify Discourse in the background — failure is non-fatal
         Task {

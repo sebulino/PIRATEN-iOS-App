@@ -49,3 +49,27 @@ struct Topic: Identifiable, Equatable, Hashable, Codable {
     /// Whether the topic has been read by the current user
     let isRead: Bool
 }
+
+extension Topic {
+    /// Returns a copy marked as read. Used when the user opens a topic so the
+    /// list surfaces that show an unread / "Neu" cue (forum list, the Kajüte's
+    /// "Aktuelle Themen") drop it. Centralised here so every read-flip stays in
+    /// sync — `Topic` is an all-`let` value type, so the fields must otherwise
+    /// be re-listed by hand at each call site.
+    func markedRead() -> Topic {
+        Topic(
+            id: id,
+            title: title,
+            createdBy: createdBy,
+            createdAt: createdAt,
+            postsCount: postsCount,
+            viewCount: viewCount,
+            likeCount: likeCount,
+            categoryId: categoryId,
+            isVisible: isVisible,
+            isClosed: isClosed,
+            isArchived: isArchived,
+            isRead: true
+        )
+    }
+}

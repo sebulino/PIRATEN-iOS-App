@@ -129,6 +129,45 @@ struct HomeViewModelTests {
         #expect(vm.recentTopics.map { $0.id } == [2, 4, 1, 3])
     }
 
+    @Test("Reading a topic clears its »Neu« state in Aktuelle Themen and the cache")
+    func markTopicReadClearsUnread() async throws {
+        // Reproduces the bug: opening a topic from "Aktuelle Themen" and
+        // returning must drop its unread/"Neu" state — both in the live view
+        // and persisted, so it does not reappear after a dashboard reload.
+        let cache = DiscourseCacheStore(
+            userDefaults: UserDefaults(suiteName: "test-markread-\(UUID().uuidString)")!
+        )
+        func topic(_ id: Int, read: Bool) -> Topic {
+            Topic(
+                id: id,
+                title: "Thema \(id)",
+                createdBy: UserSummary(id: 1, username: "pirat", displayName: nil, avatarUrl: nil),
+                createdAt: Date(),
+                postsCount: 3,
+                viewCount: 0,
+                likeCount: 0,
+                categoryId: 1,
+                isVisible: true,
+                isClosed: false,
+                isArchived: false,
+                isRead: read
+            )
+        }
+        cache.saveTopics([topic(1, read: false), topic(2, read: true)])
+
+        let vm = makeViewModel(discourseCache: cache)
+        vm.loadDashboard()
+        try await waitForLoaded(vm)
+        #expect(vm.recentTopics.first(where: { $0.id == 1 })?.isRead == false)
+
+        vm.markTopicRead(id: 1)
+
+        // In-memory recentTopics updated → "Neu" drops on return…
+        #expect(vm.recentTopics.first(where: { $0.id == 1 })?.isRead == true)
+        // …and persisted to the shared cache → survives a reload.
+        #expect(cache.cachedTopics().first(where: { $0.id == 1 })?.isRead == true)
+    }
+
     @Test("Knowledge articles are populated from fake repository")
     func knowledgeArticles() async throws {
         let vm = makeViewModel()

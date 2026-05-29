@@ -120,6 +120,12 @@ struct HomeView: View {
             .navigationDestination(for: Topic.self) { topic in
                 if let factory = topicDetailViewModelFactory {
                     TopicDetailView(viewModel: factory(topic))
+                        .onDisappear {
+                            // Returning from the topic: it has been read, so drop
+                            // its "Neu" cue in "Aktuelle Themen" and persist the
+                            // read state. Mirrors ForumView's update-on-back.
+                            viewModel.markTopicRead(id: topic.id)
+                        }
                 }
             }
             .onAppear {
