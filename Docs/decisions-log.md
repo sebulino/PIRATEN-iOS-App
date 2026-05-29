@@ -713,3 +713,32 @@ Status key: `OPEN` · `DECIDED` · `APPLIED` (i.e. the docs have been updated).
   `NotificationSettingsManager` doc comments, and the App Store listing
   (the "Alles standardmäßig aus" line must change — see below). Threat
   model Notifications section notes the opt-out posture.
+
+### Q-069 — Recent contacts: exclude `discobot` via a canonical system-account filter
+- **Status:** DECIDED 2026-05-29
+- **Category:** Messaging / parity.
+- **Context:** The Android sibling hides Discourse's automated accounts from
+  contact lists. iOS already filtered `system` and `robotpirat` from the
+  dashboard's "Letzte Kontakte", but not `discobot` — Discourse's onboarding
+  tutorial bot, which PMs *every* new user a welcome message. So a brand-new
+  member's very first "recent contact" was a bot they can't meaningfully reply
+  to. Reproducible by design (discobot greets every new account).
+- **Code state (before):** the exclusion set lived as a `private static`
+  inside `HomeViewModel` (`["system", "robotpirat"]`) and was applied only to
+  recent contacts. The recipient picker's user-search results applied no such
+  filter, so typing "disco"/"syst" could surface a bot as a message recipient.
+- **Decision:** Add `discobot` to the exclusion, and promote the list to a
+  single canonical source of truth — `SystemAccounts` (Domain/Discourse) with
+  a case-insensitive `isSystem(_:)` helper. Both contact surfaces now filter
+  through it: `HomeViewModel.loadRecentContacts` and
+  `RecipientPickerViewModel`'s search results.
+- **Why canonical:** the old `HomeViewModel` comment already anticipated this
+  ("if other contact surfaces need the same exclusion later, promote to a
+  shared constant"). One list, one rule, applied everywhere users surface as
+  potential human contacts — no drift between surfaces.
+- **Privacy/scope:** purely a display/UX filter over already-fetched data; no
+  new requests, no persistence, no PII. Matching is case-insensitive and
+  whole-username (substrings like `discobot_fan` are unaffected).
+- **Reversal trigger:** Discourse renames its system bots, or the Piraten
+  instance adds/removes an automated account — update `SystemAccounts.usernames`
+  (the `SystemAccountsTests` lowercase-invariant guard will flag a bad entry).

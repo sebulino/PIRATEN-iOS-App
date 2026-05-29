@@ -95,7 +95,10 @@ final class RecipientPickerViewModel: ObservableObject {
                 // Check if cancelled after API call
                 guard !Task.isCancelled else { return }
 
-                searchResults = results
+                // Exclude automated/system accounts (e.g. discobot, system):
+                // they have no business as message recipients. Same canonical
+                // exclusion the dashboard's "Letzte Kontakte" uses.
+                searchResults = results.filter { !SystemAccounts.isSystem($0.username) }
                 isSearching = false
             } catch {
                 guard !Task.isCancelled else { return }
