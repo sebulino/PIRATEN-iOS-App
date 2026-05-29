@@ -213,9 +213,48 @@ struct NotificationContentBuilderTests {
     @Test("schedule(_:content:) passes the content through unchanged")
     func explicitContentPassesThrough() async {
         let spy = SpyNotificationScheduler()
-        let content = NotificationContent(title: "T", body: "B", isLockscreenSensitive: true)
+        let content = NotificationContent(title: "T", body: "B", isLockscreenSensitive: true, deepLink: nil)
         await spy.schedule(.forum, content: content)
         #expect(spy.calls.last?.content == content)
+    }
+
+    // MARK: - Deep link payload (tap → exact item)
+
+    @Test("Forum builder deep-links to the newest topic (same item as the body)")
+    func forumDeepLinksToNamedTopic() {
+        let content = NotificationContentBuilder.forum(from: [
+            makeTopic(id: 7, title: "Verlierer"),
+            makeTopic(id: 42, title: "Mitgliederversammlung 2026")
+        ])
+        // The deep link targets the SAME topic named in the body (max id = 42),
+        // so a tap can never open a different topic than the banner advertised.
+        #expect(content?.deepLink == .forumTopic(topicId: 42))
+        #expect(content?.body.contains("»Mitgliederversammlung 2026«") == true)
+    }
+
+    @Test("Messages builder deep-links to the newest thread (same item as the body)")
+    func messagesDeepLinksToNamedThread() {
+        let sender = makeUser(username: "kraehe", displayName: "Käpt'n Krähe")
+        let content = NotificationContentBuilder.messages(from: [
+            makeThread(id: 3, title: "Alt", lastPoster: sender),
+            makeThread(id: 99, title: "Klarmachen zum Entern", lastPoster: sender)
+        ])
+        #expect(content?.deepLink == .messageThread(topicId: 99))
+        #expect(content?.body.contains("»Klarmachen zum Entern«") == true)
+    }
+
+    @Test("Todos builder sets no deep link (tab-level routing only)")
+    func todosHasNoDeepLink() {
+        let content = NotificationContentBuilder.todos(from: [makeTodo(id: 1, title: "Aufgabe")])
+        #expect(content != nil)
+        #expect(content?.deepLink == nil)
+    }
+
+    @Test("News builder sets no deep link (sheet routing only)")
+    func newsHasNoDeepLink() {
+        let content = NotificationContentBuilder.news(from: [makeNews(messageId: 1, text: "Neuigkeit")])
+        #expect(content != nil)
+        #expect(content?.deepLink == nil)
     }
 }
 

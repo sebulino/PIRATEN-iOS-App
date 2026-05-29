@@ -42,4 +42,15 @@ struct NotificationContent: Sendable, Equatable {
     /// change scheduling behaviour — it documents intent and lets tests
     /// assert that the messages builder marks its output sensitive.
     let isLockscreenSensitive: Bool
+
+    /// Item-level deep link to the concrete item this notification names, so a
+    /// tap can open it directly (e.g. the forum topic or the message thread).
+    ///
+    /// Set by the builder to the **same item** named in `body` (both use the
+    /// source's `max(id)`), so the tap destination can never drift from the
+    /// banner text. `nil` for sources that route to a tab/sheet only (News,
+    /// Wissen, ToDos) or when no item could be identified — the tap then falls
+    /// back to category-level routing. Only an id is carried, no content
+    /// (see THREAT_MODEL.md T-007).
+    let deepLink: DeepLink?
 }

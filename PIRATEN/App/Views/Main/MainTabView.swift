@@ -98,6 +98,11 @@ struct MainTabView: View {
     /// State for handling deep link navigation to todo detail
     @State private var deepLinkedTodo: Todo?
 
+    /// Navigation path for the Forum tab's stack. A `.forumTopic` deep link
+    /// pushes the topic here; normal in-list taps append to it too, so back
+    /// lands in the topic list.
+    @State private var forumNavigationPath: [Topic] = []
+
     /// Scene phase for foreground/background polling control
     @Environment(\.scenePhase) private var scenePhase
 
@@ -152,6 +157,7 @@ struct MainTabView: View {
             ForumView(
                 viewModel: forumViewModel,
                 discourseAuthCoordinator: discourseAuthCoordinator,
+                navigationPath: $forumNavigationPath,
                 topicDetailViewModelFactory: topicDetailViewModelFactory,
                 userProfileViewModelFactory: userProfileViewModelFactory,
                 onSendMessageFromProfile: { profile in
@@ -443,6 +449,13 @@ struct MainTabView: View {
                 showingNews = true
                 deepLinkRouter.pendingNewsSheet = false
             }
+
+            // Cold launch via an item-level notification tap (Forum/Nachrichten):
+            // AppDelegate set pendingDeepLink before this view existed, so the
+            // `.onChange` observer never fired. Consume it here.
+            if let deepLink = deepLinkRouter.pendingDeepLink {
+                handlePendingDeepLink(deepLink)
+            }
         }
         .onDisappear {
             stopPolling()
@@ -510,40 +523,11 @@ struct MainTabView: View {
             await refreshDeliveredNotificationsCount()
         }
         .onChange(of: deepLinkRouter.pendingDeepLink) { _, pendingDeepLink in
-            guard let deepLink = pendingDeepLink else { return }
-
-            // Handle the deep link based on type
-            switch deepLink {
-            case .messageThread(let topicId):
-                // Open messages sheet and present the deep-linked thread
-                showingMessages = true
-                Task {
-                    messagesViewModel.loadMessages()
-                    // Give a moment for messages to load
-                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-                    if let thread = messagesViewModel.messageThreads.first(where: { $0.id == topicId }) {
-                        deepLinkedMessageThread = thread
-                    }
-                    // Clear pending deep link after handling
-                    deepLinkRouter.clearPendingDeepLink()
-                }
-
-            case .todoDetail(let todoId):
-                Task {
-                    todosViewModel.loadTodos()
-                    try? await Task.sleep(nanoseconds: 500_000_000)
-                    if let todoIdInt = Int(todoId),
-                       let todo = todosViewModel.todos.first(where: { $0.id == todoIdInt }) {
-                        deepLinkedTodo = todo
-                    }
-                    deepLinkRouter.clearPendingDeepLink()
-                }
-
-            case .forumTopic:
-                // DeepLinkRouter already switched to Forum tab (tag 1).
-                // The Forum tab will show the topic list; navigation to a specific
-                // topic within the tab is not yet implemented (see OPEN_QUESTIONS.md Q-014).
-                deepLinkRouter.clearPendingDeepLink()
+            // Warm path: a tap arrived while the app was running. (The cold-
+            // launch path is consumed in `.onAppear`, where this `.onChange`
+            // would never fire because the value was set before the view.)
+            if let deepLink = pendingDeepLink {
+                handlePendingDeepLink(deepLink)
             }
         }
         // Notification-tap routing for the two sheet-backed sources. Tab-backed
@@ -559,6 +543,58 @@ struct MainTabView: View {
             if shouldShow {
                 showingNews = true
                 deepLinkRouter.pendingNewsSheet = false
+            }
+        }
+    }
+
+    // MARK: - Deep Link Handling
+
+    /// Routes an item-level deep link (from a notification tap) to its
+    /// destination:
+    /// - `.forumTopic` → push the topic onto the Forum tab's stack (back → list),
+    /// - `.messageThread` → open the Nachrichten sheet and present the thread,
+    /// - `.todoDetail` → present the todo detail.
+    ///
+    /// `DeepLinkRouter.handle` already selected the matching tab. The target
+    /// item's list may not be loaded yet (especially on a cold launch), so each
+    /// case loads, briefly waits, then resolves the item by id before
+    /// navigating. The pending link is cleared once handled.
+    ///
+    /// Called from both `.onChange(pendingDeepLink)` (warm) and `.onAppear`
+    /// (cold launch, where the value was set before the view appeared).
+    private func handlePendingDeepLink(_ deepLink: DeepLink) {
+        switch deepLink {
+        case .messageThread(let topicId):
+            showingMessages = true
+            Task {
+                messagesViewModel.loadMessages()
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s for the list to load
+                if let thread = messagesViewModel.messageThreads.first(where: { $0.id == topicId }) {
+                    deepLinkedMessageThread = thread
+                }
+                deepLinkRouter.clearPendingDeepLink()
+            }
+
+        case .todoDetail(let todoId):
+            Task {
+                todosViewModel.loadTodos()
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                if let todoIdInt = Int(todoId),
+                   let todo = todosViewModel.todos.first(where: { $0.id == todoIdInt }) {
+                    deepLinkedTodo = todo
+                }
+                deepLinkRouter.clearPendingDeepLink()
+            }
+
+        case .forumTopic(let topicId):
+            Task {
+                forumViewModel.loadTopics()
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                if let topic = forumViewModel.topics.first(where: { $0.id == topicId }) {
+                    // Push onto the Forum tab's stack (router already selected it).
+                    forumNavigationPath = [topic]
+                }
+                deepLinkRouter.clearPendingDeepLink()
             }
         }
     }
