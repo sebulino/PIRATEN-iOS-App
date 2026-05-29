@@ -92,6 +92,31 @@ Out of scope (but acknowledged):
   persisted beyond what upstreams already hold.
 - Keychain contents are wiped on logout.
 
+### Notifications (T-007)
+
+- Local notifications **may name the item that triggered them** — the
+  forum topic title, the private-message sender + subject, the todo or
+  news title. Previously every body was generic; this was loosened for
+  parity with the Android app and for usefulness. Bodies are built on
+  the fly by `NotificationContentBuilder` from data already fetched for
+  the poll; **no notification text is ever persisted** (only aggregate
+  `bg_*` ids/counts are stored, for change detection).
+- **Wissen** and **Termine** stay generic: a changed knowledge slug
+  can't be named meaningfully, and event detection is count-based so it
+  cannot identify *which* event is new.
+- **Private-message bodies are sensitive** (they reveal a sender and
+  subject). iOS has no per-notification redaction API (no equivalent of
+  Android's `setPublicVersion`). Instead we rely on the system-wide
+  *"Vorschau zeigen: Wenn entsperrt"* default, which hides the body on a
+  locked screen and reveals it only after Face/Touch ID. The builder
+  marks such content `isLockscreenSensitive`, but that flag is
+  informational — it does not change scheduling. A user who has switched
+  previews to *"Immer"* will see message senders/subjects on the lock
+  screen; this is their explicit OS-level choice.
+- Notification bodies still contain no tokens, no email addresses, no
+  membership data, and no full message contents — only the single
+  newest item's title/sender.
+
 ### Input handling
 
 - Content from Discourse is rendered with bounded interpreters
