@@ -1658,11 +1658,16 @@ foregrounded.
 - For each source with new activity since the last background wake,
   the coordinator checks
   `NotificationSettingsManager.<category>Enabled`.
-- If enabled, a `UNMutableNotificationContent` is scheduled with a
-  fixed German title/body per category (see
-  `NotificationCategory` enum).
-- Notification bodies are generic — they never contain message
-  contents, topic titles, or other PII (see threat model T-007).
+- If enabled, a `UNMutableNotificationContent` is scheduled. The body
+  names the newest triggering item where the poller can identify it —
+  forum topic title, message sender + subject, todo/news title (built by
+  `NotificationContentBuilder`). Wissen and Termine fall back to the
+  fixed German strings on the `NotificationCategory` enum, as does any
+  source with an empty list or missing title.
+- Notification bodies never contain tokens, email, membership data, or
+  full message contents. Private-message sender + subject are kept off
+  the lock screen by the iOS "Vorschau: Wenn entsperrt" system default,
+  not by per-notification code (see threat model T-007).
 - Tapping a notification opens the corresponding tab.
 - The Discourse-aggregate badge (home-screen unread count) is
   updated by `DiscourseNotificationPoller` separately, with its own
@@ -1673,7 +1678,7 @@ foregrounded.
 | Platform | Status      | Notes                                                                                                              |
 |----------|-------------|--------------------------------------------------------------------------------------------------------------------|
 | iOS      | ✅ Shipped  | `BackgroundRefreshCoordinator` + `LocalNotificationScheduler` (fix for OPEN-12 / #75). Real-device BG test pending organic `BGAppRefreshTask` fire. |
-| Android  | Not started | `NotificationManagerCompat.notify()` from inside the `WorkManager` worker. Same per-category gating, same generic-body privacy rule. |
+| Android  | Ahead of iOS | `NotificationManagerCompat.notify()` from inside the `WorkManager` worker. Same per-category gating. Item-specific bodies first landed on Android; iOS reached parity via `NotificationContentBuilder`. Android redacts message previews with `setPublicVersion`; iOS relies on the OS "previews when unlocked" default (see T-007). |
 
 ---
 

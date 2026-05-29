@@ -25,9 +25,14 @@
 //    notification for the same event, but each only once per its own
 //    "last seen" marker.
 //
-//  Privacy: Only aggregate ids/counts are persisted. No message contents,
-//  usernames, or titles leak into notification bodies — all bodies are
-//  fixed strings on `NotificationCategory` (see THREAT_MODEL.md T-007).
+//  Privacy: Only aggregate ids/counts are persisted — never item text.
+//  Notification bodies MAY name the triggering item (topic title, message
+//  sender + subject, todo/news title) when the poller can identify it; this
+//  is built on the fly via `NotificationContentBuilder` and never stored.
+//  Message bodies (sender + subject) are sensitive and stay hidden on the
+//  lock screen via the iOS "Vorschau: Wenn entsperrt" system default — there
+//  is no per-notification redaction API on iOS (see THREAT_MODEL.md T-007).
+//  Wissen and Termine stay generic.
 //
 
 import Foundation
@@ -141,7 +146,7 @@ final class BackgroundRefreshCoordinator {
             defer { UserDefaults.standard.set(newestId, forKey: Keys.forumLastId) }
 
             if lastSeen != 0, newestId > lastSeen, settings.forumEnabled {
-                await scheduler.schedule(.forum)
+                await scheduler.schedule(.forum, content: NotificationContentBuilder.forum(from: topics))
             }
         } catch {
             logFailure("forum", error)
@@ -168,7 +173,7 @@ final class BackgroundRefreshCoordinator {
             defer { UserDefaults.standard.set(newestId, forKey: Keys.messagesLastId) }
 
             if lastSeen != 0, newestId > lastSeen, settings.messagesEnabled {
-                await scheduler.schedule(.messages)
+                await scheduler.schedule(.messages, content: NotificationContentBuilder.messages(from: threads))
             }
         } catch {
             logFailure("messages", error)
@@ -183,7 +188,7 @@ final class BackgroundRefreshCoordinator {
             defer { UserDefaults.standard.set(newestId, forKey: Keys.todosLastId) }
 
             if lastSeen != 0, newestId > lastSeen, settings.todosEnabled {
-                await scheduler.schedule(.todos)
+                await scheduler.schedule(.todos, content: NotificationContentBuilder.todos(from: todos))
             }
         } catch {
             logFailure("todos", error)
@@ -201,7 +206,7 @@ final class BackgroundRefreshCoordinator {
             defer { UserDefaults.standard.set(newestId, forKey: Keys.newsLastId) }
 
             if lastSeen != 0, newestId > lastSeen, settings.newsEnabled {
-                await scheduler.schedule(.news)
+                await scheduler.schedule(.news, content: NotificationContentBuilder.news(from: items))
             }
         } catch {
             logFailure("news", error)
