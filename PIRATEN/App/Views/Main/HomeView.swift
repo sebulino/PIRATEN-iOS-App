@@ -170,10 +170,12 @@ struct HomeView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    // Scroll anchor - allows programmatic scroll to top
-                    Color.clear.frame(height: 1).id("top")
-
-                    // Greeting
+                    // Greeting — the first element, so it sits at the top like
+                    // the Wissen tab's "Empfohlen" heading. A separate scroll-
+                    // anchor row used to sit here; the VStack's 24pt section
+                    // spacing then fell between that row and the greeting,
+                    // pushing it ~25pt lower than Wissen. The scroll-to-top
+                    // anchor is now the content VStack itself (.id("top") below).
                     if let firstName = viewModel.userFirstName {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Ahoi \(firstName)!")
@@ -212,12 +214,6 @@ struct HomeView: View {
                                 )
                             }
                         }
-                        // Halve the gap between the "Kajüte" navigation title and
-                        // the greeting: the VStack's 24pt section spacing applies
-                        // above this first element too. Pull the greeting up by
-                        // half (−12) so the title sits closer, without changing
-                        // the 24pt spacing between the sections below.
-                        .padding(.top, -12)
                     }
 
                     // Discourse re-auth banner
@@ -246,6 +242,10 @@ struct HomeView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
+                // Scroll-to-top target for pull-to-refresh. Lives on the content
+                // VStack (always present) rather than a separate leading anchor
+                // row, which would re-introduce the 24pt gap above the greeting.
+                .id("top")
             }
             .refreshable {
                 await viewModel.refresh()
