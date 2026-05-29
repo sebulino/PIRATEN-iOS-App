@@ -25,10 +25,12 @@ final class DiscourseCacheStore {
 
     // MARK: - Dependencies
 
-    /// `nonisolated` so the nonisolated initializer can assign to it.
-    /// `UserDefaults` is documented as thread-safe, so sharing the
-    /// reference across actors is safe.
-    private nonisolated let userDefaults: UserDefaults
+    /// `nonisolated(unsafe)` so the nonisolated initializer can assign it and it
+    /// can be read off the main actor. `UserDefaults` is not `Sendable`, so plain
+    /// `nonisolated` is rejected under the Swift 6 language mode — but it is
+    /// Apple-documented thread-safe, so opting out of isolation checking here is
+    /// sound (we never mutate the reference after init).
+    private nonisolated(unsafe) let userDefaults: UserDefaults
 
     // MARK: - Initialization
 
