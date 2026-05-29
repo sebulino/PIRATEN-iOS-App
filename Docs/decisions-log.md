@@ -742,3 +742,28 @@ Status key: `OPEN` · `DECIDED` · `APPLIED` (i.e. the docs have been updated).
 - **Reversal trigger:** Discourse renames its system bots, or the Piraten
   instance adds/removes an automated account — update `SystemAccounts.usernames`
   (the `SystemAccountsTests` lowercase-invariant guard will flag a bad entry).
+
+### Q-070 — Display-parity verification (reply count, news date, Termine format)
+- **Status:** DECIDED 2026-05-29
+- **Category:** Parity / verify-only.
+- **Context:** Deviation D of the parity effort flagged three display details
+  for verification against the Android app. Verify-only: change only on a real
+  gap.
+- **Findings:**
+  - **Forum reply count — OK, no change.** Both the dashboard recent-topics
+    row (`HomeView`) and the forum list (`ForumView`) render
+    `max(0, topic.postsCount - 1)` (Discourse's `posts_count` includes the
+    original post). Per-post reply counts use `post.replyCount` directly.
+    Matches the documented convention.
+  - **Termine date format — OK, no change.** `CalendarView` formats event
+    dates with a `de_DE` `DateFormatter` (medium date + short time), and
+    detects all-day events (midnight start → date only, no time). Locale-
+    correct and reasonable.
+  - **News date — GAP, fixed.** The news list card (`NewsCardView`) showed no
+    date at all, and the detail view (`NewsDetailView`) showed an absolute date.
+    Android surfaces news recency relatively. Decision: add a relative
+    timestamp (`Text(item.postedAt, style: .relative)` → »vor 2 Tagen«) to the
+    news card, matching the forum feed's existing relative style. The detail
+    view keeps the absolute date intentionally — the precise date is useful
+    when reading the full article, and it is not a feed-recency surface.
+- **Scope:** UI-only; no model, request, or persistence change.
