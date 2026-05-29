@@ -11,11 +11,17 @@ import UserNotifications
 import UIKit
 
 /// Manages per-category push notification preferences and system permissions.
-/// Privacy-first: all notification categories are opt-in (default off).
-/// No tracking or analytics data is collected.
 ///
-/// Uses client-side polling of Discourse for notification detection
-/// (no APNs push infrastructure required).
+/// Categories default to **ON (opt-out)** so a fresh install gets useful
+/// notifications without configuration, matching the Android app (Q-068).
+/// This is bounded by iOS itself: no notification is delivered until the user
+/// grants the system permission prompt, which is requested in-context the first
+/// time the authenticated main screen appears. Members can switch any category
+/// off in Profile, and that explicit choice always wins (see `init`).
+///
+/// Still privacy-first: no tracking or analytics data is collected, and
+/// detection uses client-side polling of Discourse (no APNs push
+/// infrastructure required).
 @MainActor
 final class NotificationSettingsManager: ObservableObject {
 
@@ -55,7 +61,7 @@ final class NotificationSettingsManager: ObservableObject {
 
     /// Whether push notifications for Knowledge-Hub updates are enabled.
     /// Fires when the PIRATEN-Kanon repo publishes a new or changed topic.
-    /// Added in FR-PROF-002 (six opt-in categories, default off).
+    /// Added in FR-PROF-002 (six categories, default on / opt-out — Q-068).
     @Published var knowledgeEnabled: Bool {
         didSet {
             UserDefaults.standard.set(knowledgeEnabled, forKey: Keys.knowledgeEnabled)
@@ -65,7 +71,7 @@ final class NotificationSettingsManager: ObservableObject {
 
     /// Whether push notifications for new calendar events are enabled.
     /// Fires when piragitator.de publishes a new event that has not been seen locally.
-    /// Added in FR-PROF-002 (six opt-in categories, default off).
+    /// Added in FR-PROF-002 (six categories, default on / opt-out — Q-068).
     @Published var eventsEnabled: Bool {
         didSet {
             UserDefaults.standard.set(eventsEnabled, forKey: Keys.eventsEnabled)
@@ -110,8 +116,21 @@ final class NotificationSettingsManager: ObservableObject {
     // MARK: - Initialization
 
     init() {
-        // All categories default to false (opt-in for privacy)
         let defaults = UserDefaults.standard
+        // Opt-out by default (Q-068): seed every category to `true` in the
+        // registration domain so a fresh install gets notifications without
+        // configuration, matching the Android app. `register(defaults:)` is the
+        // LOWEST-priority domain, so an explicit user choice (turning a category
+        // off, persisted via the `didSet` below) always wins and survives
+        // relaunches. Must run before any `bool(forKey:)` read.
+        defaults.register(defaults: [
+            Keys.messagesEnabled: true,
+            Keys.forumEnabled: true,
+            Keys.todosEnabled: true,
+            Keys.newsEnabled: true,
+            Keys.knowledgeEnabled: true,
+            Keys.eventsEnabled: true
+        ])
         self.messagesEnabled = defaults.bool(forKey: Keys.messagesEnabled)
         self.forumEnabled = defaults.bool(forKey: Keys.forumEnabled)
         self.todosEnabled = defaults.bool(forKey: Keys.todosEnabled)
@@ -166,6 +185,15 @@ final class NotificationSettingsManager: ObservableObject {
     /// above. If you add a new category, add it here too — otherwise the
     /// next user of the device sees the previous user's notification
     /// preference. Security audit M-2 / LogoutOrchestrator depends on this.
+    ///
+    /// Opt-out interaction (Q-068): setting the in-memory flags to `false`
+    /// stops any further notifications for the *current* session (the poller
+    /// and background coordinator both gate on `anyNotificationsEnabled`).
+    /// Removing the explicit keys means a freshly-constructed manager on the
+    /// next launch/login falls back to the registered opt-out default (all
+    /// on) — i.e. the next user starts from the same uniform default, never
+    /// from the previous user's specific choices. That still satisfies M-2:
+    /// no preference *leaks* across users.
     func clearAllSettings() {
         messagesEnabled = false
         forumEnabled = false

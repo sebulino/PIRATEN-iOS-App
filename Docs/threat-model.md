@@ -116,6 +116,14 @@ Out of scope (but acknowledged):
 - Notification bodies still contain no tokens, no email addresses, no
   membership data, and no full message contents — only the single
   newest item's title/sender.
+- **Categories default on (opt-out, Q-068)** for parity with the Android
+  app. This is bounded: iOS still requires an explicit system-permission
+  grant before *any* notification is delivered (requested in-context
+  after login, not cold on first launch), detection stays polling-only
+  (no third-party push server sees metadata, cf. Q-067), and members can
+  switch any category off — a choice that persists and overrides the
+  default. On logout the per-category flags revert to the uniform default
+  rather than leaking the previous user's selections (M-2).
 
 ### Input handling
 

@@ -67,7 +67,7 @@ WAS DU IN DER APP FINDEST
 
 BENACHRICHTIGUNGEN, DIE DU SELBST STEUERST
 
-Du entscheidest pro Bereich, ob du Push-Benachrichtigungen bekommen willst — Forum, Nachrichten, News, Termine, Aufgaben, Wissen. Alles standardmäßig aus, alles jederzeit in den Einstellungen änderbar. Wir wecken dich nur, wenn du es möchtest.
+Du steuerst Benachrichtigungen pro Bereich — Forum, Nachrichten, News, Termine, Aufgaben, Wissen. iOS fragt dich beim ersten Start um Erlaubnis; danach sind alle Bereiche aktiv, und du schaltest in den Einstellungen jederzeit ab, was dich nicht interessiert. Erkannt wird Neues per direkter Abfrage – ohne Tracking und ohne fremde Push-Server.
 
 DATENSCHUTZ IST KEIN ADD-ON
 
