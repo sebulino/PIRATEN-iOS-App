@@ -675,3 +675,41 @@ Status key: `OPEN` · `DECIDED` · `APPLIED` (i.e. the docs have been updated).
      would need an ADR amendment + datenschutz.md update.
 - **Tracking issue:** filed in the iOS repo so member reports have a
   single thread to land in.
+
+### Q-068 — Notifications: opt-in (default off) → opt-out (default on)
+- **Status:** DECIDED 2026-05-29
+- **Category:** Notifications / privacy.
+- **Context:** The Android sibling defaults all notification categories
+  on (opt-out); iOS shipped them off (opt-in). The parity effort asked
+  whether iOS should match.
+- **Code state (before):** `NotificationSettingsManager.init` read each
+  category with `UserDefaults.bool(forKey:)`, which returns `false` for
+  an absent key — so a fresh install had every category off. The OS
+  permission prompt was only ever triggered from a toggle's `didSet`.
+- **Docs state (before):** FR-PROF-002 and the App Store listing both
+  advertised "default off / opt-in for privacy."
+- **Decision:** Switch iOS to **opt-out** (default on), matching Android.
+  Implemented with `UserDefaults.register(defaults:)` seeding all six
+  keys to `true` in the (lowest-priority) registration domain, so an
+  explicit user "off" still wins and persists. Because no `didSet` fires
+  on a fresh install, the OS permission prompt is now requested
+  in-context when the authenticated `MainTabView` first appears (status
+  `.notDetermined` only) — never cold on first launch.
+- **Why this is acceptable for a privacy-first app:** the privacy delta
+  is small and bounded. (1) iOS still requires an explicit system
+  permission grant before *any* notification is delivered — opt-out only
+  changes the in-app default, not Apple's gate. (2) Detection stays
+  polling-only; no third party sees message metadata (cf. Q-067). (3)
+  Notification bodies carry no persisted content (T-007). (4) Members can
+  switch any category off, and on logout `clearAllSettings()` reverts to
+  the uniform default rather than leaking the previous user's choices
+  (M-2). The benefit is parity + members getting useful alerts without
+  hunting through settings.
+- **Reversal trigger:** member feedback that the post-login permission
+  prompt feels pushy, or App Store review flagging the prompt timing.
+  Fallback is a lightweight pre-permission priming screen before the
+  system prompt.
+- **Follow-up:** updated FR-PROF-002 acceptance criteria, the
+  `NotificationSettingsManager` doc comments, and the App Store listing
+  (the "Alles standardmäßig aus" line must change — see below). Threat
+  model Notifications section notes the opt-out posture.

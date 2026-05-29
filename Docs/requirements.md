@@ -1437,17 +1437,22 @@ joined, and my participation stats.
 
 **User goal.** As a member, I want fine-grained control over which
 kinds of new activity trigger a notification on my phone, so I can
-opt into the categories I care about without being spammed.
+switch off the categories I don't care about without being spammed.
 
 **Acceptance criteria.**
 
 - Six toggles in Profile: Forum, Nachrichten, News, ToDos, Wissen,
   Termine.
 - Each toggle's state is persisted to UserDefaults.
-- All toggles default off (opt-in for privacy — no surprise
-  notifications).
-- Enabling any toggle triggers the `UNUserNotificationCenter`
-  permission prompt if not yet granted.
+- All toggles default **on** (opt-out — Q-068), matching the Android
+  app, so members receive useful notifications without configuration.
+  iOS still gates delivery behind the system permission prompt, which
+  is requested in-context the first time the authenticated main screen
+  appears (not cold on first launch). Members can switch any category
+  off in Profile; that explicit choice is persisted and wins over the
+  default on the next launch.
+- Enabling any toggle (or the in-context request above) triggers the
+  `UNUserNotificationCenter` permission prompt if not yet granted.
 - Toggle state only gates **display** (whether a banner fires) —
   polling still runs regardless so tab badges stay current (see
   [ADR-0015](./adr/0015-background-notification-coordinator.md)).
