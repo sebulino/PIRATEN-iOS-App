@@ -79,11 +79,24 @@ jobs:
         # Proper fix (post-v1, tracked in #76): extract RSAKeyManager and
         # KeychainCredentialStore behind protocols so unit tests can inject
         # in-memory mocks. Then remove these -skip-testing flags.
+        #
+        # -parallel-testing-enabled NO: run the suite serially on a single
+        # simulator. Parallel execution spins up multiple simulator *clones*,
+        # and on the GitHub Actions macOS runner a clone intermittently fails
+        # to launch the test host ("FBSOpenApplicationServiceErrorDomain
+        # Code=1 … request denied by service delegate"). Whichever tests are
+        # scheduled first on the dead clone then "fail" at 0.000s with no
+        # diagnostics — a false red that no code change can fix and that
+        # re-running only sometimes clears. These are fast unit tests (the
+        # whole suite runs in seconds), so serial execution costs little and
+        # removes the flake entirely. UI tests, which genuinely benefit from
+        # parallelism, live in ui-tests.yml and are unaffected.
         run: |
           set -o pipefail
           xcodebuild test \
             -scheme PIRATEN \
             -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -parallel-testing-enabled NO \
             -only-testing:PIRATENTests \
             -skip-testing:PIRATENTests/DiscourseAuthManagerTests \
             -skip-testing:PIRATENTests/RSAKeyManagerTests \
