@@ -12,6 +12,10 @@ import SwiftUI
 struct TodoDetailView: View {
     @StateObject var viewModel: TodoDetailViewModel
 
+    /// Tracks focus of the comment input so we can dismiss the keyboard
+    /// after the user taps send (tester feedback: keyboard lingered).
+    @FocusState private var isCommentFocused: Bool
+
     init(viewModel: TodoDetailViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
@@ -125,9 +129,10 @@ struct TodoDetailView: View {
                     HStack {
                         TextField("Kommentar...", text: $viewModel.commentText)
                             .textFieldStyle(.roundedBorder)
-                        Button {
-                            viewModel.sendComment()
-                        } label: {
+                            .focused($isCommentFocused)
+                            .submitLabel(.send)
+                            .onSubmit(sendComment)
+                        Button(action: sendComment) {
                             Image(systemName: "paperplane.fill")
                         }
                         .disabled(viewModel.commentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isSendingComment)
@@ -156,6 +161,15 @@ struct TodoDetailView: View {
             viewModel.loadComments()
             viewModel.loadReferenceData()
         }
+    }
+
+    /// Dismisses the keyboard, then hands off to the view model. Dismissing
+    /// first (optimistically) makes the send feel snappy; commentText is only
+    /// cleared by the VM on success, so a failed send keeps the text for retry.
+    /// Wired to both the send button and the keyboard's return key.
+    private func sendComment() {
+        isCommentFocused = false
+        viewModel.sendComment()
     }
 
     @ViewBuilder
