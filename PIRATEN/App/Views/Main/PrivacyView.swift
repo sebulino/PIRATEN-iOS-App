@@ -82,7 +82,7 @@ struct PrivacyView: View {
                     PrivacyRow(
                         icon: "bell",
                         title: "Push-Mitteilungen",
-                        detail: "Mitteilungen sind standardmäßig deaktiviert (Opt-in). Es werden keine Nachrichteninhalte oder Absendernamen übertragen – nur ein allgemeiner Hinweis."
+                        detail: "Mitteilungen sind standardmäßig aktiv (Opt-out) und lassen sich je Kategorie in den Einstellungen abschalten. Sie entstehen lokal auf dem Gerät (die App fragt das Forum in Intervallen ab) – es gibt keine Push-Server und es werden keine Daten an Dritte gesendet. Der Hinweistext nennt das betreffende Element (z. B. den Beitragstitel), bei Nachrichten Absender und Betreff – diese bleiben über die iOS-Vorschau-Einstellung auf dem Sperrbildschirm verborgen."
                     )
 
                     PrivacyRow(
@@ -118,7 +118,7 @@ struct PrivacyView: View {
                     PrivacyRow(
                         icon: "bell.badge",
                         title: "Mitteilungen",
-                        detail: "Nur wenn du Mitteilungen aktivierst, wird die Systemberechtigung angefragt. Du kannst sie jederzeit in den iOS-Einstellungen widerrufen."
+                        detail: "Die Systemberechtigung für Mitteilungen wird einmalig in der App angefragt. Du kannst sie jederzeit in den iOS-Einstellungen widerrufen."
                     )
 
                     PrivacyRow(
