@@ -20,6 +20,9 @@ struct ProfileView: View {
     @State private var adminStatus: Bool?
     @State private var showLogoutConfirmation = false
 
+    /// Environment dismiss for sheet presentation (top-left close button).
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
         NavigationStack {
             Group {
@@ -55,6 +58,16 @@ struct ProfileView: View {
                 }
             }
             .navigationTitle("Profil")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .accessibilityLabel("Schließen")
+                }
+            }
             .onAppear {
                 if viewModel.user == nil {
                     viewModel.loadUser()
