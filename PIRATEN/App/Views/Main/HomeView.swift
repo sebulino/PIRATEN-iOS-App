@@ -194,24 +194,32 @@ struct HomeView: View {
                                     .font(.piratenSubheadline)
                                     .foregroundColor(.secondary)
                             } else {
-                                Label {
-                                    if viewModel.unreadMessageCount == 1 {
-                                        Text("Du hast eine neue Nachricht.")
-                                    } else {
-                                        Text("Du hast \(viewModel.unreadMessageCount) neue Nachrichten.")
+                                // Tappable: jump straight to the Nachrichten view.
+                                Button {
+                                    onMessagesTapped?()
+                                } label: {
+                                    Label {
+                                        if viewModel.unreadMessageCount == 1 {
+                                            Text("Du hast eine neue Nachricht.")
+                                        } else {
+                                            Text("Du hast \(viewModel.unreadMessageCount) neue Nachrichten.")
+                                        }
+                                    } icon: {
+                                        Image(systemName: "envelope.badge.fill")
+                                            .foregroundColor(.piratenPrimary)
                                     }
-                                } icon: {
-                                    Image(systemName: "envelope.badge.fill")
-                                        .foregroundColor(.piratenPrimary)
+                                    .font(.piratenSubheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.primary)
                                 }
-                                .font(.piratenSubheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.primary)
+                                .buttonStyle(.plain)
                                 .accessibilityLabel(
                                     viewModel.unreadMessageCount == 1
                                     ? "Eine neue Nachricht"
                                     : "\(viewModel.unreadMessageCount) neue Nachrichten"
                                 )
+                                .accessibilityHint("Öffnet die Nachrichten")
+                                .accessibilityAddTraits(.isButton)
                             }
                         }
                     }

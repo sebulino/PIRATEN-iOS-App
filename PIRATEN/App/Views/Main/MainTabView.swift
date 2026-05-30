@@ -456,6 +456,10 @@ struct MainTabView: View {
             if let deepLink = deepLinkRouter.pendingDeepLink {
                 handlePendingDeepLink(deepLink)
             }
+
+            // Cold launch: the app is now open, so clear any springboard badge.
+            // (scenePhase's `.active` onChange doesn't fire for the initial value.)
+            Task { try? await UNUserNotificationCenter.current().setBadgeCount(0) }
         }
         .onDisappear {
             stopPolling()
@@ -463,10 +467,18 @@ struct MainTabView: View {
         .onChange(of: scenePhase) { _, newPhase in
             switch newPhase {
             case .active:
-                // Poll immediately on foreground return, then resume timer
+                // Poll immediately on foreground return, then resume timer.
+                // The app is now open, so clear the springboard badge — and keep
+                // it clear (the foreground poll below would otherwise re-raise it
+                // from the server's unread count).
                 if notificationSettings.anyNotificationsEnabled {
-                    Task { await notificationPoller.poll() }
+                    Task {
+                        await notificationPoller.poll()
+                        try? await UNUserNotificationCenter.current().setBadgeCount(0)
+                    }
                     startPollingIfNeeded()
+                } else {
+                    Task { try? await UNUserNotificationCenter.current().setBadgeCount(0) }
                 }
                 Task { await refreshDeliveredNotificationsCount() }
             case .background, .inactive:
@@ -513,10 +525,13 @@ struct MainTabView: View {
             }
         }
         .onChange(of: anyContentUnread) { _, hasUnread in
-            if hasUnread {
-                Task { try? await UNUserNotificationCenter.current().setBadgeCount(1) }
-            } else {
+            // The springboard badge is only meaningful while the app is
+            // backgrounded — in the foreground the user sees the in-app signals
+            // (tab badges, "Neu"), so keep the icon badge clear while active.
+            if scenePhase == .active {
                 Task { try? await UNUserNotificationCenter.current().setBadgeCount(0) }
+            } else {
+                Task { try? await UNUserNotificationCenter.current().setBadgeCount(hasUnread ? 1 : 0) }
             }
         }
         .task {
@@ -619,6 +634,10 @@ struct MainTabView: View {
             Task { @MainActor in
                 await notificationPoller.poll()
                 await refreshDeliveredNotificationsCount()
+                // This timer only runs while the app is foreground, so the
+                // springboard badge stays clear (the poll above set it from the
+                // server's unread count).
+                try? await UNUserNotificationCenter.current().setBadgeCount(0)
             }
         }
     }
