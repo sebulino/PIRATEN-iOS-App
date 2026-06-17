@@ -427,8 +427,9 @@ private struct TopicRow: View {
                     .accessibilityLabel("\(topic.viewCount) Aufrufe")
             }
 
-                // Time ago
-                Text(topic.createdAt, style: .relative)
+                // Time since the last post (falls back to creation time for
+                // older cached topics that predate the lastActivityAt field).
+                Text(topic.lastActivityAt ?? topic.createdAt, style: .relative)
                     .font(.piratenCaption2)
                     .foregroundStyle(.secondary)
             }

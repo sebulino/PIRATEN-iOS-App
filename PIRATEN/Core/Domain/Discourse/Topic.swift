@@ -25,6 +25,11 @@ struct Topic: Identifiable, Equatable, Hashable, Codable {
     /// When the topic was created
     let createdAt: Date
 
+    /// When the most recent post arrived (Discourse `bumped_at`). Optional:
+    /// older cached topics predate this field and decode as `nil`, and a topic
+    /// JSON without it falls back to `createdAt` at the display site.
+    let lastActivityAt: Date?
+
     /// Total number of posts in this topic
     let postsCount: Int
 
@@ -48,6 +53,39 @@ struct Topic: Identifiable, Equatable, Hashable, Codable {
 
     /// Whether the topic has been read by the current user
     let isRead: Bool
+
+    /// `lastActivityAt` defaults to `nil` so the many existing call sites
+    /// (fakes, tests) that don't supply it keep compiling; the DTO mapping and
+    /// `markedRead()` pass it explicitly.
+    init(
+        id: Int,
+        title: String,
+        createdBy: UserSummary,
+        createdAt: Date,
+        lastActivityAt: Date? = nil,
+        postsCount: Int,
+        viewCount: Int,
+        likeCount: Int,
+        categoryId: Int,
+        isVisible: Bool,
+        isClosed: Bool,
+        isArchived: Bool,
+        isRead: Bool
+    ) {
+        self.id = id
+        self.title = title
+        self.createdBy = createdBy
+        self.createdAt = createdAt
+        self.lastActivityAt = lastActivityAt
+        self.postsCount = postsCount
+        self.viewCount = viewCount
+        self.likeCount = likeCount
+        self.categoryId = categoryId
+        self.isVisible = isVisible
+        self.isClosed = isClosed
+        self.isArchived = isArchived
+        self.isRead = isRead
+    }
 }
 
 extension Topic {
@@ -62,6 +100,7 @@ extension Topic {
             title: title,
             createdBy: createdBy,
             createdAt: createdAt,
+            lastActivityAt: lastActivityAt,
             postsCount: postsCount,
             viewCount: viewCount,
             likeCount: likeCount,
