@@ -64,20 +64,29 @@ jobs:
       - name: Run UI tests (PIRATENUITests only)
         run: |
           set -o pipefail
-          # testLaunchPerformance is excluded from the CI gate on purpose.
-          # It's an XCTApplicationLaunchMetric measure() test (Xcode template
-          # boilerplate) with no committed .xcbaseline. On shared cloud
-          # runners it fails non-deterministically on high inter-iteration
-          # variance — especially right after the ~160s AppStoreScreenshotTests
-          # run leaves the runner under load. Performance measurement needs a
-          # stable baseline + dedicated hardware; it does not belong in a
-          # pass/fail nightly correctness gate. Run it locally if you need
-          # launch-time numbers. (See CI failure run 26554643867.)
+          # Both Xcode-template launch tests are excluded from the CI gate on
+          # purpose:
+          #   • testLaunchPerformance — an XCTApplicationLaunchMetric measure()
+          #     test with no committed .xcbaseline.
+          #   • testLaunch — the generated UI launch test, which also relaunches
+          #     and measures the app several times per run.
+          # Both are boilerplate that exercise launch *timing*, not correctness.
+          # On shared cloud runners they fail non-deterministically: testLaunch
+          # relaunches ~3×, and after the slow AppStoreScreenshotTests +
+          # testAppLaunchesAndShowsLoginScreen the overall test phase reaches the
+          # 600s ceiling — the first testLaunch iteration is then marked failed
+          # at ~88s while its retries pass at ~56s/~18s, flipping the nightly job
+          # red intermittently. Performance/launch measurement needs a stable
+          # baseline + dedicated hardware; it does not belong in a pass/fail
+          # nightly correctness gate. Run them locally for launch-time numbers.
+          # The real launch smoke test, testAppLaunchesAndShowsLoginScreen,
+          # stays in the gate. (See CI failure runs 26554643867, 27665874085.)
           xcodebuild test \
             -scheme PIRATEN \
             -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
             -only-testing:PIRATENUITests \
             -skip-testing:PIRATENUITests/PIRATENUITests/testLaunchPerformance \
+            -skip-testing:PIRATENUITests/PIRATENUITestsLaunchTests/testLaunch \
             -derivedDataPath build \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
