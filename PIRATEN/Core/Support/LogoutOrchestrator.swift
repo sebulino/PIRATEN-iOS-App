@@ -81,6 +81,7 @@ final class LogoutOrchestrator {
     private let messageDraftStore: MessageDraftStorage
     private let newsCacheStore: NewsCacheStore
     private let discourseCacheStore: DiscourseCacheStore
+    private let avatarImageCache: AvatarImageCache
     private let readingProgressStore: ReadingProgressStorage
     private let knowledgeCacheManager: KnowledgeCacheManager
 
@@ -101,6 +102,7 @@ final class LogoutOrchestrator {
         messageDraftStore: MessageDraftStorage,
         newsCacheStore: NewsCacheStore,
         discourseCacheStore: DiscourseCacheStore,
+        avatarImageCache: AvatarImageCache,
         readingProgressStore: ReadingProgressStorage,
         knowledgeCacheManager: KnowledgeCacheManager,
         notificationSettings: NotificationSettingsManager,
@@ -117,6 +119,7 @@ final class LogoutOrchestrator {
         self.messageDraftStore = messageDraftStore
         self.newsCacheStore = newsCacheStore
         self.discourseCacheStore = discourseCacheStore
+        self.avatarImageCache = avatarImageCache
         self.readingProgressStore = readingProgressStore
         self.knowledgeCacheManager = knowledgeCacheManager
         self.notificationSettings = notificationSettings
@@ -150,6 +153,7 @@ final class LogoutOrchestrator {
         messageDraftStore.clearDraft()
         newsCacheStore.clearAll()
         discourseCacheStore.clearAll()
+        avatarImageCache.clear()
         readingProgressStore.clearAll()
         knowledgeCacheManager.clearCache()
 

@@ -360,24 +360,7 @@ struct HomeView: View {
     @ViewBuilder
     private func contactAvatar(_ contact: UserSummary) -> some View {
         VStack(spacing: 4) {
-            if let avatarUrl = contact.avatarUrl {
-                AsyncImage(url: avatarUrl) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Image(systemName: "person.circle.fill")
-                        .resizable()
-                        .foregroundColor(.secondary)
-                }
-                .frame(width: 48, height: 48)
-                .clipShape(Circle())
-            } else {
-                Image(systemName: "person.circle.fill")
-                    .resizable()
-                    .foregroundColor(.secondary)
-                    .frame(width: 48, height: 48)
-            }
+            CachedAvatarView(url: contact.avatarUrl, size: 48)
 
             Text(contact.displayName ?? contact.username)
                 .font(.piratenCaption)

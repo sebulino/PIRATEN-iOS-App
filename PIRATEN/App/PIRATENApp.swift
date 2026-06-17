@@ -112,6 +112,7 @@ struct PIRATENApp: App {
                 notificationPoller: container.notificationPoller,
                 deepLinkRouter: container.deepLinkRouter,
                 eventKitService: container.eventKitService,
+                avatarImageCache: container.avatarImageCache,
                 topicDetailViewModelFactory: { [container] topic in
                     container.makeTopicDetailViewModel(for: topic)
                 },

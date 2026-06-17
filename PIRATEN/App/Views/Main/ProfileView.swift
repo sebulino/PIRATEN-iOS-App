@@ -287,23 +287,7 @@ struct ProfileView: View {
 
     @ViewBuilder
     private var avatarView: some View {
-        if let avatarUrl = viewModel.discourseProfile?.avatarUrl {
-            AsyncImage(url: avatarUrl) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 60, height: 60)
-                        .clipShape(Circle())
-                case .failure:
-                    avatarPlaceholder
-                default:
-                    ProgressView()
-                        .frame(width: 60, height: 60)
-                }
-            }
-        } else {
+        CachedAvatarView(url: viewModel.discourseProfile?.avatarUrl, size: 60) {
             avatarPlaceholder
         }
     }

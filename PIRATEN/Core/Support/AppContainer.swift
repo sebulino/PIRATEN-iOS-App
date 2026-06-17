@@ -133,6 +133,11 @@ final class AppContainer {
     /// Discourse cache storage for persisting forum topics and message threads offline.
     let discourseCacheStore: DiscourseCacheStore
 
+    /// Shared avatar image cache (memory + disk) so avatars appear instantly on
+    /// revisit. Injected into the view tree via the `avatarImageCache`
+    /// environment value; cleared on logout.
+    let avatarImageCache: AvatarImageCache
+
     /// Reading progress storage for Knowledge Hub topics.
     let readingProgressStore: ReadingProgressStore
 
@@ -306,6 +311,7 @@ final class AppContainer {
         self.messageDraftStore = MessageDraftStore()
         self.newsCacheStore = NewsCacheStore()
         self.discourseCacheStore = DiscourseCacheStore()
+        self.avatarImageCache = AvatarImageCache()
         self.readingProgressStore = ReadingProgressStore()
 
         // Notification layer (deep link router has no external dependencies)
@@ -493,6 +499,7 @@ final class AppContainer {
             messageDraftStore: messageDraftStore,
             newsCacheStore: newsCacheStore,
             discourseCacheStore: discourseCacheStore,
+            avatarImageCache: avatarImageCache,
             readingProgressStore: readingProgressStore,
             knowledgeCacheManager: knowledgeCacheManager,
             notificationSettings: notificationSettingsManager,
@@ -565,6 +572,7 @@ final class AppContainer {
         self.messageDraftStore = MessageDraftStore()
         self.newsCacheStore = NewsCacheStore()
         self.discourseCacheStore = DiscourseCacheStore()
+        self.avatarImageCache = AvatarImageCache()
         self.readingProgressStore = ReadingProgressStore()
         self.knowledgeCacheManager = KnowledgeCacheManager()
 
@@ -635,6 +643,7 @@ final class AppContainer {
             messageDraftStore: messageDraftStore,
             newsCacheStore: newsCacheStore,
             discourseCacheStore: discourseCacheStore,
+            avatarImageCache: avatarImageCache,
             readingProgressStore: readingProgressStore,
             knowledgeCacheManager: knowledgeCacheManager,
             notificationSettings: notificationSettingsManager,

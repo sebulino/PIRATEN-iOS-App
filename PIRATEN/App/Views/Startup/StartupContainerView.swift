@@ -33,6 +33,9 @@ struct StartupContainerView: View {
     /// events to the user's iOS Calendar (FR-EVT-003).
     let eventKitService: EventKitServicing
 
+    /// Shared avatar image cache, forwarded to RootView for environment injection.
+    let avatarImageCache: AvatarImageCache
+
     /// Factory for creating TopicDetailViewModels
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
 
@@ -94,6 +97,7 @@ struct StartupContainerView: View {
                 notificationPoller: notificationPoller,
                 deepLinkRouter: deepLinkRouter,
                 eventKitService: eventKitService,
+                avatarImageCache: avatarImageCache,
                 topicDetailViewModelFactory: topicDetailViewModelFactory,
                 messageThreadDetailViewModelFactory: messageThreadDetailViewModelFactory,
                 recipientPickerViewModelFactory: recipientPickerViewModelFactory,
@@ -174,6 +178,7 @@ struct StartupContainerView: View {
         ),
         deepLinkRouter: DeepLinkRouter(),
         eventKitService: PreviewStartupEventKitService(),
+        avatarImageCache: AvatarImageCache(),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
         },

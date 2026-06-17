@@ -321,24 +321,7 @@ private struct PostRow: View {
                     onUsernameTapped?(post.author.username)
                 } label: {
                     HStack(spacing: 8) {
-                        if let avatarUrl = post.author.avatarUrl {
-                            AsyncImage(url: avatarUrl) { image in
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            } placeholder: {
-                                Image(systemName: "person.circle.fill")
-                                    .resizable()
-                                    .foregroundColor(.secondary)
-                            }
-                            .frame(width: 28, height: 28)
-                            .clipShape(Circle())
-                        } else {
-                            Image(systemName: "person.circle.fill")
-                                .resizable()
-                                .foregroundColor(.secondary)
-                                .frame(width: 28, height: 28)
-                        }
+                        CachedAvatarView(url: post.author.avatarUrl, size: 28)
 
                         Text(post.author.displayName ?? post.author.username)
                             .font(.piratenSubheadline)
