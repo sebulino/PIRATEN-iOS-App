@@ -62,6 +62,7 @@ struct LogoutOrchestratorTests {
             messageDraftStore: messageDraft,
             newsCacheStore: newsCache,
             discourseCacheStore: discourseCache,
+            avatarImageCache: AvatarImageCache(),
             readingProgressStore: readingProgress,
             knowledgeCacheManager: knowledgeCache,
             notificationSettings: settings,

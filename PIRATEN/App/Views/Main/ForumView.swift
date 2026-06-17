@@ -366,24 +366,7 @@ private struct TopicRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             // Author avatar
-            if let avatarUrl = topic.createdBy.avatarUrl {
-                AsyncImage(url: avatarUrl) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Image(systemName: "person.circle.fill")
-                        .resizable()
-                        .foregroundColor(.secondary)
-                }
-                .frame(width: 36, height: 36)
-                .clipShape(Circle())
-            } else {
-                Image(systemName: "person.circle.fill")
-                    .resizable()
-                    .foregroundColor(.secondary)
-                    .frame(width: 36, height: 36)
-            }
+            CachedAvatarView(url: topic.createdBy.avatarUrl, size: 36)
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {

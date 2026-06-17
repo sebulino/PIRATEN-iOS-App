@@ -531,24 +531,7 @@ private struct MessageThreadRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             // First participant avatar
-            if let avatarUrl = thread.participants.first?.avatarUrl {
-                AsyncImage(url: avatarUrl) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Image(systemName: "person.circle.fill")
-                        .resizable()
-                        .foregroundColor(.secondary)
-                }
-                .frame(width: 40, height: 40)
-                .clipShape(Circle())
-            } else {
-                Image(systemName: "person.circle.fill")
-                    .resizable()
-                    .foregroundColor(.secondary)
-                    .frame(width: 40, height: 40)
-            }
+            CachedAvatarView(url: thread.participants.first?.avatarUrl, size: 40)
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack {

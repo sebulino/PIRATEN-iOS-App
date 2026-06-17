@@ -422,10 +422,6 @@ private struct MessagePostRow: View {
     /// (spawns WebKit parser). Computed once via .task(id:) instead of on every render.
     @State private var parsedContent: AttributedString?
 
-    /// Cached avatar image — loaded via .task(id:) to avoid AsyncImage's
-    /// URLSession saturation in long LazyVStack lists (fails after ~33 items).
-    @State private var avatarImage: UIImage?
-
     /// Inline images extracted from the post HTML, loaded manually to avoid
     /// AsyncImage saturation in long threads.
     @State private var inlineImages: [(url: URL, image: UIImage)] = []
@@ -513,36 +509,13 @@ private struct MessagePostRow: View {
                     // Skip failed images
                 }
             }
-
-            if avatarImage == nil, let url = post.author.avatarUrl {
-                do {
-                    let (data, _) = try await URLSession.shared.data(from: url)
-                    if let image = UIImage(data: data) {
-                        avatarImage = image
-                    }
-                } catch {
-                    // Silently fail — placeholder icon remains visible
-                }
-            }
         }
     }
 
     @ViewBuilder
     private var avatarView: some View {
-        if let avatarImage {
-            Image(uiImage: avatarImage)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 32, height: 32)
-                .clipShape(Circle())
-                .accessibilityHidden(true)
-        } else {
-            Image(systemName: "person.circle.fill")
-                .resizable()
-                .foregroundColor(.secondary)
-                .frame(width: 32, height: 32)
-                .accessibilityHidden(true)
-        }
+        CachedAvatarView(url: post.author.avatarUrl, size: 32)
+            .accessibilityHidden(true)
     }
 
     /// Formats timestamp: relative for recent messages, date for older ones

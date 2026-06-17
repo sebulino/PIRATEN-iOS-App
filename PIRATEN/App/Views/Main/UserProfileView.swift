@@ -79,21 +79,10 @@ struct UserProfileView: View {
                 // Profile Header
                 VStack(spacing: 12) {
                     // Large avatar
-                    if let avatarUrl = profile.avatarUrl {
-                        AsyncImage(url: avatarUrl) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        } placeholder: {
-                            initialsAvatar(for: profile)
-                        }
-                        .frame(width: 80, height: 80)
-                        .clipShape(Circle())
-                        .accessibilityHidden(true)
-                    } else {
+                    CachedAvatarView(url: profile.avatarUrl, size: 80) {
                         initialsAvatar(for: profile)
-                            .accessibilityHidden(true)
                     }
+                    .accessibilityHidden(true)
 
                     // Display name
                     Text(profile.displayText)

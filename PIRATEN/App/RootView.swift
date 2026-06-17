@@ -26,6 +26,11 @@ struct RootView: View {
     /// events to the user's iOS Calendar (FR-EVT-003).
     let eventKitService: EventKitServicing
 
+    /// Shared avatar image cache, injected into the view tree via the
+    /// `avatarImageCache` environment value so `CachedAvatarView` everywhere
+    /// uses one cache.
+    let avatarImageCache: AvatarImageCache
+
     /// Factory for creating TopicDetailViewModels
     var topicDetailViewModelFactory: ((Topic) -> TopicDetailViewModel)?
 
@@ -100,6 +105,7 @@ struct RootView: View {
                     onLogout: onLogout
                 )
                 .provideWindow()
+                .avatarImageCache(avatarImageCache)
             case .failed(let error):
                 ErrorView(error: error, authStateManager: authStateManager)
             case .sessionExpired:
@@ -225,6 +231,7 @@ struct SessionExpiredView: View {
         ),
         deepLinkRouter: DeepLinkRouter(),
         eventKitService: PreviewRootEventKitService(),
+        avatarImageCache: AvatarImageCache(),
         topicDetailViewModelFactory: { topic in
             TopicDetailViewModel(topic: topic, discourseRepository: fakeDiscourseRepo)
         },
