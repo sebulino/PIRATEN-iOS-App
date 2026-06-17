@@ -47,6 +47,10 @@ struct DiscourseTopicDTO: Decodable {
     let archived: Bool
     let createdAt: String
 
+    /// Time of the most recent post / bump (Discourse `bumped_at`). Optional —
+    /// not every topic payload carries it.
+    let bumpedAt: String?
+
     /// Whether the topic is unseen by the current user
     let unseen: Bool?
 
@@ -73,6 +77,7 @@ struct DiscourseTopicDTO: Decodable {
         case closed
         case archived
         case createdAt = "created_at"
+        case bumpedAt = "bumped_at"
         case unseen
         case unreadPosts = "unread_posts"
         case highestPostNumber = "highest_post_number"
@@ -90,18 +95,8 @@ struct DiscourseTopicDTO: Decodable {
             return nil
         }
 
-        // Parse the ISO 8601 date
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-        // Try with fractional seconds first, then without
-        var parsedDate = formatter.date(from: createdAt)
-        if parsedDate == nil {
-            formatter.formatOptions = [.withInternetDateTime]
-            parsedDate = formatter.date(from: createdAt)
-        }
-
-        guard let date = parsedDate else {
+        // Parse the ISO 8601 created date (required).
+        guard let date = Self.parseISO8601(createdAt) else {
             return nil
         }
 
@@ -110,6 +105,9 @@ struct DiscourseTopicDTO: Decodable {
             title: title,
             createdBy: user.toDomainModel(),
             createdAt: date,
+            // Last-post time (Discourse `bumped_at`). Optional: a missing or
+            // unparsable value leaves the display to fall back to createdAt.
+            lastActivityAt: bumpedAt.flatMap(Self.parseISO8601),
             postsCount: postsCount,
             viewCount: views,
             likeCount: likeCount,
@@ -132,6 +130,16 @@ struct DiscourseTopicDTO: Decodable {
         if let unread = unreadPosts, unread > 0 { return false }
         if let highest = highestPostNumber, let lastRead = lastReadPostNumber, highest > lastRead { return false }
         return true
+    }
+
+    /// Parses a Discourse ISO 8601 timestamp, tolerating both the
+    /// fractional-seconds and whole-seconds forms.
+    static func parseISO8601(_ value: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: value) { return date }
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: value)
     }
 }
 

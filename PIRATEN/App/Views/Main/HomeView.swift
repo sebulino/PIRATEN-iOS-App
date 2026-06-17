@@ -598,7 +598,9 @@ struct HomeView: View {
                     .font(.piratenCaption)
                     .foregroundColor(.secondary)
 
-                Text(topic.createdAt, style: .relative)
+                // Last-post time (falls back to creation time for older
+                // cached topics without lastActivityAt). Matches the Forum list.
+                Text(topic.lastActivityAt ?? topic.createdAt, style: .relative)
                     .font(.piratenCaption)
                     .foregroundColor(.secondary)
             }
