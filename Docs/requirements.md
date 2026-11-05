@@ -1004,7 +1004,7 @@ duplicate the work.
 
 - A "Übernehmen" button on each open task.
 - Tapping transitions the task `open → claimed` server-side via
-  `PATCH /tasks/:id.json` with `state=claimed`.
+  `PATCH /tasks/:id.json` with `{"task": {"status": "claimed", "assignee": "<username>"}}`.
 - The task moves out of the open list and appears under
   "Übernommene Aufgaben" on the Kajüte (FR-HOME-005).
 - The Aufgaben tab updates its badge to reflect the change.
